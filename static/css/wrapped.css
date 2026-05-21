@@ -761,7 +761,10 @@ body {
   .spinner,
   .slide-mesh,
   .avatar-ring,
-  .persona-art {
+  .persona-art,
+  .slide-bg--overlay,
+  .plays-hero-card,
+  .slide--watch-time .hero-pop {
     animation: none;
   }
 }

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from app.config import Settings, get_settings
+from app.utils.json_io import load_json_dict
 
 DATE_FMT = "%d-%m-%Y %H:%M:%S"
 
@@ -49,8 +50,7 @@ def load_user_mapping(settings: Settings | None = None) -> dict[str, dict[str, A
     path = settings.resolve_path(settings.user_mapping_path)
     if not path.exists():
         return {}
-    with path.open(encoding="utf-8") as f:
-        return json.load(f)
+    return load_json_dict(path)
 
 
 def load_telegram_data(settings: Settings | None = None, year: int | None = None) -> TelegramData:

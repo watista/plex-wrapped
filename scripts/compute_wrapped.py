@@ -28,7 +28,7 @@ def main() -> None:
     year = args.year or settings.wrapped_year
 
     tautulli = TautulliClient(settings)
-    cache = WrappedCache(settings)
+    cache = WrappedCache(settings, database_path=settings.database_path)
     telegram = load_telegram_data(settings, year)
     mapping = load_user_mapping(settings)
 

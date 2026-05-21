@@ -45,19 +45,30 @@
     );
   }
 
-  /** Unified slide shell: same height, mesh, padded main area */
-  function createSlide(innerHtml, variant) {
-    const meshClass =
-      variant === "cool" ? "slide-mesh slide-mesh--cool" : variant === "warm" ? "slide-mesh slide-mesh--warm" : "slide-mesh";
+  function createSlide(innerHtml, slideId) {
     const section = document.createElement("section");
-    section.className = "slide";
-    section.innerHTML = `<div class="${meshClass}"></div>${innerHtml}`;
+    section.className = `slide slide--${slideId}`;
+    section.innerHTML = `
+      <div class="slide-bg" aria-hidden="true"></div>
+      <div class="slide-bg slide-bg--overlay" aria-hidden="true"></div>
+      ${innerHtml}`;
     return section;
   }
 
   function slideMain(html, layout) {
     const cls = layout ? `slide-main slide-main--${layout}` : "slide-main";
     return `<main class="${cls}">${html}</main>`;
+  }
+
+  function buildPosterStack(items) {
+    const thumbs = (items || [])
+      .slice(0, 6)
+      .map((item) => posterUrl(item.thumb))
+      .filter(Boolean);
+    if (!thumbs.length) return "";
+    return `<div class="poster-stack" aria-hidden="true">${thumbs
+      .map((src) => `<img src="${escapeHtml(src)}" alt="" loading="lazy">`)
+      .join("")}</div>`;
   }
 
   function buildRankList(items, playsLabel, withPoster) {
@@ -74,14 +85,36 @@
         i === 0
           ? '<span class="material-symbols-outlined" style="color:var(--primary);font-variation-settings:\'FILL\' 1">verified</span>'
           : "";
+      const metaStyle = i === 0 ? "color:var(--primary)" : "color:var(--on-surface-variant)";
       html += `<div class="rank-item glass-card${hero}"${opacity}>
         <span class="rank-num">${i + 1}</span>
         ${img}
         <div class="rank-body">
           <h3>${escapeHtml(item.title)}</h3>
-          <p class="rank-meta">${item.plays} ${playsLabel}</p>
+          <p class="rank-meta" style="${metaStyle}">${item.plays} ${playsLabel.toUpperCase()}</p>
         </div>
         ${verified}
+      </div>`;
+    });
+    html += "</div>";
+    return html;
+  }
+
+  function buildGenreBars(genres) {
+    if (!genres.length) return "";
+    const max = Math.max(...genres.map((g) => g.plays), 1);
+    let html = '<div class="genre-bars">';
+    genres.forEach((g, i) => {
+      const pct = Math.round((g.plays / max) * 100);
+      const hero = i === 0 ? " genre-row--hero" : "";
+      const opacity = i === 0 ? "" : ` style="opacity:${Math.max(0.6, 1 - i * 0.1)}"`;
+      html += `<div class="genre-row glass-card${hero}"${opacity}>
+        <span class="rank-num">${i + 1}</span>
+        <div style="flex:1;min-width:0">
+          <h3 style="font-family:var(--font-display);font-size:1rem;color:#fff">${escapeHtml(g.name)}</h3>
+          <div class="genre-bar-track" style="margin-top:8px"><div class="genre-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+        <span class="rank-meta">${g.plays}</span>
       </div>`;
     });
     html += "</div>";
@@ -109,9 +142,31 @@
         </svg>
         <div class="chart-center">
           <span class="display-lg">${ratio}</span>
-          <span class="label-md" style="color:var(--on-surface-variant)">verhouding</span>
+          <span class="label-md" style="color:var(--on-surface-variant)">statistieken</span>
         </div>
       </div>`;
+  }
+
+  function buildHeatmapGrid() {
+    const levels = [1, 2, 3, 4, 5, 3, 2, 4, 5, 4, 5, 5, 4, 3, 2, 1, 1, 2, 3, 4, 5, 4, 3, 2, 1, 1, 2, 3];
+    return levels
+      .map((l) => `<div class="heat-dot heat-dot--${l}"></div>`)
+      .join("");
+  }
+
+  function bingeNarrative(moviePlays, tvPlays) {
+    if (tvPlays > moviePlays && moviePlays > 0) {
+      const ratio = Math.round(tvPlays / moviePlays);
+      return `Je bent een echte serie-bingewatcher. Voor elke film keek je maar liefst ${ratio} afleveringen.`;
+    }
+    if (moviePlays > tvPlays && tvPlays > 0) {
+      const ratio = Math.round(moviePlays / tvPlays);
+      return `Films stonden centraal — ${ratio} films voor elke aflevering.`;
+    }
+    if (tvPlays > 0 && moviePlays === 0) {
+      return "Pure seriesmodus: geen films, alleen afleveringen.";
+    }
+    return "Een gebalanceerde mix van films en series.";
   }
 
   function buildSlides(d) {
@@ -136,7 +191,7 @@
             <p class="body-md">Laten we kijken naar je jaar in films en series.</p>
           </div>
         `),
-        "warm"
+        "welcome"
       )
     );
 
@@ -146,7 +201,8 @@
           slideMain(
             `<h2 class="headline-lg">Geen activiteit in ${year}</h2>
              <p class="body-md" style="margin-top:1rem">Begin met kijken of aanvragen om volgend jaar stats te zien.</p>`
-          )
+          ),
+          "welcome"
         )
       );
       return slides;
@@ -158,33 +214,47 @@
 
       slides.push(
         createSlide(
-          slideMain(
-            `<span class="label-md">Kijktijd</span>
-             <h2 class="display-xl" style="margin-top:12px">${hours} uur</h2>
-             <div class="glass-card glass-card--inline">
-               <p class="body-md">Dat is <strong>${days} dagen</strong> kijkplezier</p>
-             </div>`,
-            "bottom-note"
-          ) +
-            `<p class="slide-footnote label-md" style="color:rgba(226,226,226,0.6)">gestreamd in ${year}</p>`
+          `<span class="material-symbols-outlined slide-deco-clock" aria-hidden="true">schedule</span>` +
+            slideMain(
+              `<div class="hero-pop stack-md">
+                 <span class="label-md label-md--wide">Totale kijktijd</span>
+                 <h2 class="display-xl">${hours} uur</h2>
+                 <div class="glass-card glass-card--days">
+                   <p class="body-lg">Dat is <strong>${days} dagen</strong> kijkplezier</p>
+                 </div>
+               </div>
+               <div class="slide-footnote" style="position:absolute;bottom:calc(var(--nav-h) + 24px);left:var(--gutter);right:var(--gutter);z-index:10;text-align:center">
+                 <div class="footnote-divider"></div>
+                 <p class="label-md" style="color:rgba(226,226,226,0.6);letter-spacing:0.15em">gestreamd in ${year}</p>
+               </div>`,
+              "bottom-note"
+            ),
+          "watch-time"
         )
       );
 
       slides.push(
         createSlide(
           slideMain(
-            `<span class="label-md">Totaal gestart</span>
-             <h2 class="display-xl" style="margin-top:12px">${d.total_plays}</h2>
-             <p class="body-md" style="margin-top:1rem">keer op play gedrukt voor films & series</p>`
-          )
+            `<div class="plays-hero-card glass-card">
+               <span class="material-symbols-outlined">play_circle</span>
+               <h2 class="display-xl">${d.total_plays}</h2>
+               <p class="headline-md" style="color:var(--on-surface);margin-top:0.5rem">keer op play voor films &amp; series</p>
+               <div class="plays-divider"></div>
+             </div>
+             <p class="label-md label-md--wide" style="margin-top:3rem;opacity:0.6">Totaal gestart</p>`
+          ),
+          "total-plays"
         )
       );
 
       slides.push(
         createSlide(
           slideMain(
-            `<span class="label-md">De grote balans</span>
-             <h2 class="headline-lg" style="margin-bottom:8px">Films vs series</h2>
+            `<div class="stack-sm" style="margin-bottom:0.5rem">
+               <span class="label-md label-md--wide">De grote balans</span>
+               <h2 class="headline-lg">Films vs series</h2>
+             </div>
              ${buildDonutChart(d.movie_plays, d.tv_plays)}
              <div class="split-grid">
                <div class="glass-card">
@@ -197,22 +267,24 @@
                  <span class="stat-num stat-num--tertiary">${d.movie_plays}</span>
                  <span class="label-md" style="color:var(--on-surface-variant)">films</span>
                </div>
-             </div>`,
+             </div>
+             <p class="slide-narrative">${escapeHtml(bingeNarrative(d.movie_plays, d.tv_plays))}</p>`,
             "top"
-          )
+          ),
+          "movies-vs-tv"
         )
       );
 
       if (d.top_movies && d.top_movies.length) {
         slides.push(
           createSlide(
-            slideMain(
-              `<h2 class="headline-lg" style="text-align:left;width:100%;max-width:360px;margin-bottom:1rem">
-                 Jouw <span class="text-primary">top 5</span> films
-               </h2>
-               ${buildRankList(d.top_movies, "keer bekeken", true)}`,
-              "top"
-            )
+            buildPosterStack(d.top_movies) +
+              slideMain(
+                `<h2 class="slide-title">Jouw <span class="text-primary">top 5</span> films</h2>
+                 ${buildRankList(d.top_movies, "keer bekeken", true)}`,
+                "top"
+              ),
+            "top-movies"
           )
         );
       }
@@ -220,13 +292,13 @@
       if (d.top_shows && d.top_shows.length) {
         slides.push(
           createSlide(
-            slideMain(
-              `<h2 class="headline-lg" style="text-align:left;width:100%;max-width:360px;margin-bottom:1rem">
-                 Jouw <span class="text-primary">top 5</span> series
-               </h2>
-               ${buildRankList(d.top_shows, "afleveringen", true)}`,
-              "top"
-            )
+            buildPosterStack(d.top_shows) +
+              slideMain(
+                `<h2 class="slide-title">Jouw <span class="text-primary">top 5</span> series</h2>
+                 ${buildRankList(d.top_shows, "afleveringen", true)}`,
+                "top"
+              ),
+            "top-shows"
           )
         );
       }
@@ -235,13 +307,27 @@
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md">Jouw seriesreis</span>
-               <div class="depth-stats" style="margin-top:1.5rem">
-                 <p><strong>${d.unique_series}</strong> series</p>
-                 <p><strong>${d.unique_seasons}</strong> seizoenen</p>
-                 <p><strong>${d.unique_episodes}</strong> afleveringen</p>
-               </div>`
-            )
+              `<div class="stack-sm" style="text-align:center;margin-bottom:1.5rem">
+                 <span class="label-md label-md--wide">Diepe duik</span>
+                 <h2 class="headline-lg">Jouw seriesreis</h2>
+               </div>
+               <div class="staircase">
+                 <div class="stair-step glass-card">
+                   <span class="display-xl">${d.unique_episodes}</span>
+                   <span class="stair-label">afleveringen</span>
+                 </div>
+                 <div class="stair-step glass-card">
+                   <span class="display-lg">${d.unique_seasons}</span>
+                   <span class="stair-label">seizoenen</span>
+                 </div>
+                 <div class="stair-step glass-card">
+                   <span class="headline-lg">${d.unique_series}</span>
+                   <span class="stair-label">series</span>
+                 </div>
+               </div>
+               <p class="stair-quote">"Je hebt genoeg content verslonden om een heel seizoen te vullen."</p>`
+            ),
+            "series-depth"
           )
         );
       }
@@ -254,13 +340,39 @@
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md">Wanneer kijk je</span>
-               <div class="stat-rows" style="margin-top:1.5rem">
-                 <p>Drukste maand: <strong>${escapeHtml(d.busiest_month || "—")}</strong></p>
-                 <p>Drukste dag: <strong>${escapeHtml(d.peak_day || "—")}</strong></p>
-                 <p>Piekuur: <strong>${hour}</strong></p>
-               </div>`
-            )
+              `<div class="stack-sm" style="text-align:center;width:100%;max-width:360px;margin-bottom:1rem">
+                 <span class="label-md label-md--wide">Your rhythm</span>
+                 <h2 class="headline-lg">Wanneer kijk je</h2>
+               </div>
+               <div class="glass-card heatmap-card">
+                 <div style="display:flex;justify-content:space-between;align-items:flex-end">
+                   <span class="label-md" style="color:var(--on-surface-variant)">Activiteit</span>
+                   <span class="headline-md" style="color:var(--primary)">${escapeHtml(d.busiest_month || year)}</span>
+                 </div>
+                 <div class="heatmap-grid">${buildHeatmapGrid()}</div>
+               </div>
+               <div class="when-bento">
+                 <div class="glass-card when-span-2">
+                   <div>
+                     <p class="label-md" style="color:var(--on-surface-variant)">Drukste maand</p>
+                     <p class="headline-lg">${escapeHtml(d.busiest_month || "—")}</p>
+                   </div>
+                   <div class="icon-circle"><span class="material-symbols-outlined nav-icon-fill" style="color:var(--primary)">calendar_month</span></div>
+                 </div>
+                 <div class="glass-card">
+                   <p class="label-md" style="color:var(--on-surface-variant)">Drukste dag</p>
+                   <p class="headline-md">${escapeHtml(d.peak_day || "—")}</p>
+                   <div class="mini-bars"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                 </div>
+                 <div class="glass-card">
+                   <p class="label-md" style="color:var(--on-surface-variant)">Piekuur</p>
+                   <p class="headline-md">${hour}</p>
+                   <div class="mini-bars"><span style="height:6px"></span><span style="height:10px;background:var(--primary)"></span><span style="height:8px"></span><span></span><span></span><span></span><span></span></div>
+                 </div>
+               </div>`,
+              "top"
+            ),
+            "when-you-watch"
           )
         );
       }
@@ -269,10 +381,19 @@
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md">Jouw scherm</span>
-               <h2 class="display-lg" style="margin-top:1rem;color:#fff">${escapeHtml(d.favorite_device)}</h2>
-               <p class="body-md" style="margin-top:0.75rem">meest gebruikte player</p>`
-            )
+              `<div class="device-hero glass-card">
+                 <span class="material-symbols-outlined nav-icon-fill">tv</span>
+               </div>
+               <div class="stack-sm">
+                 <p class="label-md label-md--wide">Je favoriete venster</p>
+                 <h2 class="display-lg" style="color:#fff;line-height:1.2">Jouw scherm:<br><span class="text-primary">${escapeHtml(d.favorite_device)}</span></h2>
+               </div>
+               <div class="glass-card device-badge">
+                 <span class="material-symbols-outlined" style="color:var(--primary)">tv</span>
+                 <p>meest gebruikte player</p>
+               </div>`
+            ),
+            "favorite-device"
           )
         );
       }
@@ -281,10 +402,16 @@
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md">Langste streak</span>
-               <h2 class="display-xl" style="margin-top:12px">${d.longest_streak_days} dagen op rij</h2>
-               <p class="body-md" style="margin-top:1rem">jouw langste kijkstreak in ${year}</p>`
-            )
+              `<div class="streak-glow" aria-hidden="true"></div>
+               <div class="streak-ring glass-card">
+                 <span class="material-symbols-outlined">calendar_today</span>
+                 <span class="display-xl">${d.longest_streak_days}</span>
+               </div>
+               <h2 class="headline-lg">${d.longest_streak_days} dagen op rij</h2>
+               <p class="label-md streak-sub" style="color:var(--on-surface-variant)">Langste streak in ${year}</p>`,
+              "bottom-note"
+            ),
+            "longest-streak"
           )
         );
       }
@@ -293,14 +420,12 @@
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md">Filmgenres</span>
-               ${buildRankList(
-                 d.top_movie_genres.map((g) => ({ title: g.name, plays: g.plays })),
-                 "keer",
-                 false
-               )}`,
+              `<span class="label-md label-md--wide">Filmgenres</span>
+               <h2 class="headline-lg" style="margin-top:0.5rem">Top 5 genres</h2>
+               ${buildGenreBars(d.top_movie_genres)}`,
               "top"
-            )
+            ),
+            "movie-genres"
           )
         );
       }
@@ -309,14 +434,12 @@
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md">Seriesgenres</span>
-               ${buildRankList(
-                 d.top_show_genres.map((g) => ({ title: g.name, plays: g.plays })),
-                 "keer",
-                 false
-               )}`,
+              `<span class="label-md label-md--wide">Seriesgenres</span>
+               <h2 class="headline-lg" style="margin-top:0.5rem">Top 5 genres</h2>
+               ${buildGenreBars(d.top_show_genres)}`,
               "top"
-            )
+            ),
+            "show-genres"
           )
         );
       }
@@ -325,10 +448,16 @@
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md">Op de server</span>
-               <h2 class="display-xl" style="margin-top:12px">#${d.server.rank}</h2>
-               <p class="body-md" style="margin-top:1rem">tussen kijkers op deze server</p>`
-            )
+              `<span class="label-md label-md--wide">Op de server</span>
+               <p class="rank-medal">#${d.server.rank}</p>
+               <p class="body-md" style="margin-top:1rem">tussen kijkers op deze server</p>
+               <div class="rank-podium" aria-hidden="true">
+                 <span style="height:45%"></span>
+                 <span></span>
+                 <span style="height:55%"></span>
+               </div>`
+            ),
+            "server-rank"
           )
         );
       }
@@ -340,13 +469,27 @@
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md">Server vs jij</span>
-               <div class="stat-rows glass-card" style="margin-top:1.5rem;padding:1.25rem;border-radius:12px">
-                 <p>Server #1 serie: <strong>${escapeHtml(serverTopShow)}</strong></p>
-                 <p>Jouw serie: <strong>${escapeHtml(userTopShow)}</strong></p>
+              `<span class="label-md label-md--wide">Server vs jij</span>
+               <h2 class="headline-lg" style="margin-top:0.5rem">De grote vergelijking</h2>
+               <div class="glass-card versus-card">
+                 <div class="versus-row">
+                   <div>
+                     <p class="versus-label">Server #1</p>
+                     <p class="versus-title">${escapeHtml(serverTopShow)}</p>
+                   </div>
+                   <span class="material-symbols-outlined" style="color:var(--tertiary)">groups</span>
+                 </div>
+                 <div class="versus-row">
+                   <div>
+                     <p class="versus-label">Jouw top</p>
+                     <p class="versus-title">${escapeHtml(userTopShow)}</p>
+                   </div>
+                   <span class="material-symbols-outlined" style="color:var(--primary)">person</span>
+                 </div>
                </div>
-               <p class="body-md" style="margin-top:1rem">${same ? "Zelfde smaak?" : "Jij koos je eigen pad"}</p>`
-            )
+               <p class="match-badge">${same ? "Zelfde smaak" : "Jij koos je eigen pad"}</p>`
+            ),
+            "server-vs-you"
           )
         );
       }
@@ -358,18 +501,21 @@
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md">Aanvragen</span>
-               <div class="split-grid" style="margin-top:1.5rem">
+              `<span class="label-md label-md--wide">Telegram</span>
+               <h2 class="headline-lg" style="margin-top:0.5rem">Aanvragen</h2>
+               <div class="split-grid req-grid" style="margin-top:1.5rem">
                  <div class="glass-card">
-                   <span class="stat-num">${tg.film_requests}</span>
+                   <span class="req-num">${tg.film_requests}</span>
                    <span class="label-md" style="color:var(--on-surface-variant)">films</span>
                  </div>
                  <div class="glass-card">
-                   <span class="stat-num">${tg.serie_requests}</span>
+                   <span class="req-num">${tg.serie_requests}</span>
                    <span class="label-md" style="color:var(--on-surface-variant)">series</span>
                  </div>
-               </div>`
-            )
+               </div>`,
+              "top"
+            ),
+            "telegram-requests"
           )
         );
       }
@@ -378,12 +524,18 @@
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md">Aanvraag → kijken</span>
-               <div class="stat-rows glass-card" style="margin-top:1.5rem;padding:1.25rem;border-radius:12px">
-                 <p>Films: <strong>${tg.movies_requested}</strong> aangevraagd · <strong>${tg.movies_watched}</strong> bekeken</p>
-                 <p>Series: <strong>${tg.series_requested}</strong> aangevraagd · <strong>${tg.series_watched}</strong> bekeken</p>
-               </div>`
-            )
+              `<span class="label-md label-md--wide">Aanvraag → kijken</span>
+               <div class="glass-card versus-card" style="margin-top:1.5rem;text-align:left">
+                 <p style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08)">
+                   Films: <strong style="color:#fff">${tg.movies_requested}</strong> aangevraagd · <strong style="color:var(--primary)">${tg.movies_watched}</strong> bekeken
+                 </p>
+                 <p style="padding:10px 0">
+                   Series: <strong style="color:#fff">${tg.series_requested}</strong> aangevraagd · <strong style="color:var(--primary)">${tg.series_watched}</strong> bekeken
+                 </p>
+               </div>
+               <p class="body-md" style="margin-top:1rem">Van aanvraag naar play-knop</p>`
+            ),
+            "telegram-watched"
           )
         );
       }
@@ -392,10 +544,12 @@
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md">Botgebruik</span>
+              `<span class="material-symbols-outlined bot-icon">smart_toy</span>
+               <span class="label-md label-md--wide">Botgebruik</span>
                <h2 class="display-xl" style="margin-top:12px">${tg.login_count}</h2>
                <p class="body-md" style="margin-top:1rem">keer dat je de aanvraagbot gebruikte</p>`
-            )
+            ),
+            "telegram-bot"
           )
         );
       }
@@ -409,12 +563,12 @@
         createSlide(
           slideMain(
             `<img class="persona-art" src="${art}" alt="">
-             <span class="label-md" style="margin-top:1rem">Jouw persona</span>
+             <span class="label-md label-md--wide">Jouw persona</span>
              <h2 class="headline-lg" style="margin-top:8px">Op basis van jouw stats word je gekroond tot</h2>
-             <p class="display-lg" style="margin-top:8px">${escapeHtml(d.persona)}</p>
-             <p class="body-md" style="margin-top:12px">${escapeHtml(d.persona_tagline || "")}</p>`
+             <p class="display-lg persona-name" style="margin-top:8px">${escapeHtml(d.persona)}</p>
+             <p class="body-md persona-tagline" style="margin-top:12px">${escapeHtml(d.persona_tagline || "")}</p>`
           ),
-          "cool"
+          "persona"
         )
       );
 
@@ -431,8 +585,8 @@
         ? tg.total_requests ?? (tg.film_requests || 0) + (tg.serie_requests || 0)
         : 0;
 
-      let bento = `<div class="stack-sm" style="width:100%;max-width:360px;margin-bottom:1rem">
-        <p class="label-md">Jouw jaar in review</p>
+      let bento = `<div class="summary-header">
+        <p class="label-md label-md--wide" style="opacity:0.8">Jouw jaar in review</p>
         <h2 class="headline-lg">${year} samenvatting</h2>
       </div>
       <div class="bento-grid">`;
@@ -460,7 +614,7 @@
           ${img}
           <div>
             <span class="label-md" style="color:var(--on-surface-variant)">${topMedia.label}</span>
-            <span class="bento-value" style="font-size:1.1rem">${escapeHtml(topMedia.title)}</span>
+            <span class="bento-value">${escapeHtml(topMedia.title)}</span>
           </div>
         </div>`;
       }
@@ -490,14 +644,19 @@
       </div>`;
 
       bento += `</div>
-        <button type="button" class="share-btn" id="btnShareSummary">
-          <span class="material-symbols-outlined" style="font-size:20px">share</span>
-          Deel je jaar
-        </button>`;
+        <div class="share-actions">
+          <button type="button" class="share-btn" id="btnShareSummary">
+            <span class="material-symbols-outlined" style="font-size:20px">share</span>
+            Deel je jaar
+          </button>
+          <div class="share-secondary" aria-hidden="true">
+            <span class="material-symbols-outlined">download</span>
+            <span class="material-symbols-outlined">bookmark</span>
+            <span class="material-symbols-outlined">favorite</span>
+          </div>
+        </div>`;
 
-      slides.push(
-        createSlide(slideMain(bento, "top"), "warm")
-      );
+      slides.push(createSlide(slideMain(bento, "top"), "summary"));
     }
 
     return slides;

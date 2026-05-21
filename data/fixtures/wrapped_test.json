@@ -1,0 +1,79 @@
+{
+  "year": 2025,
+  "user_id": 1,
+  "display_name": "Alex (test)",
+  "username": "alex_test",
+  "avatar_url": null,
+
+  "total_watch_seconds": 1987200,
+  "watch_hours": 552,
+  "watch_days": 23,
+  "total_plays": 847,
+  "movie_plays": 312,
+  "tv_plays": 535,
+
+  "top_movies": [
+    {"title": "Dune: Part Two", "thumb": null, "plays": 4, "duration_seconds": 28800},
+    {"title": "Oppenheimer", "thumb": null, "plays": 3, "duration_seconds": 21600},
+    {"title": "The Batman", "thumb": null, "plays": 2, "duration_seconds": 14400},
+    {"title": "Everything Everywhere All at Once", "thumb": null, "plays": 2, "duration_seconds": 12600},
+    {"title": "Spider-Man: Across the Spider-Verse", "thumb": null, "plays": 2, "duration_seconds": 10800}
+  ],
+  "top_shows": [
+    {"title": "Breaking Bad", "thumb": null, "plays": 62, "duration_seconds": 186000},
+    {"title": "The Bear", "thumb": null, "plays": 28, "duration_seconds": 84000},
+    {"title": "Severance", "thumb": null, "plays": 18, "duration_seconds": 54000},
+    {"title": "Shōgun", "thumb": null, "plays": 14, "duration_seconds": 42000},
+    {"title": "Slow Horses", "thumb": null, "plays": 12, "duration_seconds": 36000}
+  ],
+  "unique_series": 34,
+  "unique_seasons": 89,
+  "unique_episodes": 412,
+
+  "busiest_month": "oktober",
+  "peak_day": "zaterdag",
+  "peak_hour": 23,
+  "favorite_device": "NVIDIA SHIELD Android TV",
+  "longest_streak_days": 14,
+  "longest_streak_start": "2025-10-05",
+  "longest_streak_end": "2025-10-18",
+
+  "top_movie_genres": [
+    {"name": "Science Fiction", "plays": 48},
+    {"name": "Drama", "plays": 41},
+    {"name": "Action", "plays": 35},
+    {"name": "Thriller", "plays": 28},
+    {"name": "Comedy", "plays": 22}
+  ],
+  "top_show_genres": [
+    {"name": "Drama", "plays": 210},
+    {"name": "Crime", "plays": 98},
+    {"name": "Comedy", "plays": 76},
+    {"name": "Documentary", "plays": 44},
+    {"name": "Mystery", "plays": 38}
+  ],
+
+  "server": {
+    "rank": 2,
+    "server_top_show": "The Office"
+  },
+  "user_comparison_show": "Breaking Bad",
+  "user_comparison_reason": "most_played",
+
+  "telegram": {
+    "film_requests": 18,
+    "serie_requests": 24,
+    "total_requests": 42,
+    "movies_requested": 18,
+    "movies_watched": 11,
+    "series_requested": 24,
+    "series_watched": 16,
+    "login_count": 47
+  },
+
+  "persona": "Nachtuil",
+  "persona_tagline": "De server gloeit na 22:00.",
+  "persona_id": "night_owl",
+  "has_watch_history": true,
+  "has_telegram_activity": true
+}

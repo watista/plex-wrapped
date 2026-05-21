@@ -32,7 +32,12 @@ class Settings(BaseSettings):
     user_mapping_path: str = "config/user_mapping.json"
     telegram_requests_path: str = "data/telegram_requests.json"
     database_path: str = "data/wrapped.db"
+    test_database_path: str = "data/wrapped_test.db"
+    use_test_database: bool = False
     wrapped_test_fixture_path: str = "data/fixtures/wrapped_test.json"
+    wrapped_test_users_path: str = "data/fixtures/test_users.json"
+
+    log_level: str = "INFO"
 
     plex_server_url: str = ""
     plex_server_token: str = ""
@@ -42,6 +47,11 @@ class Settings(BaseSettings):
         if p.is_absolute():
             return p
         return PROJECT_ROOT / p
+
+    def active_database_path(self) -> str:
+        if self.use_test_database:
+            return self.test_database_path
+        return self.database_path
 
 
 @lru_cache

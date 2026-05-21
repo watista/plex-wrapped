@@ -1,3 +1,6 @@
+# custom
+todo
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -130,6 +133,8 @@ celerybeat.pid
 # Project data
 data/*
 !data/.gitkeep
+!data/fixtures/
+!data/fixtures/**
 !data/telegram_requests.json.example
 config/user_mapping.json
 

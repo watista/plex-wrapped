@@ -1,0 +1,75 @@
+{
+  "year": 2025,
+  "user_id": 14983182,
+  "display_name": "Wouter",
+  "username": "sam_test",
+  "avatar_url": null,
+
+  "total_watch_seconds": 936000,
+  "watch_hours": 260,
+  "watch_days": 10,
+  "total_plays": 412,
+  "movie_plays": 298,
+  "tv_plays": 114,
+
+  "top_movies": [
+    {"title": "Poor Things", "thumb": null, "plays": 5, "duration_seconds": 27000},
+    {"title": "Killers of the Flower Moon", "thumb": null, "plays": 4, "duration_seconds": 24000},
+    {"title": "Past Lives", "thumb": null, "plays": 3, "duration_seconds": 16200},
+    {"title": "The Holdovers", "thumb": null, "plays": 3, "duration_seconds": 15300},
+    {"title": "Anatomy of a Fall", "thumb": null, "plays": 2, "duration_seconds": 10800}
+  ],
+  "top_shows": [
+    {"title": "Succession", "thumb": null, "plays": 22, "duration_seconds": 66000},
+    {"title": "The Last of Us", "thumb": null, "plays": 9, "duration_seconds": 27000},
+    {"title": "Beef", "thumb": null, "plays": 8, "duration_seconds": 24000}
+  ],
+  "unique_series": 12,
+  "unique_seasons": 28,
+  "unique_episodes": 96,
+
+  "busiest_month": "maart",
+  "peak_day": "vrijdag",
+  "peak_hour": 20,
+  "favorite_device": "Apple TV",
+  "longest_streak_days": 7,
+  "longest_streak_start": "2025-03-12",
+  "longest_streak_end": "2025-03-18",
+
+  "top_movie_genres": [
+    {"name": "Drama", "plays": 92},
+    {"name": "Comedy", "plays": 54},
+    {"name": "Romance", "plays": 41},
+    {"name": "Thriller", "plays": 33},
+    {"name": "History", "plays": 21}
+  ],
+  "top_show_genres": [
+    {"name": "Drama", "plays": 48},
+    {"name": "Comedy", "plays": 22},
+    {"name": "Crime", "plays": 18}
+  ],
+
+  "server": {
+    "rank": 5,
+    "server_top_show": "Succession"
+  },
+  "user_comparison_show": "Succession",
+  "user_comparison_reason": "most_played",
+
+  "telegram": {
+    "film_requests": 31,
+    "serie_requests": 8,
+    "total_requests": 39,
+    "movies_requested": 31,
+    "movies_watched": 19,
+    "series_requested": 8,
+    "series_watched": 5,
+    "login_count": 22
+  },
+
+  "persona": "Filmliefhebber",
+  "persona_tagline": "Films zijn jouw hoofdprogramma.",
+  "persona_id": "film_buff",
+  "has_watch_history": true,
+  "has_telegram_activity": true
+}

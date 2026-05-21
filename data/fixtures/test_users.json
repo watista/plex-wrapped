@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "plex_user_id": 1,
+      "display_name": "Alex (test)",
+      "fixture": "wrapped_test.json"
+    },
+    {
+      "plex_user_id": 14983182,
+      "display_name": "Wouter",
+      "fixture": "wrapped_test_user2.json"
+    }
+  ]
+}

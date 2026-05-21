@@ -10,9 +10,17 @@ from app.config import Settings, get_settings
 
 
 class WrappedCache:
-    def __init__(self, settings: Settings | None = None):
+    """SQLite store for pre-computed wrapped payloads (production or test DB)."""
+
+    def __init__(
+        self,
+        settings: Settings | None = None,
+        *,
+        database_path: str | None = None,
+    ):
         self.settings = settings or get_settings()
-        self.path = self.settings.resolve_path(self.settings.database_path)
+        db_path = database_path or self.settings.active_database_path()
+        self.path = self.settings.resolve_path(db_path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Load bundled test stats into the wrapped cache (no Tautulli required)."""
+"""Load bundled test stats into the dedicated test SQLite database."""
 
 from __future__ import annotations
 
@@ -11,69 +11,89 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.config import get_settings
-from app.fixtures.test_wrapped import load_test_payload
+from app.fixtures.test_wrapped import find_test_user, load_test_payload, load_test_user_entries
 from app.models.cache import WrappedCache
-from app.telegram.loader import load_user_mapping
 
 
-def _resolve_user_ids(settings, explicit: int | None, all_mapped: bool) -> set[int]:
-    if explicit is not None:
-        return {explicit}
+def _resolve_entries(settings, user_id: int | None, all_test_users: bool):
+    if all_test_users:
+        entries = load_test_user_entries(settings)
+        if not entries:
+            print("No users in data/fixtures/test_users.json")
+            sys.exit(1)
+        return entries
 
-    if all_mapped:
-        mapping = load_user_mapping(settings)
-        return {
-            int(entry["plex_user_id"])
-            for entry in mapping.values()
-            if entry.get("plex_user_id") is not None
-        }
+    if user_id is not None:
+        entry = find_test_user(user_id, settings)
+        fixture = entry.fixture if entry else None
+        display_name = entry.display_name if entry else f"User {user_id} (test)"
+        from app.fixtures.test_wrapped import TestUserEntry
 
-    print("Loading test data for user_id=1 (use --user-id or --all-mapped to override)")
-    return {1}
+        return [
+            TestUserEntry(
+                plex_user_id=user_id,
+                display_name=display_name,
+                fixture=fixture or settings.resolve_path(settings.wrapped_test_fixture_path),
+            )
+        ]
+
+    print("Loading test data for user_id=1 (use --user-id or --all-test-users)")
+    entry = find_test_user(1, settings)
+    if entry:
+        return [entry]
+    from app.fixtures.test_wrapped import TestUserEntry
+
+    return [
+        TestUserEntry(
+            plex_user_id=1,
+            display_name="Alex (test)",
+            fixture=settings.resolve_path(settings.wrapped_test_fixture_path),
+        )
+    ]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Load test wrapped stats into the SQLite cache for local UI testing"
+        description="Load test wrapped stats into data/wrapped_test.db (separate from production)"
     )
     parser.add_argument("--year", type=int, default=None, help="Wrapped year (default: WRAPPED_YEAR)")
     parser.add_argument("--user-id", type=int, default=None, help="Plex/Tautulli user id to store under")
     parser.add_argument(
-        "--all-mapped",
+        "--all-test-users",
         action="store_true",
-        help="Load test data for every plex_user_id in user_mapping.json",
+        help="Load every user listed in data/fixtures/test_users.json",
     )
     parser.add_argument(
         "--fixture",
         type=Path,
         default=None,
-        help="Path to fixture JSON (default: data/fixtures/wrapped_test.json)",
+        help="Override fixture JSON for a single --user-id load",
     )
     args = parser.parse_args()
 
     settings = get_settings()
     year = args.year or settings.wrapped_year
-    cache = WrappedCache(settings)
+    db = WrappedCache(settings, database_path=settings.test_database_path)
 
-    user_ids = _resolve_user_ids(settings, args.user_id, args.all_mapped)
-    if args.all_mapped and not user_ids:
-        print("No plex_user_id entries found in user_mapping.json")
-        sys.exit(1)
+    entries = _resolve_entries(settings, args.user_id, args.all_test_users)
 
-    for uid in sorted(user_ids):
+    for entry in entries:
         payload = load_test_payload(
-            user_id=uid,
+            user_id=entry.plex_user_id,
             year=year,
-            fixture_path=args.fixture,
+            fixture_path=args.fixture or entry.fixture,
             settings=settings,
         )
-        cache.set(uid, year, payload.model_dump())
+        db.set(entry.plex_user_id, year, payload.model_dump())
         print(
-            f"Loaded test wrapped for user_id={uid} year={year} "
+            f"Wrote user_id={entry.plex_user_id} year={year} "
             f"({payload.display_name}, {payload.total_plays} plays)"
         )
 
-    print(f"Done. Open /wrapped after signing in as one of: {sorted(user_ids)}")
+    user_ids = sorted(e.plex_user_id for e in entries)
+    print(f"Database: {db.path}")
+    print("Enable test mode in .env: USE_TEST_DATABASE=true")
+    print(f"Then open /wrapped as one of: {user_ids}")
 
 
 if __name__ == "__main__":
