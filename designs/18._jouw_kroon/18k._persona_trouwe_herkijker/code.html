@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="nl"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Plex Wrapped - Persona Crown</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error-container": "#ffdad6",
+                    "outline-variant": "#514534",
+                    "on-error": "#690005",
+                    "primary-fixed-dim": "#ffba3e",
+                    "error": "#ffb4ab",
+                    "tertiary-container": "#49b5ff",
+                    "surface-container-highest": "#353535",
+                    "secondary-container": "#464a4d",
+                    "on-tertiary-fixed": "#001e31",
+                    "primary": "#ffbd49",
+                    "tertiary-fixed-dim": "#91ccff",
+                    "on-tertiary": "#003351",
+                    "on-secondary": "#2d3134",
+                    "on-tertiary-fixed-variant": "#004b73",
+                    "on-secondary-fixed-variant": "#43474a",
+                    "on-secondary-fixed": "#181c1f",
+                    "surface-dim": "#131313",
+                    "secondary-fixed": "#e0e3e7",
+                    "on-secondary-container": "#b5b9bc",
+                    "inverse-surface": "#e2e2e2",
+                    "surface": "#131313",
+                    "on-surface-variant": "#d6c4ad",
+                    "surface-container-lowest": "#0e0e0e",
+                    "secondary-fixed-dim": "#c4c7cb",
+                    "on-primary-fixed": "#281900",
+                    "tertiary-fixed": "#cce5ff",
+                    "primary-container": "#e5a00d",
+                    "primary-fixed": "#ffdeae",
+                    "error-container": "#93000a",
+                    "on-primary-fixed-variant": "#604100",
+                    "outline": "#9e8e7a",
+                    "on-tertiary-container": "#004569",
+                    "on-background": "#e2e2e2",
+                    "inverse-primary": "#7f5700",
+                    "on-primary-container": "#593b00",
+                    "tertiary": "#96ceff",
+                    "surface-tint": "#ffba3e",
+                    "on-primary": "#432c00",
+                    "surface-container": "#1f1f1f",
+                    "on-surface": "#e2e2e2",
+                    "surface-variant": "#353535",
+                    "background": "#131313",
+                    "secondary": "#c4c7cb",
+                    "surface-bright": "#393939",
+                    "surface-container-low": "#1b1b1b",
+                    "surface-container-high": "#2a2a2a",
+                    "inverse-on-surface": "#303030"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "20px",
+                    "stack-xl": "40px",
+                    "stack-lg": "24px",
+                    "safe-area-top": "64px",
+                    "stack-xs": "4px",
+                    "stack-sm": "8px",
+                    "safe-area-bottom": "48px",
+                    "stack-md": "16px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "headline-md": ["Hanken Grotesk"],
+                    "label-md": ["Inter"],
+                    "headline-lg": ["Hanken Grotesk"],
+                    "display-lg": ["Hanken Grotesk"],
+                    "display-xl": ["Hanken Grotesk"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                    "display-xl": ["72px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-md-mobile": ["20px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "1.1", "fontWeight": "700"}],
+                    "display-lg-mobile": ["40px", {"lineHeight": "1.1", "fontWeight": "800"}],
+                    "display-xl-mobile": ["56px", {"lineHeight": "1.1", "fontWeight": "800"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #131313;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .story-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 450px;
+            aspect-ratio: 9/16;
+            background: radial-gradient(circle at top right, #2d004b 0%, #131313 100%);
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .mesh-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(at 0% 0%, rgba(229, 160, 13, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(145, 204, 255, 0.1) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(73, 181, 255, 0.1) 0px, transparent 50%),
+                radial-gradient(at 0% 100%, rgba(229, 160, 13, 0.1) 0px, transparent 50%);
+            filter: blur(80px);
+            z-index: 0;
+            animation: drift 60s infinite alternate ease-in-out;
+        }
+
+        @keyframes drift {
+            from { transform: scale(1) translate(0, 0); }
+            to { transform: scale(1.2) translate(5%, 5%); }
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            border-left: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .crown-glow {
+            filter: drop-shadow(0 0 30px rgba(229, 160, 13, 0.4));
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(2deg); }
+        }
+
+        .progress-segment {
+            height: 4px;
+            flex-grow: 1;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 0 2px;
+        }
+
+        .progress-segment.active {
+            background: #FFFFFF;
+        }
+
+        .mask-fade-bottom {
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body>
+<div class="story-container relative flex flex-col items-center justify-between">
+<div class="mesh-gradient"></div>
+<!-- Progress Indicator -->
+<div class="absolute top-4 left-0 w-full px-4 z-[60] flex gap-1">
+<!-- 19 segments, 18 active -->
+<script>
+                for(let i=0; i<19; i++) {
+                    document.write(`<div class="progress-segment ${i < 18 ? 'active' : ''}"></div>`);
+                }
+            </script>
+</div>
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-gutter pt-safe-area-top h-16 no-border bg-gradient-to-b from-black/60 to-transparent">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary transition-opacity duration-200 active:scale-95 hover:opacity-80">close</span>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tighter">Plex Wrapped</h1>
+</div>
+<span class="material-symbols-outlined text-primary transition-opacity duration-200 active:scale-95 hover:opacity-80">share</span>
+</header>
+<!-- Main Content Canvas -->
+<main class="relative z-10 w-full h-full flex flex-col items-center justify-center px-gutter pt-24 pb-32 text-center">
+<!-- Hero Persona Section -->
+<div class="w-full max-w-[320px] mb-stack-lg">
+<div class="relative crown-glow">
+<!-- Stylized Crown Image -->
+<img alt="Persona Crown" class="w-full aspect-square object-contain rounded-full" data-alt="A cinematic, high-quality 3D icon of a vinyl record playing a film reel, representational of 'Loyal Rewatcher' persona." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfQymYR-Aog-8eH0YaePEO6xd7wzGcJM6dimRohZ_pCPwHlv8bSsSstZ9IdaVDpdLStGsXCoteeMu_hECKv-Ysujb8PPXz-EEuY9ohN_Bwx3gC3YivwyoKSZRnPUKmqGItYcCPbH6zrgggdPWVYFtHj26qtpjGOC94P977Hvb2MPm4kJ7G8xgX01U5u_aXv8ugnE1IFd24naL7DLIWK5EgIWS8SQEzRKq4-wRjZQji5ea6DNs8MgKrGQZ2JtJBbA6hIb9v80q7WPki"/>
+</div>
+</div>
+<!-- Typography Cluster -->
+<div class="flex flex-col gap-stack-sm mb-stack-xl">
+<span class="font-label-md text-label-md text-primary tracking-widest uppercase">JOUW PERSONA</span>
+<h2 class="font-display-lg-mobile text-display-lg-mobile text-on-surface leading-none mb-2">
+                    Jouw kroon: <br/>
+<span class="text-primary-container">Trouwe herkijker</span>
+</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-[280px] mx-auto">Favorieten verdienen een herkansing.</p>
+</div>
+<!-- Stats Bento Bit -->
+<div class="glass-card rounded-xl p-stack-md w-full flex items-center justify-between">
+<div class="text-left">
+<p class="font-label-md text-label-md text-on-surface-variant uppercase">PLAYS</p>
+<p class="font-headline-lg text-headline-lg text-primary">12</p>
+</div>
+<div class="h-10 w-[1px] bg-white/10"></div>
+<div class="text-right">
+<p class="font-label-md text-label-md text-on-surface-variant uppercase">Rank</p>
+<p class="font-headline-lg text-headline-lg text-on-surface">Top 18%</p>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-between items-center px-10 pb-safe-area-bottom no-border bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+<button class="text-on-surface/50 p-4 hover:text-primary scale-110 transition-transform">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<div class="glass-card px-6 py-2 rounded-full border border-white/10">
+<span class="font-label-md text-label-md text-on-surface">18 / 19</span>
+</div>
+<button class="text-on-surface/50 p-4 hover:text-primary scale-110 transition-transform">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</nav>
+<!-- Floating Action Button (Suppressed per rules for Persona screen focus) -->
+</div>
+<script>
+        // Subtle micro-interaction: Pulse the "Binge-Koning" text on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const crownTitle = document.querySelector('.text-primary-container');
+            crownTitle.style.opacity = '0';
+            crownTitle.style.transform = 'scale(0.9)';
+            crownTitle.style.transition = 'all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            
+            setTimeout(() => {
+                crownTitle.style.opacity = '1';
+                crownTitle.style.transform = 'scale(1)';
+            }, 500);
+        });
+    </script>
+</body></html>

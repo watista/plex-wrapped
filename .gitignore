@@ -127,6 +127,12 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
+# Project data
+data/*
+!data/.gitkeep
+!data/telegram_requests.json.example
+config/user_mapping.json
+
 # Environments
 .env
 .venv

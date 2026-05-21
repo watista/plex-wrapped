@@ -1,0 +1,336 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Plex Wrapped - Top Show Genres</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "outline-variant": "#514534",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#ffba3e",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#49b5ff",
+                        "surface-container-highest": "#353535",
+                        "secondary-container": "#464a4d",
+                        "on-tertiary-fixed": "#001e31",
+                        "primary": "#ffbd49",
+                        "tertiary-fixed-dim": "#91ccff",
+                        "on-tertiary": "#003351",
+                        "on-secondary": "#2d3134",
+                        "on-tertiary-fixed-variant": "#004b73",
+                        "on-secondary-fixed-variant": "#43474a",
+                        "on-secondary-fixed": "#181c1f",
+                        "surface-dim": "#131313",
+                        "secondary-fixed": "#e0e3e7",
+                        "on-secondary-container": "#b5b9bc",
+                        "inverse-surface": "#e2e2e2",
+                        "surface": "#131313",
+                        "on-surface-variant": "#d6c4ad",
+                        "surface-container-lowest": "#0e0e0e",
+                        "secondary-fixed-dim": "#c4c7cb",
+                        "on-primary-fixed": "#281900",
+                        "tertiary-fixed": "#cce5ff",
+                        "primary-container": "#e5a00d",
+                        "primary-fixed": "#ffdeae",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#604100",
+                        "outline": "#9e8e7a",
+                        "on-tertiary-container": "#004569",
+                        "on-background": "#e2e2e2",
+                        "inverse-primary": "#7f5700",
+                        "on-primary-container": "#593b00",
+                        "tertiary": "#96ceff",
+                        "surface-tint": "#ffba3e",
+                        "on-primary": "#432c00",
+                        "surface-container": "#1f1f1f",
+                        "on-surface": "#e2e2e2",
+                        "surface-variant": "#353535",
+                        "background": "#131313",
+                        "secondary": "#c4c7cb",
+                        "surface-bright": "#393939",
+                        "surface-container-low": "#1b1b1b",
+                        "surface-container-high": "#2a2a2a",
+                        "inverse-on-surface": "#303030"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "20px",
+                        "stack-xl": "40px",
+                        "stack-lg": "24px",
+                        "safe-area-top": "64px",
+                        "stack-xs": "4px",
+                        "stack-sm": "8px",
+                        "safe-area-bottom": "48px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "display-xl": ["Hanken Grotesk"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "display-xl": ["72px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #131313;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .story-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 450px;
+            margin: 0 auto;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .noise-bg {
+            position: absolute;
+            inset: 0;
+            opacity: 0.04;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .mesh-gradient {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(229, 160, 13, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(150, 206, 255, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(67, 44, 0, 1) 0%, rgba(19, 19, 19, 1) 100%);
+            z-index: -1;
+            animation: meshShift 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes meshShift {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        .progress-bar-segment {
+            height: 4px;
+            border-radius: 2px;
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .progress-bar-segment.active {
+            background: #FFFFFF;
+        }
+
+        .animate-in {
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+
+        .genre-floating-icon {
+            position: absolute;
+            font-size: 80px;
+            color: rgba(255, 189, 73, 0.05);
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background">
+<div class="story-container">
+<!-- Background elements -->
+<div class="mesh-gradient"></div>
+<div class="noise-bg"></div>
+<!-- Floating Genre Icons (Atmospheric) -->
+<span class="material-symbols-outlined genre-floating-icon" style="top: 15%; left: -10%; transform: rotate(-15deg);">theater_comedy</span>
+<span class="material-symbols-outlined genre-floating-icon" style="top: 45%; right: -5%; transform: rotate(10deg);">science</span>
+<span class="material-symbols-outlined genre-floating-icon" style="bottom: 10%; left: 5%; transform: rotate(25deg);">castle</span>
+<!-- Top Progress Indicators -->
+<div class="fixed top-0 w-full px-4 pt-4 flex gap-1 z-50">
+<!-- 19 segments for the progress -->
+<script>
+                for (let i = 1; i <= 19; i++) {
+                    const isActive = i <= 12;
+                    document.write(`<div class="progress-bar-segment ${isActive ? 'active' : ''}"></div>`);
+                }
+            </script>
+</div>
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-gutter pt-safe-area-top h-16 no-border bg-gradient-to-b from-black/60 to-transparent">
+<h1 class="font-headline-lg text-headline-lg-mobile text-primary tracking-tighter">Plex Wrapped</h1>
+<div class="flex gap-4">
+<button class="transition-opacity duration-200 active:scale-95 text-primary">
+<span class="material-symbols-outlined">share</span>
+</button>
+<button class="transition-opacity duration-200 active:scale-95 text-primary">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col px-gutter pt-24 pb-safe-area-bottom z-10">
+<section class="mt-8 mb-10 text-center animate-in">
+<p class="font-label-md text-label-md text-primary uppercase tracking-widest mb-2">TV SHOW INSIGHTS</p>
+<h2 class="font-display-lg text-white">Your Flavor of <span class="text-primary-container">Prime Time</span></h2>
+</section>
+<!-- Ranking List (Top 5 Genres) -->
+<div class="space-y-4">
+<!-- Rank 1: Hero Style -->
+<div class="glass-card rounded-xl p-6 animate-in delay-1 border-l-4 border-primary">
+<div class="flex items-center gap-6">
+<div class="w-16 h-16 rounded-full bg-primary-container/20 flex items-center justify-center border border-primary/30">
+<span class="material-symbols-outlined text-primary text-4xl" data-weight="fill">science</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-end mb-1">
+<span class="font-label-md text-primary text-label-md">#1 MOST WATCHED</span>
+<span class="font-headline-md text-white">420 episodes</span>
+</div>
+<h3 class="font-headline-lg text-white">Sci-Fi &amp; Fantasy</h3>
+</div>
+</div>
+</div>
+<!-- Rank 2-5: List Style -->
+<div class="space-y-3">
+<!-- Rank 2 -->
+<div class="glass-card rounded-xl px-4 py-4 animate-in delay-2 flex items-center gap-4">
+<span class="font-label-md text-on-surface-variant w-4">2</span>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-2xl">theater_comedy</span>
+</div>
+<div class="flex-1">
+<h4 class="font-headline-md text-white text-body-lg">Comedy</h4>
+</div>
+<div class="text-right">
+<p class="font-label-md text-on-surface-variant">184 eps</p>
+</div>
+</div>
+<!-- Rank 3 -->
+<div class="glass-card rounded-xl px-4 py-4 animate-in delay-3 flex items-center gap-4">
+<span class="font-label-md text-on-surface-variant w-4">3</span>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-2xl">crib</span>
+</div>
+<div class="flex-1">
+<h4 class="font-headline-md text-white text-body-lg">Crime Procedural</h4>
+</div>
+<div class="text-right">
+<p class="font-label-md text-on-surface-variant">156 eps</p>
+</div>
+</div>
+<!-- Rank 4 -->
+<div class="glass-card rounded-xl px-4 py-4 animate-in delay-4 flex items-center gap-4">
+<span class="font-label-md text-on-surface-variant w-4">4</span>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-2xl">psychology</span>
+</div>
+<div class="flex-1">
+<h4 class="font-headline-md text-white text-body-lg">Psychological Thriller</h4>
+</div>
+<div class="text-right">
+<p class="font-label-md text-on-surface-variant">92 eps</p>
+</div>
+</div>
+<!-- Rank 5 -->
+<div class="glass-card rounded-xl px-4 py-4 animate-in delay-5 flex items-center gap-4">
+<span class="font-label-md text-on-surface-variant w-4">5</span>
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-2xl">history_edu</span>
+</div>
+<div class="flex-1">
+<h4 class="font-headline-md text-white text-body-lg">Historical Drama</h4>
+</div>
+<div class="text-right">
+<p class="font-label-md text-on-surface-variant">78 eps</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Insight Section -->
+<div class="mt-auto mb-10 text-center animate-in delay-5">
+<p class="font-body-md text-on-surface-variant">
+                    You spent <span class="text-primary font-bold">12%</span> more time in imaginary worlds than last year. Escape much?
+                </p>
+</div>
+</main>
+<!-- Navigation Footer -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-between items-center px-10 pb-safe-area-bottom no-border bg-gradient-to-t from-black/80 via-black/20 to-transparent h-20">
+<button class="scale-110 transition-transform hover:text-primary text-on-surface/50 p-4">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<div class="flex gap-2">
+<div class="w-2 h-2 rounded-full bg-primary/20"></div>
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<div class="w-2 h-2 rounded-full bg-primary/20"></div>
+</div>
+<button class="scale-110 transition-transform hover:text-primary text-on-surface/50 p-4">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</nav>
+</div>
+<script>
+        // Simple micro-interaction for the floating icons
+        document.addEventListener('mousemove', (e) => {
+            const icons = document.querySelectorAll('.genre-floating-icon');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+
+            icons.forEach((icon, index) => {
+                const speed = (index + 1) * 10;
+                const moveX = (x - 0.5) * speed;
+                const moveY = (y - 0.5) * speed;
+                icon.style.transform = `translate(${moveX}px, ${moveY}px) rotate(${index * 15}deg)`;
+            });
+        });
+    </script>
+</body></html>

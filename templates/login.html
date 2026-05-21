@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Plex Wrapped</title>
+  <link rel="stylesheet" href="/static/css/wrapped.css">
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <h1>Plex Wrapped</h1>
+    <p class="subtitle">Your year in streaming, personalized.</p>
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+    <a href="/auth/start" class="btn-primary">Sign in with Plex</a>
+  </main>
+</body>
+</html>

@@ -1,0 +1,11 @@
+services:
+  plex-wrapped:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./config/user_mapping.json:/app/config/user_mapping.json:ro
+    restart: unless-stopped
