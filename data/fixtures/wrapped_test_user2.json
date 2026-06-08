@@ -21,7 +21,7 @@
   ],
   "top_shows": [
     {"title": "Succession", "thumb": null, "plays": 22, "duration_seconds": 66000},
-    {"title": "The Last of Us", "thumb": null, "plays": 9, "duration_seconds": 27000},
+    {"title": "The Last of Us", "thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg", "plays": 9, "duration_seconds": 27000},
     {"title": "Beef", "thumb": null, "plays": 8, "duration_seconds": 24000}
   ],
   "unique_series": 12,
@@ -29,6 +29,14 @@
   "unique_episodes": 96,
 
   "busiest_month": "maart",
+  "busiest_month_index": 3,
+  "busiest_month_daily_plays": [
+    2, 0, 4, 6, 0, 3, 5, 7, 0, 2,
+    8, 0, 4, 6, 9, 0, 3, 5, 0, 7,
+    10, 12, 0, 4, 6, 0, 3, 8, 11, 0, 5
+  ],
+  "busiest_month_first_weekday": 5,
+  "plays_by_weekday": [28, 35, 42, 51, 118, 64, 38],
   "peak_day": "vrijdag",
   "peak_hour": 20,
   "favorite_device": "Apple TV",

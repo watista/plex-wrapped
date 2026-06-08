@@ -31,6 +31,14 @@
   "unique_episodes": 412,
 
   "busiest_month": "oktober",
+  "busiest_month_index": 10,
+  "busiest_month_daily_plays": [
+    0, 3, 5, 0, 2, 8, 12, 0, 0, 4,
+    6, 9, 0, 7, 11, 14, 18, 0, 5, 10,
+    0, 6, 13, 16, 0, 4, 9, 15, 20, 0, 8
+  ],
+  "busiest_month_first_weekday": 2,
+  "plays_by_weekday": [52, 68, 71, 84, 98, 185, 142],
   "peak_day": "zaterdag",
   "peak_hour": 23,
   "favorite_device": "NVIDIA SHIELD Android TV",

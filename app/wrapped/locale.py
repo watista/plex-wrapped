@@ -58,3 +58,41 @@ def to_dutch_day(label: str | None) -> str | None:
         return None
     stripped = label.strip()
     return DAY_EN_TO_NL.get(stripped, stripped.lower())
+
+
+MONTH_NUM_TO_NL: dict[int, str] = {
+    1: "januari",
+    2: "februari",
+    3: "maart",
+    4: "april",
+    5: "mei",
+    6: "juni",
+    7: "juli",
+    8: "augustus",
+    9: "september",
+    10: "oktober",
+    11: "november",
+    12: "december",
+}
+
+WEEKDAY_NUM_TO_NL: list[str] = [
+    "maandag",
+    "dinsdag",
+    "woensdag",
+    "donderdag",
+    "vrijdag",
+    "zaterdag",
+    "zondag",
+]
+
+
+def month_number_to_dutch(month: int | None) -> str | None:
+    if month is None:
+        return None
+    return MONTH_NUM_TO_NL.get(month)
+
+
+def weekday_number_to_dutch(weekday: int | None) -> str | None:
+    if weekday is None or weekday < 0 or weekday > 6:
+        return None
+    return WEEKDAY_NUM_TO_NL[weekday]

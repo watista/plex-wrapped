@@ -69,7 +69,8 @@
     const bokehCanvas =
       slideId === "welcome" ||
       slideId === "watch-time" ||
-      slideId === "series-depth"
+      slideId === "series-depth" ||
+      slideId === "when-you-watch"
         ? '<canvas class="slide-bokeh-canvas" aria-hidden="true"></canvas>'
         : "";
     section.innerHTML = `
@@ -419,11 +420,202 @@
       </div>`;
   }
 
-  function buildHeatmapGrid() {
-    const levels = [1, 2, 3, 4, 5, 3, 2, 4, 5, 4, 5, 5, 4, 3, 2, 1, 1, 2, 3, 4, 5, 4, 3, 2, 1, 1, 2, 3];
-    return levels
-      .map((l) => `<div class="heat-dot heat-dot--${l}"></div>`)
+  const WEEKDAY_ORDER = [
+    "maandag",
+    "dinsdag",
+    "woensdag",
+    "donderdag",
+    "vrijdag",
+    "zaterdag",
+    "zondag",
+  ];
+
+  function daysInMonth(year, monthIndex) {
+    return new Date(year, monthIndex, 0).getDate();
+  }
+
+  function normalizeDailyPlays(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw.map((value) => {
+      if (typeof value === "boolean") return value ? 1 : 0;
+      const count = Number(value);
+      return Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
+    });
+  }
+
+  function playCountToLevel(count, maxCount) {
+    if (!count || count <= 0) return 1;
+    if (maxCount <= 1) return 5;
+    const ratio = count / maxCount;
+    if (ratio <= 0.25) return 2;
+    if (ratio <= 0.5) return 3;
+    if (ratio <= 0.75) return 4;
+    return 5;
+  }
+
+  function buildHeatmapGrid(dailyPlays, firstWeekday, monthIndex, year) {
+    let plays = normalizeDailyPlays(dailyPlays);
+    const offset = Number.isFinite(Number(firstWeekday)) ? Number(firstWeekday) : 0;
+
+    if (!plays.length && monthIndex) {
+      const length = daysInMonth(year, monthIndex);
+      plays = Array.from({ length }, () => 0);
+    }
+
+    if (!plays.length) {
+      return "";
+    }
+
+    const maxPlays = Math.max(...plays, 0);
+    const cells = [];
+    for (let i = 0; i < offset; i += 1) {
+      cells.push('<div class="heat-dot heat-dot--empty" aria-hidden="true"></div>');
+    }
+
+    plays.forEach((count) => {
+      const level = playCountToLevel(count, maxPlays);
+      const title = count > 0 ? ` title="${count} keer"` : "";
+      cells.push(`<div class="heat-dot heat-dot--${level}"${title}></div>`);
+    });
+
+    return cells.join("");
+  }
+
+  const WEEKDAY_SHORT = ["ma", "di", "wo", "do", "vr", "za", "zo"];
+
+  const DUTCH_MONTH_TO_INDEX = {
+    januari: 1,
+    februari: 2,
+    maart: 3,
+    april: 4,
+    mei: 5,
+    juni: 6,
+    juli: 7,
+    augustus: 8,
+    september: 9,
+    oktober: 10,
+    november: 11,
+    december: 12,
+  };
+
+  function resolveBusiestMonthIndex(monthName, monthIndex) {
+    if (Number.isFinite(Number(monthIndex))) {
+      return Number(monthIndex);
+    }
+    if (!monthName) return null;
+    return DUTCH_MONTH_TO_INDEX[monthName.toLowerCase()] || null;
+  }
+
+  function normalizeWeekdayCounts(playsByWeekday) {
+    const raw = Array.isArray(playsByWeekday) ? playsByWeekday : [];
+    return Array.from({ length: 7 }, (_, index) => {
+      const value = Number(raw[index]);
+      return Number.isFinite(value) ? value : 0;
+    });
+  }
+
+  function buildWeekdayChart(playsByWeekday, peakDay) {
+    const counts = normalizeWeekdayCounts(playsByWeekday);
+    const max = Math.max(...counts, 1);
+    const peakIdx = WEEKDAY_ORDER.indexOf((peakDay || "").toLowerCase());
+
+    const width = 320;
+    const height = 88;
+    const padX = 14;
+    const padTop = 18;
+    const padBottom = 22;
+    const plotW = width - padX * 2;
+    const plotH = height - padTop - padBottom;
+
+    const points = counts.map((count, index) => ({
+      x: padX + (index / 6) * plotW,
+      y: padTop + plotH - (count / max) * plotH,
+      count,
+      index,
+    }));
+
+    const linePath = points
+      .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+      .join(" ");
+
+    const areaPath = `${linePath} L ${points[6].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} L ${points[0].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} Z`;
+
+    const dots = points
+      .map((point) => {
+        const isPeak = point.index === peakIdx;
+        const r = isPeak ? 4.5 : 3;
+        const label = point.count.toLocaleString("nl-NL");
+        return `<g class="${isPeak ? "weekday-line-chart__point--peak" : ""}">
+          <circle class="weekday-line-chart__dot" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="${r}"></circle>
+          <text class="weekday-line-chart__value" x="${point.x.toFixed(1)}" y="${(point.y - 8).toFixed(1)}" text-anchor="middle">${label}</text>
+        </g>`;
+      })
       .join("");
+
+    const labels = points
+      .map(
+        (point) =>
+          `<text class="weekday-line-chart__day" x="${point.x.toFixed(1)}" y="${(height - 4).toFixed(1)}" text-anchor="middle">${WEEKDAY_SHORT[point.index]}</text>`
+      )
+      .join("");
+
+    return `<div class="weekday-line-chart">
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <path class="weekday-line-chart__area" d="${areaPath}"></path>
+        <path class="weekday-line-chart__line" d="${linePath}"></path>
+        ${dots}
+        ${labels}
+      </svg>
+    </div>`;
+  }
+
+  function buildPeakClock(peakHour, inline) {
+    if (peakHour === null || peakHour === undefined) {
+      return "";
+    }
+    const hourAngle = (peakHour % 12) * 30;
+    const clockClass = inline ? "when-clock when-clock--inline" : "when-clock";
+    return `<div class="${clockClass}">
+      <div class="when-clock__face">
+        <div class="when-clock__hand when-clock__hand--hour" style="transform:rotate(${hourAngle}deg)"></div>
+        <div class="when-clock__hand when-clock__hand--minute"></div>
+        <div class="when-clock__center"></div>
+      </div>
+    </div>`;
+  }
+
+  function initWhenYouWatchWaves(slide) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const paths = slide.querySelectorAll(".when-waves path");
+    if (!paths.length) return;
+
+    let offset = 0;
+    let running = false;
+
+    function animate() {
+      if (!running) return;
+      offset += 0.05;
+      paths.forEach((path, index) => {
+        const shift = Math.sin(offset + index) * 5;
+        path.setAttribute("transform", `translate(0, ${shift})`);
+      });
+      requestAnimationFrame(animate);
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.some((entry) => entry.isIntersecting);
+        if (visible && !running) {
+          running = true;
+          animate();
+        } else if (!visible) {
+          running = false;
+        }
+      },
+      { threshold: 0.35 }
+    );
+    observer.observe(slide);
   }
 
   function bingeNarrative(moviePlays, tvPlays) {
@@ -632,37 +824,50 @@
         slides.push(
           createSlide(
             slideMain(
-              `<div class="stack-sm" style="text-align:center;width:100%;max-width:360px;margin-bottom:1rem">
-                 <span class="label-md label-md--wide">Your rhythm</span>
-                 <h2 class="headline-lg">Wanneer kijk je</h2>
-               </div>
-               <div class="glass-card heatmap-card">
-                 <div style="display:flex;justify-content:space-between;align-items:flex-end">
-                   <span class="label-md" style="color:var(--on-surface-variant)">Activiteit</span>
-                   <span class="headline-md" style="color:var(--primary)">${escapeHtml(d.busiest_month || year)}</span>
+              `<div class="when-content">
+                 <div class="when-header stack-sm">
+                   <span class="label-md label-md--wide">Jouw ritme</span>
+                   <h2 class="headline-lg">Wanneer kijk je</h2>
                  </div>
-                 <div class="heatmap-grid">${buildHeatmapGrid()}</div>
-               </div>
-               <div class="when-bento">
-                 <div class="glass-card when-span-2">
-                   <div>
-                     <p class="label-md" style="color:var(--on-surface-variant)">Drukste maand</p>
-                     <p class="headline-lg">${escapeHtml(d.busiest_month || "—")}</p>
+                 <div class="when-stack">
+                   <div class="glass-card when-card when-card--month-heatmap">
+                     <p class="label-md when-label">Drukste maand</p>
+                     <div class="when-card__row when-card__row--title">
+                       <p class="headline-md when-value">${escapeHtml(d.busiest_month || "—")}</p>
+                       <div class="when-icon-circle">
+                         <span class="material-symbols-outlined nav-icon-fill">calendar_month</span>
+                       </div>
+                     </div>
+                     <div class="heatmap-grid">${buildHeatmapGrid(
+                       d.busiest_month_daily_plays ?? d.busiest_month_active_days,
+                       d.busiest_month_first_weekday,
+                       resolveBusiestMonthIndex(d.busiest_month, d.busiest_month_index),
+                       year
+                     )}</div>
                    </div>
-                   <div class="icon-circle"><span class="material-symbols-outlined nav-icon-fill" style="color:var(--primary)">calendar_month</span></div>
+                   <div class="glass-card when-card when-card--weekday">
+                     <p class="label-md when-label">Drukste dag</p>
+                     <p class="headline-md when-day-value">${escapeHtml(d.peak_day || "—")}</p>
+                     ${buildWeekdayChart(d.plays_by_weekday, d.peak_day)}
+                   </div>
+                   <div class="glass-card when-card when-card--hour">
+                     <div class="when-card__row when-card__row--hour">
+                       <div class="when-hour-text">
+                         <p class="label-md when-label">Drukste uur</p>
+                         <p class="headline-md when-hour-value">${hour}</p>
+                       </div>
+                       ${buildPeakClock(d.peak_hour, true)}
+                     </div>
+                   </div>
                  </div>
-                 <div class="glass-card">
-                   <p class="label-md" style="color:var(--on-surface-variant)">Drukste dag</p>
-                   <p class="headline-md">${escapeHtml(d.peak_day || "—")}</p>
-                   <div class="mini-bars"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-                 </div>
-                 <div class="glass-card">
-                   <p class="label-md" style="color:var(--on-surface-variant)">Piekuur</p>
-                   <p class="headline-md">${hour}</p>
-                   <div class="mini-bars"><span style="height:6px"></span><span style="height:10px;background:var(--primary)"></span><span style="height:8px"></span><span></span><span></span><span></span><span></span></div>
-                 </div>
+               </div>
+               <div class="when-waves" aria-hidden="true">
+                 <svg viewBox="0 0 400 100" preserveAspectRatio="none">
+                   <path class="when-wave when-wave--primary" d="M0,50 Q50,0 100,50 T200,50 T300,50 T400,50" fill="none" stroke="#ffbd49" stroke-width="2"></path>
+                   <path class="when-wave when-wave--tertiary" d="M0,50 Q50,20 100,50 T200,50 T300,50 T400,50" fill="none" stroke="#96ceff" stroke-width="1"></path>
+                 </svg>
                </div>`,
-              "top"
+              "when-you-watch"
             ),
             "when-you-watch"
           )
@@ -1048,7 +1253,10 @@
 
       setupProgress(slides.length);
       slides.forEach((s) => slidesEl.appendChild(s));
-      slidesEl.querySelectorAll(".slide--welcome").forEach(initWelcomeBokeh);
+      slidesEl
+        .querySelectorAll(".slide--welcome, .slide--when-you-watch")
+        .forEach(initWelcomeBokeh);
+      slidesEl.querySelectorAll(".slide--when-you-watch").forEach(initWhenYouWatchWaves);
       slidesEl
         .querySelectorAll(".slide--watch-time, .slide--series-depth")
         .forEach(initWatchTimeBokeh);

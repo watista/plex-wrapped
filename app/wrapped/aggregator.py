@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from calendar import monthrange
 from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
 from typing import Any
@@ -13,7 +14,7 @@ from app.telegram.loader import (
     count_unique_matched,
     load_telegram_data,
 )
-from app.wrapped.locale import to_dutch_day, to_dutch_month
+from app.wrapped.locale import month_number_to_dutch, to_dutch_day, to_dutch_month, weekday_number_to_dutch
 from app.wrapped.slides import apply_persona
 
 
@@ -72,6 +73,49 @@ def _history_row_date(row: dict[str, Any]) -> date | None:
     if not ts:
         return None
     return datetime.fromtimestamp(int(ts), tz=timezone.utc).date()
+
+
+def _compute_watch_timing(
+    media_history: list[dict[str, Any]],
+    year: int,
+) -> dict[str, Any]:
+    """Per-month activity, busiest-month calendar, and weekday play counts from history."""
+    month_play_counts: Counter[int] = Counter()
+    month_day_play_counts: dict[int, Counter[int]] = defaultdict(Counter)
+    weekday_play_counts: Counter[int] = Counter()
+
+    for row in media_history:
+        row_date = _history_row_date(row)
+        if not row_date or row_date.year != year:
+            continue
+        month_play_counts[row_date.month] += 1
+        month_day_play_counts[row_date.month][row_date.day] += 1
+        weekday_play_counts[row_date.weekday()] += 1
+
+    busiest_month_index: int | None = None
+    busiest_month: str | None = None
+    busiest_month_daily_plays: list[int] = []
+    busiest_month_first_weekday = 0
+    plays_by_weekday = [weekday_play_counts.get(i, 0) for i in range(7)]
+
+    if month_play_counts:
+        busiest_month_index = max(month_play_counts, key=month_play_counts.get)
+        busiest_month = month_number_to_dutch(busiest_month_index)
+        days_in_month = monthrange(year, busiest_month_index)[1]
+        day_counts = month_day_play_counts[busiest_month_index]
+        busiest_month_daily_plays = [day_counts.get(day, 0) for day in range(1, days_in_month + 1)]
+        busiest_month_first_weekday = date(year, busiest_month_index, 1).weekday()
+
+    return {
+        "busiest_month": busiest_month,
+        "busiest_month_index": busiest_month_index,
+        "busiest_month_daily_plays": busiest_month_daily_plays,
+        "busiest_month_first_weekday": busiest_month_first_weekday,
+        "plays_by_weekday": plays_by_weekday,
+        "peak_day": weekday_number_to_dutch(max(range(7), key=lambda i: weekday_play_counts.get(i, 0)))
+        if weekday_play_counts
+        else None,
+    }
 
 
 class WrappedAggregator:
@@ -252,36 +296,45 @@ class WrappedAggregator:
                 user_comparison_show = _media_key(first_row, "episode")[0]
                 user_comparison_reason = "first_played"
 
-        busiest_month = peak_day = None
+        watch_timing = _compute_watch_timing(media_history, self.year)
+        busiest_month = watch_timing["busiest_month"]
+        busiest_month_index = watch_timing["busiest_month_index"]
+        busiest_month_daily_plays = watch_timing["busiest_month_daily_plays"]
+        busiest_month_first_weekday = watch_timing["busiest_month_first_weekday"]
+        plays_by_weekday = watch_timing["plays_by_weekday"]
+        peak_day = watch_timing["peak_day"]
         peak_hour = None
-        try:
-            month_data = self.tautulli.get_plays_per_month(user_id=user_id, time_range=time_range_days)
-            categories = month_data.get("categories", [])
-            series = month_data.get("series", [])
-            if categories and series:
-                totals = [
-                    sum(s.get("data", [0])[i] if i < len(s.get("data", [])) else 0 for s in series)
-                    for i in range(len(categories))
-                ]
-                if totals:
-                    idx = totals.index(max(totals))
-                    busiest_month = to_dutch_month(categories[idx])
-        except Exception:
-            pass
 
-        try:
-            dow_data = self.tautulli.get_plays_by_dayofweek(user_id=user_id, time_range=time_range_days)
-            categories = dow_data.get("categories", [])
-            series = dow_data.get("series", [])
-            if categories and series:
-                totals = [
-                    sum(s.get("data", [0])[i] if i < len(s.get("data", [])) else 0 for s in series)
-                    for i in range(len(categories))
-                ]
-                if totals:
-                    peak_day = to_dutch_day(categories[totals.index(max(totals))])
-        except Exception:
-            pass
+        if not busiest_month:
+            try:
+                month_data = self.tautulli.get_plays_per_month(user_id=user_id, time_range=time_range_days)
+                categories = month_data.get("categories", [])
+                series = month_data.get("series", [])
+                if categories and series:
+                    totals = [
+                        sum(s.get("data", [0])[i] if i < len(s.get("data", [])) else 0 for s in series)
+                        for i in range(len(categories))
+                    ]
+                    if totals:
+                        idx = totals.index(max(totals))
+                        busiest_month = to_dutch_month(categories[idx])
+            except Exception:
+                pass
+
+        if not peak_day:
+            try:
+                dow_data = self.tautulli.get_plays_by_dayofweek(user_id=user_id, time_range=time_range_days)
+                categories = dow_data.get("categories", [])
+                series = dow_data.get("series", [])
+                if categories and series:
+                    totals = [
+                        sum(s.get("data", [0])[i] if i < len(s.get("data", [])) else 0 for s in series)
+                        for i in range(len(categories))
+                    ]
+                    if totals:
+                        peak_day = to_dutch_day(categories[totals.index(max(totals))])
+            except Exception:
+                pass
 
         try:
             hour_data = self.tautulli.get_plays_by_hourofday(user_id=user_id, time_range=time_range_days)
@@ -362,6 +415,10 @@ class WrappedAggregator:
             unique_seasons=len(season_keys),
             unique_episodes=len(episode_keys),
             busiest_month=busiest_month,
+            busiest_month_index=busiest_month_index,
+            busiest_month_daily_plays=busiest_month_daily_plays,
+            busiest_month_first_weekday=busiest_month_first_weekday,
+            plays_by_weekday=plays_by_weekday,
             peak_day=peak_day,
             peak_hour=peak_hour,
             favorite_device=favorite_device,

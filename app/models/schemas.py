@@ -54,6 +54,10 @@ class WrappedPayload(BaseModel):
     unique_episodes: int = 0
 
     busiest_month: str | None = None
+    busiest_month_index: int | None = None
+    busiest_month_daily_plays: list[int] = Field(default_factory=list)
+    busiest_month_first_weekday: int = 0
+    plays_by_weekday: list[int] = Field(default_factory=list)
     peak_day: str | None = None
     peak_hour: int | None = None
     favorite_device: str | None = None
