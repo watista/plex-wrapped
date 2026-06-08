@@ -7,6 +7,24 @@
   const btnClose = document.getElementById("btnClose");
   const btnShare = document.getElementById("btnShare");
 
+  const TOP_MOVIES_BG = [
+    "/static/designs/top_movies_bg_1.png",
+    "/static/designs/top_movies_bg_2.png",
+    "/static/designs/top_movies_bg_3.png",
+    "/static/designs/top_movies_bg_4.png",
+    "/static/designs/top_movies_bg_5.png",
+    "/static/designs/top_movies_bg_6.png",
+  ];
+
+  const TOP_SHOWS_BG = [
+    "/static/designs/top_shows_bg_1.png",
+    "/static/designs/top_shows_bg_2.png",
+    "/static/designs/top_shows_bg_3.png",
+    "/static/designs/top_shows_bg_4.png",
+    "/static/designs/top_shows_bg_5.png",
+    "/static/designs/top_shows_bg_6.png",
+  ];
+
   const PERSONA_ART = {
     curator: "/static/designs/personas/curator.png",
     series_devourer: "/static/designs/personas/series_devourer.png",
@@ -48,11 +66,241 @@
   function createSlide(innerHtml, slideId) {
     const section = document.createElement("section");
     section.className = `slide slide--${slideId}`;
+    const bokehCanvas =
+      slideId === "welcome" ||
+      slideId === "watch-time" ||
+      slideId === "series-depth"
+        ? '<canvas class="slide-bokeh-canvas" aria-hidden="true"></canvas>'
+        : "";
     section.innerHTML = `
       <div class="slide-bg" aria-hidden="true"></div>
       <div class="slide-bg slide-bg--overlay" aria-hidden="true"></div>
+      ${bokehCanvas}
       ${innerHtml}`;
     return section;
+  }
+
+  function initWelcomeBokeh(slide) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const canvas = slide.querySelector(".slide-bokeh-canvas");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    let particles = [];
+    let viewWidth = 0;
+    let viewHeight = 0;
+
+    function resize() {
+      const w = slide.clientWidth;
+      const h = slide.clientHeight;
+      if (!w || !h) return false;
+
+      const dpr = window.devicePixelRatio || 1;
+      viewWidth = w;
+      viewHeight = h;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return true;
+    }
+
+    function createParticle() {
+      return {
+        x: Math.random() * viewWidth,
+        y: Math.random() * viewHeight,
+        size: Math.random() * 3 + 1,
+        speedX: (Math.random() - 0.5) * 0.2,
+        speedY: (Math.random() - 0.5) * 0.2,
+        opacity: Math.random() * 0.45 + 0.15,
+      };
+    }
+
+    function resetParticle(p) {
+      Object.assign(p, createParticle());
+    }
+
+    function initParticles(count) {
+      particles = Array.from({ length: count }, createParticle);
+    }
+
+    function animate() {
+      if (viewWidth && viewHeight) {
+        ctx.clearRect(0, 0, viewWidth, viewHeight);
+        particles.forEach((p) => {
+          p.x += p.speedX;
+          p.y += p.speedY;
+          if (p.x < 0 || p.x > viewWidth || p.y < 0 || p.y > viewHeight) {
+            resetParticle(p);
+          }
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(229, 160, 13, ${p.opacity})`;
+          ctx.fill();
+        });
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function start() {
+      if (!resize()) {
+        requestAnimationFrame(start);
+        return;
+      }
+      initParticles(40);
+      animate();
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (resize()) {
+        particles.forEach(resetParticle);
+      }
+    });
+    resizeObserver.observe(slide);
+    start();
+  }
+
+  function initWatchTimeBokeh(slide) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const canvas = slide.querySelector(".slide-bokeh-canvas");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    let particles = [];
+    let viewWidth = 0;
+    let viewHeight = 0;
+    let started = false;
+
+    function resize() {
+      const w = slide.clientWidth;
+      const h = slide.clientHeight;
+      if (!w || !h) return false;
+
+      const dpr = window.devicePixelRatio || 1;
+      viewWidth = w;
+      viewHeight = h;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return true;
+    }
+
+    function createParticle(yRange) {
+      const yMax = yRange ?? viewHeight;
+      return {
+        x: Math.random() * viewWidth,
+        y: Math.random() * yMax,
+        size: Math.random() * 2 + 0.5,
+        speedY: Math.random() * -0.5 - 0.2,
+        opacity: Math.random() * 0.5,
+      };
+    }
+
+    function recycleParticle(p) {
+      Object.assign(p, createParticle());
+      p.y = viewHeight + Math.random() * 20;
+    }
+
+    function fillParticles(count) {
+      particles = Array.from({ length: count }, () => createParticle());
+    }
+
+    function animate() {
+      if (viewWidth && viewHeight) {
+        ctx.clearRect(0, 0, viewWidth, viewHeight);
+        particles.forEach((p) => {
+          p.y += p.speedY;
+          if (p.y < -10) recycleParticle(p);
+          ctx.fillStyle = `rgba(255, 189, 73, ${p.opacity})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function start() {
+      if (started) return;
+      if (!resize()) {
+        requestAnimationFrame(start);
+        return;
+      }
+      started = true;
+      fillParticles(40);
+      animate();
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (!started || !resize()) return;
+      particles.forEach((p) => Object.assign(p, createParticle()));
+    });
+    resizeObserver.observe(slide);
+
+    const visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) start();
+      },
+      { threshold: 0.35 }
+    );
+    visibilityObserver.observe(slide);
+  }
+
+  function initTotalPlaysIcons(slide) {
+    const container = slide.querySelector(".play-icon-explosion");
+    if (!container || container.dataset.ready) return;
+
+    const iconTypes = ["play_arrow", "movie", "tv", "theaters", "video_library"];
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function populate() {
+      if (container.dataset.ready) return;
+      container.dataset.ready = "1";
+
+      for (let i = 0; i < 40; i++) {
+        const span = document.createElement("span");
+        span.className = "material-symbols-outlined";
+        span.textContent = iconTypes[Math.floor(Math.random() * iconTypes.length)];
+
+        const rotation = Math.random() * 360;
+        span.style.left = `${Math.random() * 100}%`;
+        span.style.top = `${Math.random() * 100}%`;
+        span.style.fontSize = `${20 + Math.random() * 60}px`;
+        span.style.transform = `rotate(${rotation}deg)`;
+        span.style.opacity = String(0.05 + Math.random() * 0.15);
+
+        if (!reducedMotion) {
+          span.animate(
+            [
+              { transform: `rotate(${rotation}deg) translateY(0px)` },
+              { transform: `rotate(${rotation + 20}deg) translateY(-40px)` },
+              { transform: `rotate(${rotation}deg) translateY(0px)` },
+            ],
+            {
+              duration: 5000 + Math.random() * 10000,
+              iterations: Infinity,
+              delay: Math.random() * 5000,
+              easing: "linear",
+            }
+          );
+        }
+
+        container.appendChild(span);
+      }
+    }
+
+    const visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) populate();
+      },
+      { threshold: 0.35 }
+    );
+    visibilityObserver.observe(slide);
   }
 
   function slideMain(html, layout) {
@@ -69,6 +317,18 @@
     return `<div class="poster-stack" aria-hidden="true">${thumbs
       .map((src) => `<img src="${escapeHtml(src)}" alt="" loading="lazy">`)
       .join("")}</div>`;
+  }
+
+  function buildTopMoviesPosterBg() {
+    return `<div class="poster-stack poster-stack--top-movies" aria-hidden="true">${TOP_MOVIES_BG.map(
+      (src) => `<img src="${src}" alt="" loading="lazy">`
+    ).join("")}</div>`;
+  }
+
+  function buildTopShowsPosterBg() {
+    return `<div class="poster-stack poster-stack--top-shows" aria-hidden="true">${TOP_SHOWS_BG.map(
+      (src) => `<img src="${src}" alt="" loading="lazy">`
+    ).join("")}</div>`;
   }
 
   function buildRankList(items, playsLabel, withPoster) {
@@ -121,6 +381,18 @@
     return html;
   }
 
+  function formatMoviesTvRatio(moviePlays, tvPlays) {
+    const movies = Math.max(0, moviePlays);
+    const episodes = Math.max(0, tvPlays);
+    if (movies === 0 && episodes === 0) return "—";
+    if (movies === 0) return "0:1";
+    if (episodes === 0) return "1:0";
+    if (movies >= episodes) {
+      return `${Math.ceil(movies / episodes)}:1`;
+    }
+    return `1:${Math.ceil(episodes / movies)}`;
+  }
+
   function buildDonutChart(moviePlays, tvPlays) {
     const total = moviePlays + tvPlays || 1;
     const tvPct = tvPlays / total;
@@ -129,10 +401,10 @@
     const c = 2 * Math.PI * r;
     const tvLen = c * tvPct;
     const movieLen = c * moviePct;
-    const ratio =
-      moviePlays > 0 ? `${moviePlays}:${tvPlays}` : tvPlays > 0 ? `0:${tvPlays}` : "—";
+    const ratio = formatMoviesTvRatio(moviePlays, tvPlays);
     return `
       <div class="chart-wrap">
+        <div class="chart-mesh" aria-hidden="true"></div>
         <svg viewBox="0 0 100 100" aria-hidden="true">
           <circle cx="50" cy="50" r="${r}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
           <circle cx="50" cy="50" r="${r}" fill="none" stroke="#ffbd49" stroke-width="8"
@@ -141,8 +413,8 @@
             stroke-dasharray="${movieLen} ${c}" stroke-dashoffset="-${tvLen}" stroke-linecap="round"/>
         </svg>
         <div class="chart-center">
-          <span class="display-lg">${ratio}</span>
-          <span class="label-md" style="color:var(--on-surface-variant)">statistieken</span>
+          <span class="chart-ratio">${ratio}</span>
+          <span class="chart-ratio-label">Statistieken</span>
         </div>
       </div>`;
   }
@@ -155,16 +427,27 @@
   }
 
   function bingeNarrative(moviePlays, tvPlays) {
-    if (tvPlays > moviePlays && moviePlays > 0) {
-      const ratio = Math.round(tvPlays / moviePlays);
-      return `Je bent een echte serie-bingewatcher. Voor elke film keek je maar liefst ${ratio} afleveringen.`;
+    const LOW_THRESHOLD = 5;
+
+    if (tvPlays === 0 && moviePlays > 0) {
+      return "Pure filmmodus: geen series, alleen films.";
     }
-    if (moviePlays > tvPlays && tvPlays > 0) {
+    if (moviePlays === 0 && tvPlays > 0) {
+      return "Pure seriesmodus: geen films, alleen afleveringen.";
+    }
+    if (moviePlays > tvPlays) {
+      if (tvPlays > 0 && tvPlays < LOW_THRESHOLD) {
+        return "Pure filmmodus: (bijna) geen series, alleen films.";
+      }
       const ratio = Math.round(moviePlays / tvPlays);
       return `Films stonden centraal — ${ratio} films voor elke aflevering.`;
     }
-    if (tvPlays > 0 && moviePlays === 0) {
-      return "Pure seriesmodus: geen films, alleen afleveringen.";
+    if (tvPlays > moviePlays) {
+      if (moviePlays > 0 && moviePlays < LOW_THRESHOLD) {
+        return "Pure seriesmodus: (bijna) geen films, alleen afleveringen.";
+      }
+      const ratio = Math.round(tvPlays / moviePlays);
+      return `Je bent een echte serie-bingewatcher. Voor elke film keek je maar liefst ${ratio} afleveringen.`;
     }
     return "Een gebalanceerde mix van films en series.";
   }
@@ -214,18 +497,20 @@
 
       slides.push(
         createSlide(
-          `<span class="material-symbols-outlined slide-deco-clock" aria-hidden="true">schedule</span>` +
+          `<div class="floating-clock" aria-hidden="true">
+             <img src="/static/designs/watch_time_clock.png" alt="">
+           </div>` +
             slideMain(
-              `<div class="hero-pop stack-md">
-                 <span class="label-md label-md--wide">Totale kijktijd</span>
-                 <h2 class="display-xl">${hours} uur</h2>
-                 <div class="glass-card glass-card--days">
-                   <p class="body-lg">Dat is <strong>${days} dagen</strong> kijkplezier</p>
+              `<div class="hero-pop watch-hero">
+                 <span class="watch-label">Totale Kijktijd</span>
+                 <h2 class="watch-hours">${hours.toLocaleString("nl-NL")} uur</h2>
+                 <div class="glass-card glass-card--days watch-days-card">
+                   <p class="watch-days-text">Dat is <span class="text-primary">${days} dagen</span> kijkplezier</p>
                  </div>
                </div>
-               <div class="slide-footnote" style="position:absolute;bottom:calc(var(--nav-h) + 24px);left:var(--gutter);right:var(--gutter);z-index:10;text-align:center">
+               <div class="slide-footnote watch-footnote">
                  <div class="footnote-divider"></div>
-                 <p class="label-md" style="color:rgba(226,226,226,0.6);letter-spacing:0.15em">gestreamd in ${year}</p>
+                 <p class="watch-footnote-label">gestreamd in ${year}</p>
                </div>`,
               "bottom-note"
             ),
@@ -235,42 +520,46 @@
 
       slides.push(
         createSlide(
-          slideMain(
-            `<div class="plays-hero-card glass-card">
-               <span class="material-symbols-outlined">play_circle</span>
-               <h2 class="display-xl">${d.total_plays}</h2>
-               <p class="headline-md" style="color:var(--on-surface);margin-top:0.5rem">keer op play voor films &amp; series</p>
-               <div class="plays-divider"></div>
-             </div>
-             <p class="label-md label-md--wide" style="margin-top:3rem;opacity:0.6">Totaal gestart</p>`
-          ),
+          `<div class="play-icon-explosion" aria-hidden="true"></div>` +
+            slideMain(
+              `<div class="plays-hero-card glass-card">
+                 <span class="material-symbols-outlined nav-icon-fill plays-icon">play_circle</span>
+                 <h2 class="plays-count">${d.total_plays.toLocaleString("nl-NL")}</h2>
+                 <p class="plays-subtitle">keer op de play-knop gedrukt</p>
+                 <div class="plays-divider"></div>
+               </div>
+               <p class="plays-tagline">Je bent een echte binge-watcher</p>`
+            ),
           "total-plays"
         )
       );
 
       slides.push(
         createSlide(
-          slideMain(
-            `<div class="stack-sm" style="margin-bottom:0.5rem">
-               <span class="label-md label-md--wide">De grote balans</span>
-               <h2 class="headline-lg">Films vs series</h2>
-             </div>
-             ${buildDonutChart(d.movie_plays, d.tv_plays)}
-             <div class="split-grid">
-               <div class="glass-card">
-                 <span class="material-symbols-outlined nav-icon-fill" style="font-size:22px;color:var(--primary)">live_tv</span>
-                 <span class="stat-num">${d.tv_plays}</span>
-                 <span class="label-md" style="color:var(--on-surface-variant)">afleveringen</span>
+          `<div class="movies-vs-tv-photo" aria-hidden="true">
+             <img src="/static/designs/movies_vs_tv_theater.png" alt="">
+           </div>` +
+            slideMain(
+              `<div class="mvt-header">
+                 <span class="mvt-label">De grote balans</span>
+                 <h2 class="mvt-title">Films vs series</h2>
                </div>
-               <div class="glass-card">
-                 <span class="material-symbols-outlined nav-icon-fill" style="font-size:22px;color:var(--tertiary)">movie</span>
-                 <span class="stat-num stat-num--tertiary">${d.movie_plays}</span>
-                 <span class="label-md" style="color:var(--on-surface-variant)">films</span>
+               ${buildDonutChart(d.movie_plays, d.tv_plays)}
+               <div class="split-grid mvt-stats">
+                 <div class="glass-card">
+                   <span class="material-symbols-outlined nav-icon-fill mvt-stat-icon mvt-stat-icon--movie">movie</span>
+                   <span class="stat-num stat-num--tertiary">${d.movie_plays.toLocaleString("nl-NL")}</span>
+                   <span class="mvt-stat-label">Films</span>
+                 </div>
+                 <div class="glass-card">
+                   <span class="material-symbols-outlined nav-icon-fill mvt-stat-icon mvt-stat-icon--tv">live_tv</span>
+                   <span class="stat-num">${d.tv_plays.toLocaleString("nl-NL")}</span>
+                   <span class="mvt-stat-label">Afleveringen</span>
+                 </div>
                </div>
-             </div>
-             <p class="slide-narrative">${escapeHtml(bingeNarrative(d.movie_plays, d.tv_plays))}</p>`,
-            "top"
-          ),
+               <p class="mvt-narrative">${escapeHtml(bingeNarrative(d.movie_plays, d.tv_plays))}</p>`,
+              "movies-vs-tv"
+            ),
           "movies-vs-tv"
         )
       );
@@ -278,11 +567,11 @@
       if (d.top_movies && d.top_movies.length) {
         slides.push(
           createSlide(
-            buildPosterStack(d.top_movies) +
+            buildTopMoviesPosterBg() +
               slideMain(
                 `<h2 class="slide-title">Jouw <span class="text-primary">top 5</span> films</h2>
                  ${buildRankList(d.top_movies, "keer bekeken", true)}`,
-                "top"
+                "top-movies"
               ),
             "top-movies"
           )
@@ -292,11 +581,12 @@
       if (d.top_shows && d.top_shows.length) {
         slides.push(
           createSlide(
-            buildPosterStack(d.top_shows) +
+            buildTopShowsPosterBg() +
+              `<div class="top-shows-glow" aria-hidden="true"></div>` +
               slideMain(
                 `<h2 class="slide-title">Jouw <span class="text-primary">top 5</span> series</h2>
                  ${buildRankList(d.top_shows, "afleveringen", true)}`,
-                "top"
+                "top-shows"
               ),
             "top-shows"
           )
@@ -307,25 +597,27 @@
         slides.push(
           createSlide(
             slideMain(
-              `<div class="stack-sm" style="text-align:center;margin-bottom:1.5rem">
-                 <span class="label-md label-md--wide">Diepe duik</span>
-                 <h2 class="headline-lg">Jouw seriesreis</h2>
-               </div>
-               <div class="staircase">
-                 <div class="stair-step glass-card">
-                   <span class="display-xl">${d.unique_episodes}</span>
-                   <span class="stair-label">afleveringen</span>
+              `<div class="series-depth-content">
+                 <div class="series-depth-header stack-sm">
+                   <span class="label-md label-md--wide">Diepe duik</span>
+                   <h2 class="headline-lg">Serie diepte</h2>
                  </div>
-                 <div class="stair-step glass-card">
-                   <span class="display-lg">${d.unique_seasons}</span>
-                   <span class="stair-label">seizoenen</span>
+                 <div class="staircase">
+                   <div class="stair-step glass-card">
+                     <span class="headline-lg">${d.unique_series.toLocaleString("nl-NL")}</span>
+                     <span class="stair-label">series</span>
+                   </div>
+                   <div class="stair-step glass-card">
+                     <span class="display-lg">${d.unique_seasons.toLocaleString("nl-NL")}</span>
+                     <span class="stair-label">seizoenen</span>
+                   </div>
+                   <div class="stair-step glass-card">
+                     <span class="display-xl">${d.unique_episodes.toLocaleString("nl-NL")}</span>
+                     <span class="stair-label">afleveringen</span>
+                   </div>
                  </div>
-                 <div class="stair-step glass-card">
-                   <span class="headline-lg">${d.unique_series}</span>
-                   <span class="stair-label">series</span>
-                 </div>
-               </div>
-               <p class="stair-quote">"Je hebt genoeg content verslonden om een heel seizoen te vullen."</p>`
+                 <p class="stair-quote">"Je hebt genoeg content verslonden om een heel decennium te vullen."</p>
+               </div>`
             ),
             "series-depth"
           )
@@ -756,6 +1048,11 @@
 
       setupProgress(slides.length);
       slides.forEach((s) => slidesEl.appendChild(s));
+      slidesEl.querySelectorAll(".slide--welcome").forEach(initWelcomeBokeh);
+      slidesEl
+        .querySelectorAll(".slide--watch-time, .slide--series-depth")
+        .forEach(initWatchTimeBokeh);
+      slidesEl.querySelectorAll(".slide--total-plays").forEach(initTotalPlaysIcons);
 
       loading.classList.add("hidden");
       slidesEl.classList.remove("hidden");

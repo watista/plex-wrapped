@@ -120,28 +120,18 @@
             aspect-ratio: 9/16;
             position: relative;
             overflow: hidden;
-            background: radial-gradient(circle at 50% 38%, #3d2b08 0%, #1f1508 32%, #131313 72%);
+            background: radial-gradient(circle at top right, #281900 0%, #131313 70%);
         }
 
         .bokeh-effect {
             position: absolute;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            background: 
-                radial-gradient(circle at 50% 35%, rgba(229, 160, 13, 0.1) 0%, transparent 45%),
-                radial-gradient(circle at 20% 25%, rgba(229, 160, 13, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 80% 65%, rgba(229, 160, 13, 0.06) 0%, transparent 50%);
-            animation: atmospheric-drift 20s infinite alternate ease-in-out;
-        }
-
-        #bokehCanvas {
-            position: absolute;
-            inset: 0;
-            z-index: 2;
             width: 100%;
             height: 100%;
             pointer-events: none;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(229, 160, 13, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(229, 160, 13, 0.08) 0%, transparent 50%);
+            animation: atmospheric-drift 20s infinite alternate ease-in-out;
         }
 
         @keyframes atmospheric-drift {
@@ -184,7 +174,7 @@
 <div class="story-container shadow-2xl relative">
 <!-- Atmospheric Background -->
 <div class="bokeh-effect"></div>
-<canvas id="bokehCanvas"></canvas>
+<canvas class="absolute inset-0" id="bokehCanvas" width="300" height="150"></canvas>
 <!-- Top Progress Indicators -->
 <div class="fixed top-0 w-full z-50 px-gutter pt-6 flex gap-1">
 <div class="progress-bar-segment active"></div>
@@ -238,41 +228,29 @@
         // Atmospheric Bokeh Animation
         const canvas = document.getElementById('bokehCanvas');
         const ctx = canvas.getContext('2d');
-        const container = canvas.parentElement;
         let particles = [];
-        let viewWidth = 0;
-        let viewHeight = 0;
-        let dpr = 1;
 
         function resize() {
-            const w = container.clientWidth;
-            const h = container.clientHeight;
-            if (!w || !h) return false;
-
-            dpr = window.devicePixelRatio || 1;
-            viewWidth = w;
-            viewHeight = h;
-            canvas.width = Math.floor(w * dpr);
-            canvas.height = Math.floor(h * dpr);
-            canvas.style.width = w + 'px';
-            canvas.style.height = h + 'px';
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            return true;
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
         }
 
         class Particle {
+            constructor() {
+                this.reset();
+            }
             reset() {
-                this.x = Math.random() * viewWidth;
-                this.y = Math.random() * viewHeight;
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
                 this.size = Math.random() * 3 + 1;
                 this.speedX = (Math.random() - 0.5) * 0.2;
                 this.speedY = (Math.random() - 0.5) * 0.2;
-                this.opacity = Math.random() * 0.45 + 0.15;
+                this.opacity = Math.random() * 0.5;
             }
             update() {
                 this.x += this.speedX;
                 this.y += this.speedY;
-                if (this.x < 0 || this.x > viewWidth || this.y < 0 || this.y > viewHeight) {
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
                     this.reset();
                 }
             }
@@ -284,42 +262,24 @@
             }
         }
 
-        function initParticles(count) {
-            particles = [];
-            for (let i = 0; i < count; i++) {
-                const particle = new Particle();
-                particle.reset();
-                particles.push(particle);
+        function init() {
+            resize();
+            for (let i = 0; i < 40; i++) {
+                particles.push(new Particle());
             }
         }
 
         function animate() {
-            if (viewWidth && viewHeight) {
-                ctx.clearRect(0, 0, viewWidth, viewHeight);
-                particles.forEach((p) => {
-                    p.update();
-                    p.draw();
-                });
-            }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
             requestAnimationFrame(animate);
         }
 
-        function start() {
-            if (!resize()) {
-                requestAnimationFrame(start);
-                return;
-            }
-            initParticles(40);
-            animate();
-        }
-
-        const resizeObserver = new ResizeObserver(() => {
-            if (resize()) {
-                particles.forEach((p) => p.reset());
-            }
-        });
-        resizeObserver.observe(container);
-        window.addEventListener('resize', () => resize());
-        start();
+        window.addEventListener('resize', resize);
+        init();
+        animate();
     </script>
 </body></html>

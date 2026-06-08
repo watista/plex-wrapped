@@ -764,7 +764,12 @@ body {
   .persona-art,
   .slide-bg--overlay,
   .plays-hero-card,
-  .slide--watch-time .hero-pop {
+  .slide--total-plays .slide-bg--overlay,
+  .slide--total-plays .plays-hero-card,
+  .slide--watch-time .watch-hero,
+  .slide--watch-time .slide-bg--overlay,
+  .slide--movies-vs-tv .chart-mesh,
+  .slide--top-movies .slide-bg--overlay {
     animation: none;
   }
 }

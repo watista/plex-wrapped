@@ -1,0 +1,308 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Plex Wrapped - Top Movies</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;family=Inter:wght@400;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "outline-variant": "#514534",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#ffba3e",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#49b5ff",
+                        "surface-container-highest": "#353535",
+                        "secondary-container": "#464a4d",
+                        "on-tertiary-fixed": "#001e31",
+                        "primary": "#ffbd49",
+                        "tertiary-fixed-dim": "#91ccff",
+                        "on-tertiary": "#003351",
+                        "on-secondary": "#2d3134",
+                        "on-tertiary-fixed-variant": "#004b73",
+                        "on-secondary-fixed-variant": "#43474a",
+                        "on-secondary-fixed": "#181c1f",
+                        "surface-dim": "#131313",
+                        "secondary-fixed": "#e0e3e7",
+                        "on-secondary-container": "#b5b9bc",
+                        "inverse-surface": "#e2e2e2",
+                        "surface": "#131313",
+                        "on-surface-variant": "#d6c4ad",
+                        "surface-container-lowest": "#0e0e0e",
+                        "secondary-fixed-dim": "#c4c7cb",
+                        "on-primary-fixed": "#281900",
+                        "tertiary-fixed": "#cce5ff",
+                        "primary-container": "#e5a00d",
+                        "primary-fixed": "#ffdeae",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#604100",
+                        "outline": "#9e8e7a",
+                        "on-tertiary-container": "#004569",
+                        "on-background": "#e2e2e2",
+                        "inverse-primary": "#7f5700",
+                        "on-primary-container": "#593b00",
+                        "tertiary": "#96ceff",
+                        "surface-tint": "#ffba3e",
+                        "on-primary": "#432c00",
+                        "surface-container": "#1f1f1f",
+                        "on-surface": "#e2e2e2",
+                        "surface-variant": "#353535",
+                        "background": "#131313",
+                        "secondary": "#c4c7cb",
+                        "surface-bright": "#393939",
+                        "surface-container-low": "#1b1b1b",
+                        "surface-container-high": "#2a2a2a",
+                        "inverse-on-surface": "#303030"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "20px",
+                        "stack-xl": "40px",
+                        "stack-lg": "24px",
+                        "safe-area-top": "64px",
+                        "stack-xs": "4px",
+                        "stack-sm": "8px",
+                        "safe-area-bottom": "48px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "display-xl": ["Hanken Grotesk"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                        "display-xl": ["72px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md-mobile": ["20px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0e0e0e;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* 9:16 Story Canvas */
+        .story-canvas {
+            width: 100vw;
+            height: 100vh;
+            max-width: 450px;
+            max-height: 800px;
+            position: relative;
+            overflow: hidden;
+            background: #131313;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            border-left: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .mesh-bg {
+            background: radial-gradient(at 0% 0%, #2a1a00 0px, transparent 50%),
+                        radial-gradient(at 100% 0%, #1a1a1a 0px, transparent 50%),
+                        radial-gradient(at 100% 100%, #3b2a00 0px, transparent 50%),
+                        radial-gradient(at 0% 100%, #131313 0px, transparent 50%);
+            animation: mesh-shift 60s ease infinite;
+        }
+
+        @keyframes mesh-shift {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .progress-segment {
+            height: 4px;
+            border-radius: 2px;
+            flex-grow: 1;
+        }
+
+        .poster-stack-bg {
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 120%;
+            z-index: 0;
+            opacity: 0.3;
+            filter: blur(10px) brightness(0.4);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            transform: rotate(-10deg);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased">
+<div class="story-canvas mesh-bg">
+<!-- Background Elements -->
+<div class="poster-stack-bg">
+<img class="w-full aspect-[2/3] object-cover rounded-lg" data-alt="A collage of various cinematic movie posters stacked haphazardly, featuring dramatic lighting and bold typography. The visual style is dark and moody with deep shadows and vibrant cinematic highlights, creating a rich atmosphere of a private cinema collection. The colors lean into warm ambers and deep charcoals, matching a high-end plex wrapped aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6ZHWgkcr-yj2KT2SN1PeQHpAVq9-t6Qz0tK5_oQ7cPFyDm_7hxbwFA74f9H7MW20UEofGGb2uOQaVWpnQaBCnfesfA-5ekb9jy7Pv_WVH4Q8ob5FKwpvhv9zJvg9Nncvdl2ba4aAum5UwazhHy60N04Hgwh0rPeYm3CFBV8RUKSxPi-GfmbTEjxAsKNsVtvCoerH7R7ms0Pw5I3Jq4yZVIBnX1kda8s-3fwMBFJ6iKnvEgi0urFecEfvwB2NUDAQ6OxhMSmy0EVFg">
+<img class="w-full aspect-[2/3] object-cover rounded-lg" data-alt="Close up of classic film posters with high contrast and grain, showcasing legendary cinematic imagery. The lighting is low-key with golden hues illuminating the edges of the posters. The composition is dynamic and layered, suggesting a vast media library for a Plex user. The overall mood is nostalgic and celebratory of film history." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA941ny_IuGn17DjUWBhFuZ3DViTa4_8NzyfSKf4kS15hacQHXMRxpH6Y4qjKlBnFaqz6XFlTGqfmhkcOvgPy47S_4e1dY7ErLGjqGB1FemRCoFs06StG0XrRTLSoGI1kZASmTstrDuFa4nDp-Mo4fZ5KmBp1HaaVvtIzaNgLH1DgGvMRCk7lulEISi1srYUhJmwwikLxXCAadU_0aVUnYNnhD2MF6mBePCVPtjZroPvxMMiTMp73ZwmK-yfIV5MFseOgyxGBhrpMav">
+<img class="w-full aspect-[2/3] object-cover rounded-lg" data-alt="Abstract cinematic posters overlapping each other in a dark environment. The color palette is dominated by dark grays and blacks with sharp orange and gold highlights. The scene captures the essence of a blockbuster movie night with high energy and premium visual fidelity. Soft blurs create depth and focus on the central textures." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4T2ZwQ4tBEGiRTvL8a1W-OHPd1WmZ38WVS_2L6Tclx5E01BZQdHrc8gLxrF__ukMMhBh0Jm4yicEqWWVkvqhmsfHQxUQNi074lz2ijR91iOOiHJwl-yPIDXWohqcN_gTD0uASVGbtXuXUQg2V06A1YoAc2AKDBewif3bXthaNU9EGj6h5gjY3ClV1qBJqf7GtDVzgJJSohHq89rk-KIC9P93NuHN8r8POGmk_4JxezyUB2ljLYUxnF0CZnsQAj6Lwf6k31eOKwxe8">
+<img class="w-full aspect-[2/3] object-cover rounded-lg" data-alt="Array of modern sci-fi and drama movie posters with neon glows and futuristic typography. The lighting is dramatic, casting long shadows across the stacked media assets. The aesthetic is sleek and digital, reflecting a modern tech-savvy user's high-consumption media habits. The atmosphere is immersive and visually complex." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9OuH7H5Z-uxVNFUnsmHHq3Kiyw5yrDJU6iEXOvEGXxe9STATXhVb3QpT3aiujHQIPRFkYnrZ1peHMjDhJpdkmP7FZkp5FmCwiR9xNP9zIdQtd_8dkDi8H1hlASnUJ0J1ss1fl6hQ_2ZPChEW95uDDc_t5txid6v5-bTIsvWZXnltcPWS8PueAQLm3JTdnORGtOnxE1WWR_fXYQHGsvQT3DQjRx8MEwwOzHrmaV0wNaFAxV0rQaN1fA1GeUscRlG_FXysOA0vvIqiH">
+<img class="w-full aspect-[2/3] object-cover rounded-lg" data-alt="Dark, atmospheric movie posters showing silhouetted figures and epic landscapes. The visual style is highly textured with a cinematic film grain. Rich ambers and deep burnt oranges pierce through the darkness, aligning with the Plex brand identity. The composition feels curated and premium, celebrating top-tier cinematic content." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhBOauPMLjKpp0B8lzIOlvDn4bdOV_SlX_OZcM1s_KuJlbm0uywvSTm_B2apwqKuQna-v2rmvkLpu11ZRFg__jMBd6OGPiDjG_wvWoMdpNFJ-iGfWiWKiAw5Ut7gWmBlrsHwDG8HA8kgZwTV3zlhJPKxxC1cJOPi3bEtFdXuX2iiMncde9XIpm1JGHlcQ7_RdG2MQ8POYCrIWNTsfx4Ogbp20t1G_B5_nIpCNs0YyoCGJa4MIMOqKVdowPbgWHtzaUZOhdhId0OECE">
+<img class="w-full aspect-[2/3] object-cover rounded-lg" data-alt="A dense arrangement of action and adventure movie posters, emphasizing movement and bold colors. The lighting is high-contrast, bringing out the vibrant detail in each poster while keeping the overall scene dark and mysterious. This background creates a sense of excitement and cinematic grandeur appropriate for a year-end wrap." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVamIdxk10dLu84msstE2LYzIq2AoFMiB6lShuqF1vFg7Zx8kfjJqHqMfcR8x2rY1ptsVKxHZhAt6h3Gxfc5Z09mOhgQJmdm4-6rzMq3xS-4qfByHHnxalxJ7MjwqxgagJEqTuXIMe0ivJ7HZkk6d_ZlLbU6oYP75SeGdCW3fin3C_7hyiXDxeXfW8lGvmOwbtaauoDV7WN1WO1yRjOdgmDzQIu-Br3X40ICtQ6MXfeedX1eidjYJlHH6xJQKMRH15lmsioIutqmx4">
+</div>
+<!-- Progress Indicators -->
+<div class="fixed top-4 left-0 w-full px-5 z-50 flex gap-1">
+<div class="progress-segment bg-white"></div>
+<div class="progress-segment bg-white"></div>
+<div class="progress-segment bg-white"></div>
+<div class="progress-segment bg-white"></div>
+<div class="progress-segment bg-white"></div>
+<!-- Slide 5 Active -->
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+<div class="progress-segment bg-white/20"></div>
+</div>
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-gutter pt-safe-area-top h-16 no-border bg-gradient-to-b from-black/60 to-transparent">
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-primary tracking-tighter">Plex Wrapped</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary transition-opacity duration-200 active:scale-95 cursor-pointer" data-icon="share">share</span>
+<span class="material-symbols-outlined text-primary transition-opacity duration-200 active:scale-95 cursor-pointer" data-icon="close">close</span>
+</div>
+</header>
+<!-- Main Content -->
+<main class="relative z-10 px-gutter pt-28 pb-32 h-full flex flex-col justify-center">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-white mb-stack-lg leading-tight">
+                Your <span class="text-primary">Top 5</span> <br>Screen Hits
+            </h1>
+<!-- Ranking List -->
+<div class="space-y-stack-sm">
+<!-- Rank 1 (Highlighted) -->
+<div class="glass-card p-stack-md rounded-xl border-2 border-primary-container flex items-center gap-stack-md transform scale-105 shadow-2xl shadow-primary/20">
+<span class="font-display-lg text-primary text-4xl w-10 text-center italic">1</span>
+<img class="w-16 h-24 object-cover rounded shadow-lg" data-alt="High-quality movie poster for a sci-fi epic featuring a lone astronaut on a vibrant alien world. The poster uses a rich color palette of orange, purple, and black. It is displayed in a premium glassmorphic list item, catching the light with subtle reflections and a golden border highlight, signifying its position as the number one most-watched movie." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDl23WU_BMB9mreY-pq472O1pIvifiy5muFehFIHiqeBhxYlBjJfJHHckW2QuK1ev-2k9rX3TBblrpy7SFxoAHus3GYqo-t3e2xZttIFiRAmFfaaZsHvOihqBs7TQPXRvtS7uH1i7wfaok1Fk3ww6U8dIsZpKROCtomVFLBgCvdFn0JKrF6SFi6FLe64AE8igIeu54-HsK1kIVWyWSh4Zs0Inku0uj6B_r9rg_bG8Kzlh3Lce83uJCCpRuTZpOqP2ouvqS2S3rvtuYD">
+<div class="flex-1">
+<h3 class="font-headline-md-mobile text-white truncate">Dune: Part Two</h3>
+<p class="font-label-md text-primary mt-1">12 PLAYS</p>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<!-- Rank 2 -->
+<div class="glass-card p-stack-md rounded-xl flex items-center gap-stack-md opacity-90">
+<span class="font-headline-lg text-white/40 text-2xl w-10 text-center">2</span>
+<img class="w-12 h-18 object-cover rounded opacity-80" data-alt="A dramatic movie poster with a focused portrait of a detective in a rain-slicked city. The lighting is moody and blue, contrasting with the warm internal lights of the UI. This secondary list item shows the movie's title and play count in a clean, professional layout that emphasizes content over clutter." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZ9tEKA4ynKy7BKPLuA4hDdxT_HqjaSbN9V6THn8Ff0Py5L-Qk1-y2tC6AwbH-qCDIqVTT9WMKsIDQiED6EJhEyB4b64ZGKvaoiWV_TG14xf6iM67pDhitiXh2nAdUTAaZ6LAkP3z9CaZ5uh-k59Cx33VLNwcILh_IXUDKirUrbnfnYvOINHOMVU4R6qZt19qIKd2Tjp_vHBcsjgBY-CoiN6-ONgmKU5NPCJo0Rygqo6ydfMEmE5HUpzwknacggo-qCPhc5zWpMwzC">
+<div class="flex-1">
+<h3 class="font-body-lg text-white truncate">Oppenheimer</h3>
+<p class="font-label-md text-on-surface-variant">8 PLAYS</p>
+</div>
+</div>
+<!-- Rank 3 -->
+<div class="glass-card p-stack-md rounded-xl flex items-center gap-stack-md opacity-80">
+<span class="font-headline-lg text-white/40 text-2xl w-10 text-center">3</span>
+<img class="w-12 h-18 object-cover rounded opacity-80" data-alt="Vibrant animated movie poster featuring colorful characters in a fantastical forest. The bright colors pop against the dark translucent glass background of the interface. The typography is crisp and legible, maintaining the high-contrast aesthetic of the Plex brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAEubPbbtA883gQirI-GRIVcY8fuoYn2zdT-qyj9HEWNU44qJK8qRn3MYU-X3Th5O_oD68wMPmsPVV8EjISMDk3_WAZpYidMNlqtt8dECsYCKgMMjEJGxzupw1mPMti3OJ0dGJgwOLFxVvt1Xa0NEmvUiI_vcbxPuUVAddHD3cZpKOjxKR9rYciGTAStOt8dS3QteppvJCJKyy-8lvT7811YVT6hXGQqxAsJxtNTxVnNtn0-gvq0CHTuG_XT0iGHv3Hw-cxIWF32fJ">
+<div class="flex-1">
+<h3 class="font-body-lg text-white truncate">Spider-Man: Across the Spider-Verse</h3>
+<p class="font-label-md text-on-surface-variant">6 PLAYS</p>
+</div>
+</div>
+<!-- Rank 4 -->
+<div class="glass-card p-stack-md rounded-xl flex items-center gap-stack-md opacity-70">
+<span class="font-headline-lg text-white/40 text-2xl w-10 text-center">4</span>
+<img class="w-12 h-18 object-cover rounded opacity-80" data-alt="Gritty action movie poster with a focus on high-speed car chases and explosions. The warm fire tones in the poster complement the Plex orange accents in the UI. The card's translucency allows the background poster stack to subtly peek through, creating depth." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLlcctYeIfd5QscDHgWEtiDcqISUoM8YBgT64FbRStE-37icpJwK-MpSE4hr9G8I8R5EHj_3z76SCo3tHjF56uDbAvNhaytbBeX2UZK5rgi2xaGlh5hbaOcngGHkYe5RKv8i6ay54ugqRYXqfPTah7bOM6DnKfRBy_rn8tIzh8BjJxL4oZ57jaXXqJ5CIPulFseQSzglXwCHdJ0nhBlIqbvy1JwW_revIbJi0bx5qY9J12CKAk5MOLFuWGLHLGy-JD381Dgf1I_v5L">
+<div class="flex-1">
+<h3 class="font-body-lg text-white truncate">The Batman</h3>
+<p class="font-label-md text-on-surface-variant">5 PLAYS</p>
+</div>
+</div>
+<!-- Rank 5 -->
+<div class="glass-card p-stack-md rounded-xl flex items-center gap-stack-md opacity-60">
+<span class="font-headline-lg text-white/40 text-2xl w-10 text-center">5</span>
+<img class="w-12 h-18 object-cover rounded opacity-80" data-alt="Minimalist indie film poster with a single striking image and elegant serif typography. The lighting is soft and naturalistic. This final item in the top 5 ranking rounds out the list, presented with a slight fade to direct focus back to the top of the list." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6Wp15rzEQZ8ZgLreFBVcHk4yleXzde8vNlpgwqnpWy1z7esDoiMb0QDtDSx3nwLOcrb3riBv36YICVJzTe6EvajpgRxAYfPspkzujgS0Gv0bjNKfWP7W_u3pn_53muL5nMkto0ubLEcvs7IhL17UViMSv-6xVjeKy4ejLOpr0nfaYTxvrT9Sy-sMNXnSnhZIVvrk4M83Ke1C8uPXR3p0jnr3ukk9cJntWYfa5ImNPcCxIcs23kfeu_upOtLIdQL-wq3hK6-AyTBKB">
+<div class="flex-1">
+<h3 class="font-body-lg text-white truncate">The Killer</h3>
+<p class="font-label-md text-on-surface-variant">4 PLAYS</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-between items-center px-10 pb-safe-area-bottom no-border bg-gradient-to-t from-black/80 via-black/20 to-transparent">
+<button class="text-on-surface/50 p-4 transition-transform hover:text-primary scale-110">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-white/20"></div>
+<div class="w-2 h-2 rounded-full bg-white/20"></div>
+<div class="w-2 h-2 rounded-full bg-white/20"></div>
+<div class="w-2 h-2 rounded-full bg-white/20"></div>
+<div class="w-6 h-2 rounded-full bg-primary"></div>
+<div class="w-2 h-2 rounded-full bg-white/20"></div>
+</div>
+<button class="text-on-surface/50 p-4 transition-transform hover:text-primary scale-110">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</nav>
+</div>
+<script>
+        // Micro-interactions for the list items
+        document.querySelectorAll('.glass-card').forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)';
+                card.style.opacity = index === 0 ? '1' : (1 - (index * 0.1)).toString();
+                card.style.transform = index === 0 ? 'translateY(0) scale(1.05)' : 'translateY(0)';
+            }, 300 + (index * 100));
+        });
+
+        // Atmospheric effect: Subtle mouse move parallax on background
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) - 0.5;
+            const y = (e.clientY / window.innerHeight) - 0.5;
+            const stack = document.querySelector('.poster-stack-bg');
+            if(stack) {
+                stack.style.transform = `rotate(-10deg) translate(${x * 20}px, ${y * 20}px)`;
+            }
+        });
+    </script>
+</body></html>
