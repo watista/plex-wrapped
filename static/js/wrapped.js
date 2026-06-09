@@ -2,10 +2,8 @@
   const loading = document.getElementById("loading");
   const slidesEl = document.getElementById("slides");
   const progressBar = document.getElementById("progressBar");
-  const btnPrev = document.getElementById("btnPrev");
-  const btnNext = document.getElementById("btnNext");
   const btnClose = document.getElementById("btnClose");
-  const btnShare = document.getElementById("btnShare");
+  let carousel = null;
 
   const TOP_MOVIES_BG = [
     "/static/designs/top_movies_bg_1.png",
@@ -383,7 +381,6 @@
       observer.observe(slide);
     }
 
-    slidesEl.addEventListener("scroll", tryInit, { passive: true });
   }
 
   function ensureSummaryDots() {
@@ -1040,7 +1037,7 @@
           <div class="stack-sm">
             <h2 class="headline-lg">Hoi ${escapeHtml(d.display_name)}!</h2>
             <p class="display-lg">Jouw ${year}<br>Plex Wrapped</p>
-            <p class="body-md">Laten we kijken naar je jaar in films en series.</p>
+            <p class="body-md">Laten we kijken naar jouw jaar in films en series.</p>
           </div>
         `),
         "welcome"
@@ -1590,24 +1587,7 @@
   }
 
   function currentSlideIndex() {
-    const children = [...slidesEl.children];
-    const mid = window.innerHeight / 2;
-    let best = 0;
-    let bestDist = Infinity;
-    children.forEach((s, i) => {
-      const rect = s.getBoundingClientRect();
-      const dist = Math.abs(rect.top + rect.height / 2 - mid);
-      if (dist < bestDist) {
-        bestDist = dist;
-        best = i;
-      }
-    });
-    return best;
-  }
-
-  function scrollToSlide(index) {
-    const target = slidesEl.children[index];
-    if (target) target.scrollIntoView({ behavior: "smooth" });
+    return carousel?.getIndex() ?? 0;
   }
 
   async function shareWrapped() {
@@ -1628,22 +1608,6 @@
   async function init() {
     btnClose?.addEventListener("click", () => {
       window.location.href = "/auth/logout";
-    });
-    btnShare?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      shareWrapped();
-    });
-
-    btnPrev?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const idx = currentSlideIndex();
-      if (idx > 0) scrollToSlide(idx - 1);
-    });
-
-    btnNext?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const idx = currentSlideIndex();
-      if (idx < slidesEl.children.length - 1) scrollToSlide(idx + 1);
     });
 
     try {
@@ -1667,7 +1631,14 @@
       const slides = buildSlides(data);
 
       setupProgress(slides.length);
-      slides.forEach((s) => slidesEl.appendChild(s));
+      carousel = createStoryCarousel({
+        root: slidesEl,
+        onChange: (index, slide) => {
+          updateProgress(index);
+          if (slide?.classList.contains("slide--summary")) ensureSummaryDots();
+        },
+      });
+      carousel.mount(slides);
       slidesEl
         .querySelectorAll(".slide--welcome, .slide--when-you-watch, .slide--server-rank")
         .forEach(initWelcomeBokeh);
@@ -1696,26 +1667,6 @@
         shareWrapped();
       });
 
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const idx = [...slidesEl.children].indexOf(entry.target);
-              if (idx >= 0) updateProgress(idx);
-              if (entry.target.classList.contains("slide--summary")) ensureSummaryDots();
-            }
-          });
-        },
-        { threshold: 0.55 }
-      );
-      slides.forEach((s) => observer.observe(s));
-      updateProgress(0);
-
-      document.body.addEventListener("click", (e) => {
-        if (e.target.closest("button, a, .icon-btn, .nav-btn, .share-btn")) return;
-        const idx = currentSlideIndex();
-        if (idx < slidesEl.children.length - 1) scrollToSlide(idx + 1);
-      });
     } catch (err) {
       loading.querySelector("p").textContent = "Er ging iets mis. Probeer het later opnieuw.";
       console.error(err);

@@ -17,13 +17,16 @@
     <div class="progress-bar" id="progressBar" aria-hidden="true"></div>
 
     <header class="story-header">
-      <button type="button" class="icon-btn" id="btnClose" aria-label="Sluiten">
-        <span class="material-symbols-outlined">close</span>
+      <button type="button" class="icon-btn" id="btnClose" aria-label="Uitloggen">
+        <span class="material-symbols-outlined">logout</span>
       </button>
-      <h1 class="story-header-title">Plex Wrapped</h1>
-      <button type="button" class="icon-btn" id="btnShare" aria-label="Delen">
-        <span class="material-symbols-outlined">share</span>
-      </button>
+      <h1 class="story-header-brand">
+        <img class="story-header-brand__logo" src="/static/images/plextv-tile.svg" alt="" aria-hidden="true">
+        <span class="story-header-title">
+          <span class="story-header-title__muted">Ple</span><span class="story-header-title__accent">x</span><span class="story-header-title__muted"> </span><span class="story-header-title__muted">Wra</span><span class="story-header-title__accent">pp</span><span class="story-header-title__muted">ed</span>
+        </span>
+      </h1>
+      <div class="story-header-spacer" aria-hidden="true"></div>
     </header>
 
     <div id="loading" class="loading">
@@ -32,16 +35,8 @@
     </div>
 
     <div id="slides" class="slides hidden"></div>
-
-    <nav class="story-nav" id="storyNav" aria-label="Navigatie">
-      <button type="button" class="nav-btn" id="btnPrev" aria-label="Vorige slide">
-        <span class="material-symbols-outlined">chevron_left</span>
-      </button>
-      <button type="button" class="nav-btn nav-btn-primary" id="btnNext" aria-label="Volgende slide">
-        <span class="material-symbols-outlined nav-icon-fill">chevron_right</span>
-      </button>
-    </nav>
   </div>
+  <script src="/static/js/carousel.js"></script>
   <script src="/static/js/wrapped.js"></script>
 </body>
 </html>
