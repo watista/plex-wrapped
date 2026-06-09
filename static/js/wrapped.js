@@ -40,6 +40,17 @@
     dedicated_viewer: "/static/designs/personas/dedicated_viewer.png",
   };
 
+  function formatStreakDate(isoDate) {
+    if (!isoDate) return "—";
+    const parsed = new Date(`${isoDate}T12:00:00`);
+    if (Number.isNaN(parsed.getTime())) return isoDate;
+    return parsed.toLocaleDateString("nl-NL", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }
+
   function escapeHtml(s) {
     return String(s)
       .replace(/&/g, "&amp;")
@@ -70,12 +81,19 @@
       slideId === "welcome" ||
       slideId === "watch-time" ||
       slideId === "series-depth" ||
-      slideId === "when-you-watch"
+      slideId === "when-you-watch" ||
+      slideId === "longest-streak" ||
+      slideId === "server-rank"
         ? '<canvas class="slide-bokeh-canvas" aria-hidden="true"></canvas>'
+        : "";
+    const summaryDots =
+      slideId === "summary"
+        ? '<div class="slide-bg slide-bg--dots" aria-hidden="true"></div>'
         : "";
     section.innerHTML = `
       <div class="slide-bg" aria-hidden="true"></div>
       <div class="slide-bg slide-bg--overlay" aria-hidden="true"></div>
+      ${summaryDots}
       ${bokehCanvas}
       ${innerHtml}`;
     return section;
@@ -252,11 +270,10 @@
     visibilityObserver.observe(slide);
   }
 
-  function initTotalPlaysIcons(slide) {
-    const container = slide.querySelector(".play-icon-explosion");
+  function initIconExplosion(slide, selector, iconTypes) {
+    const container = slide.querySelector(selector);
     if (!container || container.dataset.ready) return;
 
-    const iconTypes = ["play_arrow", "movie", "tv", "theaters", "video_library"];
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     function populate() {
@@ -298,6 +315,125 @@
     const visibilityObserver = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) populate();
+      },
+      { threshold: 0.35 }
+    );
+    visibilityObserver.observe(slide);
+  }
+
+  const SUMMARY_DOT_DRIFTS = [
+    "summary-dot--drift-a",
+    "summary-dot--drift-b",
+    "summary-dot--drift-c",
+    "summary-dot--drift-d",
+    "summary-dot--drift-e",
+    "summary-dot--drift-f",
+    "summary-dot--drift-g",
+    "summary-dot--drift-h",
+  ];
+
+  function initSummaryDots(slide) {
+    const container = slide.querySelector(".slide-bg--dots");
+    if (!container || container.childElementCount > 0) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const spacing = 24;
+
+    const w = slide.offsetWidth;
+    const h = slide.offsetHeight;
+    if (w < 1 || h < 1) return;
+
+    const cols = Math.ceil(w / spacing) + 1;
+    const rows = Math.ceil(h / spacing) + 1;
+    const fragment = document.createDocumentFragment();
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const dot = document.createElement("span");
+        dot.className = "summary-dot";
+        dot.style.left = `${col * spacing}px`;
+        dot.style.top = `${row * spacing}px`;
+
+        if (!reducedMotion) {
+          dot.classList.add(
+            SUMMARY_DOT_DRIFTS[Math.floor(Math.random() * SUMMARY_DOT_DRIFTS.length)]
+          );
+          const duration = 2000 + Math.random() * 1800;
+          dot.style.animationDuration = `${duration}ms`;
+          dot.style.animationDelay = `${Math.random() * duration}ms`;
+        }
+
+        fragment.appendChild(dot);
+      }
+    }
+
+    container.appendChild(fragment);
+  }
+
+  function setupSummaryDots(slide) {
+    const container = slide.querySelector(".slide-bg--dots");
+    if (!container || slide.dataset.summaryDotsWatching) return;
+    slide.dataset.summaryDotsWatching = "1";
+
+    const tryInit = () => initSummaryDots(slide);
+    tryInit();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(tryInit);
+      observer.observe(slide);
+    }
+
+    slidesEl.addEventListener("scroll", tryInit, { passive: true });
+  }
+
+  function ensureSummaryDots() {
+    slidesEl.querySelectorAll(".slide--summary").forEach(setupSummaryDots);
+  }
+
+  function initTotalPlaysIcons(slide) {
+    initIconExplosion(slide, ".play-icon-explosion", [
+      "play_arrow",
+      "movie",
+      "tv",
+      "theaters",
+      "video_library",
+    ]);
+  }
+
+  function initTopListMotion(slide) {
+    const images = slide.querySelectorAll(".poster-stack img");
+    if (!images.length || slide.dataset.posterMotionReady) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function start() {
+      if (slide.dataset.posterMotionReady) return;
+      slide.dataset.posterMotionReady = "1";
+
+      images.forEach((img, index) => {
+        if (reducedMotion) return;
+
+        const drift = 8 + Math.random() * 12;
+        const tilt = (Math.random() - 0.5) * 6;
+        img.animate(
+          [
+            { transform: `translateY(0px) rotate(${tilt}deg)` },
+            { transform: `translateY(-${drift}px) rotate(${-tilt}deg)` },
+            { transform: `translateY(0px) rotate(${tilt}deg)` },
+          ],
+          {
+            duration: 4500 + Math.random() * 4000,
+            iterations: Infinity,
+            delay: index * 350 + Math.random() * 1200,
+            easing: "ease-in-out",
+          }
+        );
+      });
+    }
+
+    const visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) start();
       },
       { threshold: 0.35 }
     );
@@ -361,25 +497,266 @@
     return html;
   }
 
-  function buildGenreBars(genres) {
-    if (!genres.length) return "";
-    const max = Math.max(...genres.map((g) => g.plays), 1);
-    let html = '<div class="genre-bars">';
-    genres.forEach((g, i) => {
-      const pct = Math.round((g.plays / max) * 100);
-      const hero = i === 0 ? " genre-row--hero" : "";
-      const opacity = i === 0 ? "" : ` style="opacity:${Math.max(0.6, 1 - i * 0.1)}"`;
-      html += `<div class="genre-row glass-card${hero}"${opacity}>
-        <span class="rank-num">${i + 1}</span>
-        <div style="flex:1;min-width:0">
-          <h3 style="font-family:var(--font-display);font-size:1rem;color:#fff">${escapeHtml(g.name)}</h3>
-          <div class="genre-bar-track" style="margin-top:8px"><div class="genre-bar-fill" style="width:${pct}%"></div></div>
+  const GENRE_ICONS = {
+    action: "bolt",
+    adventure: "explore",
+    animation: "animation",
+    comedy: "sentiment_very_satisfied",
+    crime: "policy",
+    documentary: "menu_book",
+    drama: "theater_comedy",
+    family: "family_rest",
+    fantasy: "auto_awesome",
+    history: "history_edu",
+    horror: "skull",
+    music: "music_note",
+    mystery: "help",
+    romance: "favorite",
+    "science fiction": "rocket_launch",
+    "sci-fi": "rocket_launch",
+    scifi: "rocket_launch",
+    thriller: "visibility",
+    war: "military_tech",
+    western: "landscape",
+    biography: "person",
+    sport: "sports",
+    sports: "sports",
+    superhero: "shield",
+    suspense: "visibility",
+    "tv movie": "live_tv",
+    news: "newspaper",
+    reality: "videocam",
+    soap: "soap",
+    talk: "mic",
+    "film-noir": "dark_mode",
+    kids: "child_care",
+    children: "child_care",
+  };
+
+  const GENRE_ICON_POOL = [...new Set(Object.values(GENRE_ICONS))];
+
+  function initGenreIconExplosion(slide) {
+    initIconExplosion(slide, ".genre-icon-explosion", GENRE_ICON_POOL);
+  }
+
+  function genreIcon(name) {
+    const key = (name || "").toLowerCase().trim();
+    if (GENRE_ICONS[key]) return GENRE_ICONS[key];
+    if (key.includes("sci")) return "rocket_launch";
+    if (key.includes("romance") || key.includes("romant")) return "favorite";
+    if (key.includes("horror")) return "skull";
+    if (key.includes("comedy") || key.includes("komedie")) return "sentiment_very_satisfied";
+    if (key.includes("drama")) return "theater_comedy";
+    if (key.includes("action") || key.includes("actie")) return "bolt";
+    if (key.includes("document")) return "menu_book";
+    if (key.includes("thriller")) return "visibility";
+    if (key.includes("crime") || key.includes("misdaad")) return "policy";
+    if (key.includes("fantasy")) return "auto_awesome";
+    if (key.includes("anim")) return "animation";
+    if (key.includes("war") || key.includes("oorlog")) return "military_tech";
+    if (key.includes("music") || key.includes("muziek")) return "music_note";
+    if (key.includes("family") || key.includes("familie")) return "family_rest";
+    return "movie";
+  }
+
+  function genreToneClass(rankIndex) {
+    return rankIndex % 2 === 0 ? "genre-tone--odd" : "genre-tone--even";
+  }
+
+  function buildGenreLayout(genres, statLabel, compactLabel) {
+    const top = genres.slice(0, 5);
+    if (!top.length) return "";
+
+    let html = '<div class="genre-layout">';
+
+    const hero = top[0];
+    const heroIcon = genreIcon(hero.name);
+    html += `<div class="genre-card genre-card--hero glass-card ${genreToneClass(0)}">
+      <div class="genre-card__main">
+        <div class="genre-icon genre-icon--lg">
+          <span class="material-symbols-outlined nav-icon-fill">${heroIcon}</span>
         </div>
-        <span class="rank-meta">${g.plays}</span>
+        <div class="genre-card__copy">
+          <p class="genre-rank-label">#1 Genre</p>
+          <h3 class="genre-name">${escapeHtml(hero.name)}</h3>
+        </div>
+      </div>
+      <div class="genre-card__stat">
+        <span class="genre-count">${hero.plays.toLocaleString("nl-NL")}</span>
+        <span class="genre-count-label">${escapeHtml(statLabel)}</span>
+      </div>
+    </div>`;
+
+    for (let i = 1; i < 3 && i < top.length; i += 1) {
+      const g = top[i];
+      const icon = genreIcon(g.name);
+      const opacity = i === 1 ? 0.9 : 0.8;
+      html += `<div class="genre-card genre-card--row glass-card ${genreToneClass(i)}" style="opacity:${opacity}">
+        <div class="genre-card__main">
+          <div class="genre-icon genre-icon--md">
+            <span class="material-symbols-outlined">${icon}</span>
+          </div>
+          <h3 class="genre-name">${escapeHtml(g.name)}</h3>
+        </div>
+        <div class="genre-card__stat">
+          <span class="genre-count">${g.plays.toLocaleString("nl-NL")}</span>
+          <span class="genre-count-label">${escapeHtml(statLabel)}</span>
+        </div>
       </div>`;
-    });
+    }
+
+    if (top.length > 3) {
+      html += '<div class="genre-grid">';
+      for (let i = 3; i < top.length; i += 1) {
+        const g = top[i];
+        const icon = genreIcon(g.name);
+        const opacity = i === 3 ? 0.7 : 0.6;
+        html += `<div class="genre-card genre-card--compact glass-card ${genreToneClass(i)}" style="opacity:${opacity}">
+          <div class="genre-icon genre-icon--sm">
+            <span class="material-symbols-outlined">${icon}</span>
+          </div>
+          <h4 class="genre-name-compact">${escapeHtml(g.name)}</h4>
+          <p class="genre-meta-compact">${g.plays.toLocaleString("nl-NL")} ${escapeHtml(compactLabel)}</p>
+        </div>`;
+      }
+      html += "</div>";
+    }
+
     html += "</div>";
     return html;
+  }
+
+  function formatRankHours(hours) {
+    return `${Number(hours).toLocaleString("nl-NL")} u`;
+  }
+
+  function buildComparisonCaption(d, serverTitle, userTitle, same) {
+    if (d.comparison_caption) return d.comparison_caption;
+    if (same) {
+      return `Iedereen op de server draaide ${serverTitle} — jij inclusief. Great minds think alike.`;
+    }
+    if (d.user_comparison_reason === "first_played") {
+      return `Terwijl de server massaal naar ${serverTitle} keek, startte jij het jaar met ${userTitle}.`;
+    }
+    return `Terwijl de server naar ${serverTitle} keek, was ${userTitle} jouw nummer één.`;
+  }
+
+  function buildComparisonHeadline(d, same) {
+    if (same) {
+      return 'Je bent <span class="text-primary">perfect in sync</span> met de server.';
+    }
+    const accent = d.comparison_headline_accent || "eigenzinnige";
+    return `Je hebt een <span class="text-primary">${escapeHtml(accent)}</span> smaak.`;
+  }
+
+  function buildVsPosterCard(side, title, thumb, badge) {
+    const url = posterUrl(thumb);
+    const img = url
+      ? `<img src="${escapeHtml(url)}" alt="" loading="lazy">`
+      : `<div class="vs-poster__placeholder"><span class="material-symbols-outlined">tv</span></div>`;
+    const sideClass = side === "user" ? " vs-poster-card--user" : " vs-poster-card--server";
+    const badgeClass =
+      side === "user" ? " vs-poster-card__badge--user" : " vs-poster-card__badge--server";
+    return `<div class="vs-poster-card${sideClass}">
+      <div class="vs-poster-card__frame">
+        <span class="vs-poster-card__badge${badgeClass}">${escapeHtml(badge)}</span>
+        <div class="vs-poster-card__poster glass-card">${img}</div>
+      </div>
+      <p class="vs-poster-card__title">${escapeHtml(title)}</p>
+    </div>`;
+  }
+
+  function buildTelegramCompletionNote(percent) {
+    if (percent >= 80) return "Je houdt je wachtrij goed bij!";
+    if (percent >= 50) return "Meer dan de helft van je aanvragen heb je al bekeken.";
+    if (percent > 0) return "Er staat nog genoeg op je lijst.";
+    return "Tijd om je aanvragen af te werken.";
+  }
+
+  function buildTelegramSlide(tg) {
+    const films = tg.film_requests || 0;
+    const series = tg.serie_requests || 0;
+    const logins = tg.login_count || 0;
+    const requested = (tg.movies_requested || 0) + (tg.series_requested || 0);
+    const watched = (tg.movies_watched || 0) + (tg.series_watched || 0);
+    const percent = requested > 0 ? Math.round((watched / requested) * 100) : 0;
+    const completionBlock =
+      requested > 0
+        ? `<div class="tg-completion glass-card">
+                <div class="tg-completion__head">
+                  <span class="tg-completion__pct">${percent}%</span>
+                  <span class="tg-completion__label">voltooid</span>
+                </div>
+                <div class="tg-completion__track">
+                  <div class="tg-completion__fill" style="width:${percent}%"></div>
+                </div>
+                <p class="tg-completion__note">${escapeHtml(buildTelegramCompletionNote(percent))}</p>
+              </div>`
+        : "";
+
+    return `<div class="tg-deco" aria-hidden="true">
+              <span class="material-symbols-outlined tg-deco__icon" style="top:18%;left:22%">send</span>
+              <span class="material-symbols-outlined tg-deco__icon" style="top:62%;right:18%;animation-delay:-2s">send</span>
+              <span class="material-symbols-outlined tg-deco__icon" style="top:42%;left:72%;animation-delay:-4s">send</span>
+            </div>
+            <div class="tg-layout">
+              <div class="tg-header stack-sm">
+                <span class="label-md label-md--wide tg-header__label">Community vragen</span>
+                <h2 class="tg-title">Telegram bot</h2>
+              </div>
+              <div class="tg-row tg-row--types">
+                <div class="tg-stat-card glass-card">
+                  <span class="material-symbols-outlined tg-stat-card__icon tg-stat-card__icon--primary">movie</span>
+                  <h3 class="tg-stat-card__type">Films</h3>
+                  <p class="tg-stat-card__num">${films.toLocaleString("nl-NL")}</p>
+                  <p class="tg-stat-card__meta">aanvragen</p>
+                </div>
+                <div class="tg-stat-card glass-card">
+                  <span class="material-symbols-outlined tg-stat-card__icon tg-stat-card__icon--tertiary">tv</span>
+                  <h3 class="tg-stat-card__type">Series</h3>
+                  <p class="tg-stat-card__num">${series.toLocaleString("nl-NL")}</p>
+                  <p class="tg-stat-card__meta">aanvragen</p>
+                </div>
+              </div>
+              <div class="tg-row tg-row--conv">
+                <div class="tg-conv-card glass-card">
+                  <span class="material-symbols-outlined tg-conv-card__icon tg-conv-card__icon--tertiary">send_and_archive</span>
+                  <p class="tg-conv-card__num">${logins.toLocaleString("nl-NL")}</p>
+                  <p class="tg-conv-card__meta">logins</p>
+                </div>
+                <div class="tg-conv-card glass-card">
+                  <span class="material-symbols-outlined tg-conv-card__icon tg-conv-card__icon--primary">visibility</span>
+                  <p class="tg-conv-card__num">${watched.toLocaleString("nl-NL")}</p>
+                  <p class="tg-conv-card__meta">bekeken</p>
+                </div>
+              </div>
+              ${completionBlock}
+            </div>`;
+  }
+
+  function buildRankContextRows(entries) {
+    if (!entries || !entries.length) return "";
+
+    return entries
+      .map((entry) => {
+        const youClass = entry.is_you ? " rank-row--you" : "";
+        const edgeClass = entry.is_you
+          ? ""
+          : entry.position_label === "Eén plek hoger"
+            ? " rank-row--above"
+            : " rank-row--below";
+        return `<div class="rank-row glass-card${youClass}${edgeClass}">
+          <div class="rank-row__main">
+            <span class="rank-row__num">#${entry.rank}</span>
+            <span class="rank-row__avatar" aria-hidden="true">
+              <span class="material-symbols-outlined">${entry.is_you ? "account_circle" : "person"}</span>
+            </span>
+            <span class="rank-row__label">${escapeHtml(entry.position_label)}</span>
+          </div>
+          <span class="rank-row__hours">${formatRankHours(entry.watch_hours)}</span>
+        </div>`;
+      })
+      .join("");
   }
 
   function formatMoviesTvRatio(moviePlays, tvPlays) {
@@ -875,38 +1252,68 @@
       }
 
       if (d.favorite_device) {
+        const devicePercent =
+          d.favorite_device_watch_percent !== null &&
+          d.favorite_device_watch_percent !== undefined
+            ? d.favorite_device_watch_percent
+            : null;
+        const deviceBadgeText =
+          devicePercent !== null
+            ? `${devicePercent}% van je kijktijd`
+            : "—% van je kijktijd";
         slides.push(
           createSlide(
-            slideMain(
-              `<div class="device-hero glass-card">
-                 <span class="material-symbols-outlined nav-icon-fill">tv</span>
-               </div>
-               <div class="stack-sm">
-                 <p class="label-md label-md--wide">Je favoriete venster</p>
-                 <h2 class="display-lg" style="color:#fff;line-height:1.2">Jouw scherm:<br><span class="text-primary">${escapeHtml(d.favorite_device)}</span></h2>
-               </div>
-               <div class="glass-card device-badge">
-                 <span class="material-symbols-outlined" style="color:var(--primary)">tv</span>
-                 <p>meest gebruikte player</p>
-               </div>`
-            ),
+            `<div class="device-silhouettes" aria-hidden="true">
+               <div class="tv-silhouette tv-silhouette--1"></div>
+               <div class="tv-silhouette tv-silhouette--2"></div>
+             </div>` +
+              slideMain(
+                `<div class="device-hero-block">
+                   <div class="device-hero glass-card">
+                     <span class="material-symbols-outlined nav-icon-fill">tv</span>
+                   </div>
+                   <div class="device-copy stack-sm">
+                     <p class="label-md label-md--wide">Je favoriete venster</p>
+                     <h2 class="device-title">Jouw scherm:<br><span class="text-primary">${escapeHtml(d.favorite_device)}</span></h2>
+                   </div>
+                 </div>
+                 <div class="glass-card device-badge">
+                   <span class="material-symbols-outlined nav-icon-fill" style="color:var(--primary)">tv</span>
+                   <p>${escapeHtml(deviceBadgeText)}</p>
+                 </div>`,
+                "favorite-device"
+              ),
             "favorite-device"
           )
         );
       }
 
       if (d.longest_streak_days > 0) {
+        const streakStart = formatStreakDate(d.longest_streak_start);
+        const streakEnd = formatStreakDate(d.longest_streak_end);
         slides.push(
           createSlide(
             slideMain(
-              `<div class="streak-glow" aria-hidden="true"></div>
-               <div class="streak-ring glass-card">
-                 <span class="material-symbols-outlined">calendar_today</span>
-                 <span class="display-xl">${d.longest_streak_days}</span>
+              `<div class="streak-content">
+                 <div class="streak-glow" aria-hidden="true"></div>
+                 <div class="streak-ring glass-card">
+                   <span class="material-symbols-outlined nav-icon-fill">calendar_today</span>
+                   <span class="display-xl">${d.longest_streak_days}</span>
+                 </div>
+                 <h2 class="headline-lg">${d.longest_streak_days} dagen op rij</h2>
+                 <p class="label-md streak-sub">Langste streak in ${year}</p>
                </div>
-               <h2 class="headline-lg">${d.longest_streak_days} dagen op rij</h2>
-               <p class="label-md streak-sub" style="color:var(--on-surface-variant)">Langste streak in ${year}</p>`,
-              "bottom-note"
+               <div class="streak-dates">
+                 <div class="glass-card streak-date-card">
+                   <p class="label-md streak-date-label">Start</p>
+                   <p class="headline-md streak-date-value">${escapeHtml(streakStart)}</p>
+                 </div>
+                 <div class="glass-card streak-date-card">
+                   <p class="label-md streak-date-label">Einde</p>
+                   <p class="headline-md streak-date-value">${escapeHtml(streakEnd)}</p>
+                 </div>
+               </div>`,
+              "longest-streak"
             ),
             "longest-streak"
           )
@@ -916,12 +1323,15 @@
       if (d.top_movie_genres && d.top_movie_genres.length) {
         slides.push(
           createSlide(
-            slideMain(
-              `<span class="label-md label-md--wide">Filmgenres</span>
-               <h2 class="headline-lg" style="margin-top:0.5rem">Top 5 genres</h2>
-               ${buildGenreBars(d.top_movie_genres)}`,
-              "top"
-            ),
+            `<div class="genre-icon-explosion" aria-hidden="true"></div>` +
+              slideMain(
+                `<div class="genre-header stack-sm">
+                   <span class="label-md label-md--wide">Jouw vibe</span>
+                   <h2 class="genre-title">Top film <span class="text-primary-container">genres</span></h2>
+                 </div>
+                 ${buildGenreLayout(d.top_movie_genres, "Films", "films")}`,
+                "movie-genres"
+              ),
             "movie-genres"
           )
         );
@@ -930,29 +1340,55 @@
       if (d.top_show_genres && d.top_show_genres.length) {
         slides.push(
           createSlide(
-            slideMain(
-              `<span class="label-md label-md--wide">Seriesgenres</span>
-               <h2 class="headline-lg" style="margin-top:0.5rem">Top 5 genres</h2>
-               ${buildGenreBars(d.top_show_genres)}`,
-              "top"
-            ),
+            `<div class="genre-icon-explosion" aria-hidden="true"></div>` +
+              slideMain(
+                `<div class="genre-header stack-sm">
+                   <span class="label-md label-md--wide">Jouw vibe</span>
+                   <h2 class="genre-title">Top series <span class="text-primary-container">genres</span></h2>
+                 </div>
+                 ${buildGenreLayout(d.top_show_genres, "Episodes", "episodes")}`,
+                "show-genres"
+              ),
             "show-genres"
           )
         );
       }
 
       if (d.server && d.server.rank) {
+        const activePct = d.server.more_active_than_percent;
+        const activityBadge =
+          activePct != null
+            ? `<div class="rank-activity-badge glass-card">
+                 <p class="rank-activity-badge__text">
+                   Je bent actiever dan <strong>${activePct}%</strong> van de gebruikers
+                 </p>
+               </div>`
+            : "";
+        const contextRows = buildRankContextRows(d.server.rank_context);
+
         slides.push(
           createSlide(
             slideMain(
-              `<span class="label-md label-md--wide">Op de server</span>
-               <p class="rank-medal">#${d.server.rank}</p>
-               <p class="body-md" style="margin-top:1rem">tussen kijkers op deze server</p>
-               <div class="rank-podium" aria-hidden="true">
-                 <span style="height:45%"></span>
-                 <span></span>
-                 <span style="height:55%"></span>
-               </div>`
+              `<div class="server-rank-layout">
+                 <div class="server-rank-header stack-sm">
+                   ${
+                     d.server.server_name
+                       ? `<div class="server-rank-badge glass-card">
+                            <span class="material-symbols-outlined nav-icon-fill server-rank-badge__icon">dns</span>
+                            <span class="server-rank-badge__name">${escapeHtml(d.server.server_name)}</span>
+                          </div>`
+                       : ""
+                   }
+                   <h2 class="headline-lg">Op de server</h2>
+                 </div>
+                 <div class="rank-circle glass-card">
+                   <span class="rank-circle__label">Rank</span>
+                   <span class="rank-circle__num">#${d.server.rank}</span>
+                 </div>
+                 ${activityBadge}
+                 ${contextRows ? `<div class="rank-context">${contextRows}</div>` : ""}
+               </div>`,
+              "server-rank"
             ),
             "server-rank"
           )
@@ -962,29 +1398,30 @@
       const serverTopShow = d.server?.server_top_show || d.server?.server_top_movie;
       const userTopShow = d.user_comparison_show || d.user_comparison_movie;
       if (serverTopShow && userTopShow) {
-        const same = serverTopShow.toLowerCase() === userTopShow.toLowerCase();
+        const same =
+          d.comparison_same_show != null
+            ? d.comparison_same_show
+            : serverTopShow.toLowerCase() === userTopShow.toLowerCase();
+        const serverThumb = d.server?.server_top_show_thumb;
+        const userThumb = d.user_comparison_show_thumb;
+        const caption = buildComparisonCaption(d, serverTopShow, userTopShow, same);
+
         slides.push(
           createSlide(
-            slideMain(
-              `<span class="label-md label-md--wide">Server vs jij</span>
-               <h2 class="headline-lg" style="margin-top:0.5rem">De grote vergelijking</h2>
-               <div class="glass-card versus-card">
-                 <div class="versus-row">
-                   <div>
-                     <p class="versus-label">Server #1</p>
-                     <p class="versus-title">${escapeHtml(serverTopShow)}</p>
-                   </div>
-                   <span class="material-symbols-outlined" style="color:var(--tertiary)">groups</span>
+            `<div class="top-shows-glow" aria-hidden="true"></div>` +
+              slideMain(
+              `<div class="server-vs-layout">
+                 <h2 class="server-vs-headline">${buildComparisonHeadline(d, same)}</h2>
+                 <div class="server-vs-posters">
+                   ${buildVsPosterCard("server", serverTopShow, serverThumb, "Server #1")}
+                   <div class="server-vs-badge" aria-hidden="true">VS</div>
+                   ${buildVsPosterCard("user", userTopShow, userThumb, "Jouw #1")}
                  </div>
-                 <div class="versus-row">
-                   <div>
-                     <p class="versus-label">Jouw top</p>
-                     <p class="versus-title">${escapeHtml(userTopShow)}</p>
-                   </div>
-                   <span class="material-symbols-outlined" style="color:var(--primary)">person</span>
+                 <div class="server-vs-caption glass-card">
+                   <p class="server-vs-caption__text">"${escapeHtml(caption)}"</p>
                  </div>
-               </div>
-               <p class="match-badge">${same ? "Zelfde smaak" : "Jij koos je eigen pad"}</p>`
+               </div>`,
+              "server-vs-you"
             ),
             "server-vs-you"
           )
@@ -994,60 +1431,16 @@
 
     if (tgActive) {
       const tg = d.telegram;
-      if (tg.film_requests > 0 || tg.serie_requests > 0) {
-        slides.push(
-          createSlide(
-            slideMain(
-              `<span class="label-md label-md--wide">Telegram</span>
-               <h2 class="headline-lg" style="margin-top:0.5rem">Aanvragen</h2>
-               <div class="split-grid req-grid" style="margin-top:1.5rem">
-                 <div class="glass-card">
-                   <span class="req-num">${tg.film_requests}</span>
-                   <span class="label-md" style="color:var(--on-surface-variant)">films</span>
-                 </div>
-                 <div class="glass-card">
-                   <span class="req-num">${tg.serie_requests}</span>
-                   <span class="label-md" style="color:var(--on-surface-variant)">series</span>
-                 </div>
-               </div>`,
-              "top"
-            ),
-            "telegram-requests"
-          )
-        );
-      }
+      const hasTelegramSlide =
+        (tg.film_requests || 0) > 0 ||
+        (tg.serie_requests || 0) > 0 ||
+        (tg.movies_requested || 0) > 0 ||
+        (tg.series_requested || 0) > 0 ||
+        (tg.login_count || 0) > 0;
 
-      if (tg.movies_requested > 0 || tg.series_requested > 0) {
+      if (hasTelegramSlide) {
         slides.push(
-          createSlide(
-            slideMain(
-              `<span class="label-md label-md--wide">Aanvraag → kijken</span>
-               <div class="glass-card versus-card" style="margin-top:1.5rem;text-align:left">
-                 <p style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08)">
-                   Films: <strong style="color:#fff">${tg.movies_requested}</strong> aangevraagd · <strong style="color:var(--primary)">${tg.movies_watched}</strong> bekeken
-                 </p>
-                 <p style="padding:10px 0">
-                   Series: <strong style="color:#fff">${tg.series_requested}</strong> aangevraagd · <strong style="color:var(--primary)">${tg.series_watched}</strong> bekeken
-                 </p>
-               </div>
-               <p class="body-md" style="margin-top:1rem">Van aanvraag naar play-knop</p>`
-            ),
-            "telegram-watched"
-          )
-        );
-      }
-
-      if (tg.login_count > 0) {
-        slides.push(
-          createSlide(
-            slideMain(
-              `<span class="material-symbols-outlined bot-icon">smart_toy</span>
-               <span class="label-md label-md--wide">Botgebruik</span>
-               <h2 class="display-xl" style="margin-top:12px">${tg.login_count}</h2>
-               <p class="body-md" style="margin-top:1rem">keer dat je de aanvraagbot gebruikte</p>`
-            ),
-            "telegram-bot"
-          )
+          createSlide(slideMain(buildTelegramSlide(tg), "telegram-requests"), "telegram-requests")
         );
       }
     }
@@ -1059,23 +1452,42 @@
       slides.push(
         createSlide(
           slideMain(
-            `<img class="persona-art" src="${art}" alt="">
-             <span class="label-md label-md--wide">Jouw persona</span>
-             <h2 class="headline-lg" style="margin-top:8px">Op basis van jouw stats word je gekroond tot</h2>
-             <p class="display-lg persona-name" style="margin-top:8px">${escapeHtml(d.persona)}</p>
-             <p class="body-md persona-tagline" style="margin-top:12px">${escapeHtml(d.persona_tagline || "")}</p>`
+            `<div class="persona-layout">
+               <div class="persona-hero">
+                 <div class="persona-art-glow">
+                   <img class="persona-art" src="${art}" alt="">
+                 </div>
+               </div>
+               <div class="persona-copy">
+                 <span class="persona-label">Jouw persona</span>
+                 <h2 class="persona-title">Jouw kroon:<br><span class="persona-title__name">${escapeHtml(d.persona)}</span></h2>
+                 <p class="persona-tagline">${escapeHtml(d.persona_tagline || "")}</p>
+               </div>
+             </div>`,
+            "persona"
           ),
           "persona"
         )
       );
 
       const hours = d.watch_hours ?? Math.floor((d.total_watch_seconds || 0) / 3600);
-      const days = d.watch_days ?? Math.floor(hours / 24);
       const topMedia =
         d.tv_plays > 0 && d.top_shows && d.top_shows[0]
-          ? { title: d.top_shows[0].title, label: "Topserie", thumb: d.top_shows[0].thumb, icon: "tv" }
+          ? {
+              title: d.top_shows[0].title,
+              label: "Topserie",
+              mostWatched: "Meest bekeken serie",
+              thumb: d.top_shows[0].thumb,
+              icon: "tv",
+            }
           : d.top_movies && d.top_movies[0]
-            ? { title: d.top_movies[0].title, label: "Topfilm", thumb: d.top_movies[0].thumb, icon: "movie" }
+            ? {
+                title: d.top_movies[0].title,
+                label: "Topfilm",
+                mostWatched: "Meest bekeken film",
+                thumb: d.top_movies[0].thumb,
+                icon: "movie",
+              }
             : null;
       const tg = d.telegram;
       const totalReq = tg
@@ -1083,22 +1495,21 @@
         : 0;
 
       let bento = `<div class="summary-header">
-        <p class="label-md label-md--wide" style="opacity:0.8">Jouw jaar in review</p>
-        <h2 class="headline-lg">${year} samenvatting</h2>
+        <p class="summary-eyebrow">Jouw jaar in review</p>
+        <h2 class="summary-title">${year} Samenvatting</h2>
       </div>
       <div class="bento-grid">`;
 
       if (d.has_watch_history) {
-        bento += `<div class="glass-card">
-          <span class="material-symbols-outlined">schedule</span>
-          <span class="label-md" style="color:var(--on-surface-variant)">Kijktijd</span>
-          <span class="bento-value">${hours}u</span>
-          <span class="label-md" style="color:var(--on-surface-variant);font-size:0.65rem">${days} dagen</span>
+        bento += `<div class="glass-card bento-card">
+          <span class="material-symbols-outlined bento-card__icon">schedule</span>
+          <p class="bento-card__label">Kijktijd</p>
+          <p class="bento-card__value">${hours}u</p>
         </div>`;
-        bento += `<div class="glass-card">
-          <span class="material-symbols-outlined">play_circle</span>
-          <span class="label-md" style="color:var(--on-surface-variant)">Totaal gestart</span>
-          <span class="bento-value">${d.total_plays}</span>
+        bento += `<div class="glass-card bento-card">
+          <span class="material-symbols-outlined bento-card__icon">play_circle</span>
+          <p class="bento-card__label">Totaal gestart</p>
+          <p class="bento-card__value">${d.total_plays}</p>
         </div>`;
       }
 
@@ -1106,38 +1517,42 @@
         const thumb = posterUrl(topMedia.thumb);
         const img = thumb
           ? `<img src="${escapeHtml(thumb)}" alt="">`
-          : `<div style="width:56px;height:84px;border-radius:8px;background:var(--surface-container-high)"></div>`;
+          : `<div class="bento-media__placeholder" aria-hidden="true"></div>`;
         bento += `<div class="glass-card bento-span-2 bento-media">
           ${img}
-          <div>
-            <span class="label-md" style="color:var(--on-surface-variant)">${topMedia.label}</span>
-            <span class="bento-value">${escapeHtml(topMedia.title)}</span>
+          <div class="bento-media__copy">
+            <p class="bento-card__label">${topMedia.label}</p>
+            <p class="bento-card__value bento-card__value--md">${escapeHtml(topMedia.title)}</p>
+            <p class="bento-media__badge">
+              <span class="material-symbols-outlined bento-media__star">star</span>
+              <span class="bento-media__badge-text">${topMedia.mostWatched}</span>
+            </p>
           </div>
         </div>`;
       }
 
       if (d.busiest_month) {
-        bento += `<div class="glass-card">
-          <span class="material-symbols-outlined">calendar_month</span>
-          <span class="label-md" style="color:var(--on-surface-variant)">Drukste maand</span>
-          <span class="bento-value">${escapeHtml(d.busiest_month)}</span>
+        bento += `<div class="glass-card bento-card">
+          <span class="material-symbols-outlined bento-card__icon">calendar_month</span>
+          <p class="bento-card__label">Drukste maand</p>
+          <p class="bento-card__value">${escapeHtml(d.busiest_month)}</p>
         </div>`;
       }
 
       if (totalReq > 0) {
-        bento += `<div class="glass-card">
-          <span class="material-symbols-outlined">send</span>
-          <span class="label-md" style="color:var(--on-surface-variant)">Telegram-aanvragen</span>
-          <span class="bento-value">${totalReq}</span>
+        bento += `<div class="glass-card bento-card">
+          <span class="material-symbols-outlined bento-card__icon">send</span>
+          <p class="bento-card__label">Telegram-aanvragen</p>
+          <p class="bento-card__value">${totalReq}</p>
         </div>`;
       }
 
       bento += `<div class="glass-card bento-span-2 bento-persona">
-        <div>
-          <span class="label-md" style="color:var(--on-surface-variant)">Persona</span>
-          <span class="bento-value">${escapeHtml(d.persona)}</span>
+        <div class="bento-persona__copy">
+          <p class="bento-card__label">Jouw Persona</p>
+          <p class="bento-card__value">${escapeHtml(d.persona)}</p>
         </div>
-        <span class="material-symbols-outlined">workspace_premium</span>
+        <span class="material-symbols-outlined bento-persona__icon">workspace_premium</span>
       </div>`;
 
       bento += `</div>
@@ -1153,7 +1568,7 @@
           </div>
         </div>`;
 
-      slides.push(createSlide(slideMain(bento, "top"), "summary"));
+      slides.push(createSlide(slideMain(bento, "summary"), "summary"));
     }
 
     return slides;
@@ -1254,16 +1669,27 @@
       setupProgress(slides.length);
       slides.forEach((s) => slidesEl.appendChild(s));
       slidesEl
-        .querySelectorAll(".slide--welcome, .slide--when-you-watch")
+        .querySelectorAll(".slide--welcome, .slide--when-you-watch, .slide--server-rank")
         .forEach(initWelcomeBokeh);
       slidesEl.querySelectorAll(".slide--when-you-watch").forEach(initWhenYouWatchWaves);
       slidesEl
-        .querySelectorAll(".slide--watch-time, .slide--series-depth")
+        .querySelectorAll(".slide--watch-time, .slide--series-depth, .slide--longest-streak")
         .forEach(initWatchTimeBokeh);
       slidesEl.querySelectorAll(".slide--total-plays").forEach(initTotalPlaysIcons);
+      slidesEl
+        .querySelectorAll(".slide--movie-genres, .slide--show-genres")
+        .forEach(initGenreIconExplosion);
+      slidesEl
+        .querySelectorAll(".slide--top-movies, .slide--top-shows")
+        .forEach(initTopListMotion);
 
       loading.classList.add("hidden");
       slidesEl.classList.remove("hidden");
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(ensureSummaryDots);
+      });
+      window.setTimeout(ensureSummaryDots, 120);
 
       document.getElementById("btnShareSummary")?.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -1276,6 +1702,7 @@
             if (entry.isIntersecting) {
               const idx = [...slidesEl.children].indexOf(entry.target);
               if (idx >= 0) updateProgress(idx);
+              if (entry.target.classList.contains("slide--summary")) ensureSummaryDots();
             }
           });
         },

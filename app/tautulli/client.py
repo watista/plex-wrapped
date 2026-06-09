@@ -111,6 +111,31 @@ class TautulliClient:
             y_axis=y_axis,
         )
 
+    def get_server_friendly_name(self) -> str | None:
+        data = self._request("get_server_friendly_name")
+        if isinstance(data, str) and data.strip():
+            return data.strip()
+        return None
+
+    def get_users_table(
+        self,
+        *,
+        order_column: str = "duration",
+        order_dir: str = "desc",
+        start: int = 0,
+        length: int = 500,
+        grouping: int = 1,
+    ) -> dict[str, Any]:
+        data = self._request(
+            "get_users_table",
+            order_column=order_column,
+            order_dir=order_dir,
+            start=str(start),
+            length=str(length),
+            grouping=str(grouping),
+        )
+        return data if isinstance(data, dict) else {}
+
     def get_metadata(self, *, rating_key: int | str) -> dict[str, Any]:
         data = self._request("get_metadata", rating_key=str(rating_key))
         return data if isinstance(data, dict) else {}

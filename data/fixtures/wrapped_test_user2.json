@@ -13,16 +13,16 @@
   "tv_plays": 114,
 
   "top_movies": [
-    {"title": "Poor Things", "thumb": null, "plays": 5, "duration_seconds": 27000},
-    {"title": "Killers of the Flower Moon", "thumb": null, "plays": 4, "duration_seconds": 24000},
-    {"title": "Past Lives", "thumb": null, "plays": 3, "duration_seconds": 16200},
-    {"title": "The Holdovers", "thumb": null, "plays": 3, "duration_seconds": 15300},
-    {"title": "Anatomy of a Fall", "thumb": null, "plays": 2, "duration_seconds": 10800}
+    {"title": "Poor Things", "thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg", "plays": 5, "duration_seconds": 27000},
+    {"title": "Killers of the Flower Moon", "thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg", "plays": 4, "duration_seconds": 24000},
+    {"title": "Past Lives", "thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg", "plays": 3, "duration_seconds": 16200},
+    {"title": "The Holdovers", "thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg", "plays": 3, "duration_seconds": 15300},
+    {"title": "Anatomy of a Fall", "thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg", "plays": 2, "duration_seconds": 10800}
   ],
   "top_shows": [
-    {"title": "Succession", "thumb": null, "plays": 22, "duration_seconds": 66000},
+    {"title": "Succession", "thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg", "plays": 22, "duration_seconds": 66000},
     {"title": "The Last of Us", "thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg", "plays": 9, "duration_seconds": 27000},
-    {"title": "Beef", "thumb": null, "plays": 8, "duration_seconds": 24000}
+    {"title": "Beef", "thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg", "plays": 8, "duration_seconds": 24000}
   ],
   "unique_series": 12,
   "unique_seasons": 28,
@@ -40,6 +40,7 @@
   "peak_day": "vrijdag",
   "peak_hour": 20,
   "favorite_device": "Apple TV",
+  "favorite_device_watch_percent": 67,
   "longest_streak_days": 7,
   "longest_streak_start": "2025-03-12",
   "longest_streak_end": "2025-03-18",
@@ -54,15 +55,29 @@
   "top_show_genres": [
     {"name": "Drama", "plays": 48},
     {"name": "Comedy", "plays": 22},
-    {"name": "Crime", "plays": 18}
+    {"name": "Crime", "plays": 18},
+    {"name": "Western", "plays": 15},
+    {"name": "War", "plays": 3}
   ],
 
   "server": {
     "rank": 5,
-    "server_top_show": "Succession"
+    "server_name": "Thuis-Server",
+    "server_top_show": "Succession",
+    "server_top_show_thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg",
+    "more_active_than_percent": 58,
+    "rank_context": [
+      {"rank": 4, "watch_hours": 312, "is_you": false, "position_label": "Eén plek hoger"},
+      {"rank": 5, "watch_hours": 248, "is_you": true, "position_label": "Jij"},
+      {"rank": 6, "watch_hours": 201, "is_you": false, "position_label": "Eén plek lager"}
+    ]
   },
   "user_comparison_show": "Succession",
+  "user_comparison_show_thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg",
   "user_comparison_reason": "most_played",
+  "comparison_same_show": true,
+  "comparison_headline_accent": null,
+  "comparison_caption": "Iedereen op de server draaide Succession — jij inclusief. Great minds think alike.",
 
   "telegram": {
     "film_requests": 31,

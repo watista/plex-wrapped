@@ -42,6 +42,7 @@
   "peak_day": "zaterdag",
   "peak_hour": 23,
   "favorite_device": "NVIDIA SHIELD Android TV",
+  "favorite_device_watch_percent": 82,
   "longest_streak_days": 14,
   "longest_streak_start": "2025-10-05",
   "longest_streak_end": "2025-10-18",
@@ -62,11 +63,23 @@
   ],
 
   "server": {
-    "rank": 2,
-    "server_top_show": "The Office"
+    "rank": 3,
+    "server_name": "Thuis-Server",
+    "server_top_show": "The Office",
+    "server_top_show_thumb": null,
+    "more_active_than_percent": 75,
+    "rank_context": [
+      {"rank": 2, "watch_hours": 984, "is_you": false, "position_label": "Eén plek hoger"},
+      {"rank": 3, "watch_hours": 552, "is_you": true, "position_label": "Jij"},
+      {"rank": 4, "watch_hours": 421, "is_you": false, "position_label": "Eén plek lager"}
+    ]
   },
   "user_comparison_show": "Breaking Bad",
+  "user_comparison_show_thumb": null,
   "user_comparison_reason": "most_played",
+  "comparison_same_show": false,
+  "comparison_headline_accent": "eigenzinnige",
+  "comparison_caption": "Terwijl de server naar The Office keek, was Breaking Bad jouw nummer één.",
 
   "telegram": {
     "film_requests": 18,

@@ -28,9 +28,20 @@ class TelegramStats(BaseModel):
     login_count: int = 0
 
 
+class ServerRankEntry(BaseModel):
+    rank: int
+    watch_hours: int = 0
+    is_you: bool = False
+    position_label: str = ""
+
+
 class ServerStats(BaseModel):
     rank: int | None = None
+    server_name: str | None = None
     server_top_show: str | None = None
+    server_top_show_thumb: str | None = None
+    more_active_than_percent: int | None = None
+    rank_context: list[ServerRankEntry] = Field(default_factory=list)
 
 
 class WrappedPayload(BaseModel):
@@ -61,6 +72,7 @@ class WrappedPayload(BaseModel):
     peak_day: str | None = None
     peak_hour: int | None = None
     favorite_device: str | None = None
+    favorite_device_watch_percent: int | None = None
     longest_streak_days: int = 0
     longest_streak_start: str | None = None
     longest_streak_end: str | None = None
@@ -70,7 +82,11 @@ class WrappedPayload(BaseModel):
 
     server: ServerStats = Field(default_factory=ServerStats)
     user_comparison_show: str | None = None
+    user_comparison_show_thumb: str | None = None
     user_comparison_reason: Literal["most_played", "first_played"] | None = None
+    comparison_same_show: bool | None = None
+    comparison_headline_accent: str | None = None
+    comparison_caption: str | None = None
 
     telegram: TelegramStats = Field(default_factory=TelegramStats)
 

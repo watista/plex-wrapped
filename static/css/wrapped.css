@@ -4,6 +4,7 @@
   --surface-lowest: #0e0e0e;
   --surface-container: #1f1f1f;
   --surface-container-high: #2a2a2a;
+  --surface-container-highest: #353535;
   --on-surface: #e2e2e2;
   --on-surface-variant: #d6c4ad;
   --primary: #ffbd49;
@@ -11,6 +12,7 @@
   --on-primary: #432c00;
   --tertiary: #96ceff;
   --outline: #9e8e7a;
+  --outline-variant: #514534;
   --gutter: 20px;
   --safe-top: 64px;
   --safe-bottom: 48px;
@@ -565,55 +567,12 @@ body {
   z-index: 10;
 }
 
-/* Persona */
-.persona-art {
-  width: min(280px, 75vw);
-  aspect-ratio: 1;
-  object-fit: contain;
-  filter: drop-shadow(0 0 30px rgba(229, 160, 13, 0.35));
-  animation: float-crown 4s ease-in-out infinite;
-}
-
-@keyframes float-crown {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-12px);
-  }
-}
-
 /* Summary bento */
 .bento-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   width: 100%;
-  max-width: 360px;
-}
-
-.bento-grid .glass-card {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: 4px;
-}
-
-.bento-grid .glass-card .material-symbols-outlined {
-  font-size: 22px;
-  color: var(--primary);
-  margin-bottom: 4px;
-}
-
-.bento-grid .bento-value {
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1.2;
 }
 
 .bento-grid .bento-span-2 {
@@ -622,34 +581,32 @@ body {
 
 .bento-grid .bento-media {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .bento-grid .bento-media img {
-  width: 56px;
-  height: 84px;
+  width: 64px;
+  height: 96px;
   object-fit: cover;
   border-radius: 8px;
-  background: var(--surface-container-high);
+  background: var(--surface-container-highest);
+  flex-shrink: 0;
 }
 
 .bento-grid .bento-persona {
+  display: flex;
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(90deg, rgba(229, 160, 13, 0.15), transparent);
-  border-color: rgba(255, 189, 73, 0.25);
-}
-
-.bento-grid .bento-persona .material-symbols-outlined {
-  font-size: 40px;
-  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+  width: 100%;
+  background: linear-gradient(90deg, rgba(229, 160, 13, 0.2), transparent);
+  border-color: rgba(255, 189, 73, 0.3);
 }
 
 .share-btn {
   width: 100%;
-  max-width: 360px;
   margin-top: 1rem;
   padding: 1rem 1.5rem;
   border: none;
@@ -761,15 +718,47 @@ body {
   .spinner,
   .slide-mesh,
   .avatar-ring,
-  .persona-art,
   .slide-bg--overlay,
   .plays-hero-card,
   .slide--total-plays .slide-bg--overlay,
   .slide--total-plays .plays-hero-card,
   .slide--watch-time .watch-hero,
   .slide--watch-time .slide-bg--overlay,
+  .slide--longest-streak .slide-bg--overlay,
+  .slide--movie-genres .slide-bg--overlay,
+  .slide--show-genres .slide-bg--overlay,
+  .slide--movie-genres .genre-card,
+  .slide--show-genres .genre-card,
+  .slide--server-rank .rank-circle,
+  .slide--server-vs-you .vs-poster-card--server,
+  .slide--server-vs-you .vs-poster-card--user,
   .slide--movies-vs-tv .chart-mesh,
-  .slide--top-movies .slide-bg--overlay {
+  .slide--top-movies .slide-bg--overlay,
+  .slide--top-movies .rank-item,
+  .slide--top-shows .rank-item,
+  .slide--series-depth .stair-step {
+    animation: none;
+  }
+  .slide--series-depth .stair-step:nth-child(1) {
+    transform: translateX(0.75rem) rotate(-1deg);
+  }
+  .slide--series-depth .stair-step:nth-child(2) {
+    transform: translateX(-0.75rem) rotate(1deg);
+  }
+  .slide--series-depth .stair-step:nth-child(3) {
+    transform: translateX(0.75rem) rotate(-1deg);
+  }
+  .slide--favorite-device .device-hero-block {
+    animation: none;
+  }
+  .slide--telegram-requests .tg-deco__icon {
+    animation: none;
+    opacity: 0.2;
+  }
+  .slide--persona .slide-bg--overlay,
+  .slide--persona .persona-art-glow,
+  .slide--summary .slide-bg--overlay,
+  .slide--summary .summary-dot {
     animation: none;
   }
 }
