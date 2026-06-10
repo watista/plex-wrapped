@@ -717,49 +717,6 @@ body {
   }
 }
 
-/* Login page (unchanged baseline) */
-.login-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100dvh;
-  background: var(--surface);
-}
-
-.login-card {
-  text-align: center;
-  padding: 2rem;
-  max-width: 360px;
-}
-
-.login-card h1 {
-  font-family: var(--font-display);
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  color: var(--on-surface);
-}
-
-.subtitle {
-  color: var(--on-surface-variant);
-  margin-bottom: 2rem;
-}
-
-.error {
-  color: #f87171;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-}
-
-.btn-primary {
-  display: inline-block;
-  background: var(--primary-container);
-  color: var(--on-primary);
-  font-weight: 600;
-  padding: 0.9rem 2rem;
-  border-radius: 999px;
-  text-decoration: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .slides-track {
     transition: none;

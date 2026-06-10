@@ -356,7 +356,7 @@
           dot.classList.add(
             SUMMARY_DOT_DRIFTS[Math.floor(Math.random() * SUMMARY_DOT_DRIFTS.length)]
           );
-          const duration = 2000 + Math.random() * 1800;
+          const duration = 1100 + Math.random() * 900;
           dot.style.animationDuration = `${duration}ms`;
           dot.style.animationDelay = `${Math.random() * duration}ms`;
         }
@@ -395,6 +395,162 @@
       "theaters",
       "video_library",
     ]);
+  }
+
+  function initTelegramDeco(slide) {
+    const container = slide.querySelector(".tg-deco");
+    if (!container || container.dataset.ready) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const positions = [
+      { top: "8%", left: "12%", delay: "0s", size: "5.5rem", opacity: 0.12 },
+      { top: "18%", left: "72%", delay: "-1.5s", size: "4.5rem", opacity: 0.18 },
+      { top: "32%", left: "38%", delay: "-3s", size: "6.5rem", opacity: 0.1 },
+      { top: "48%", left: "8%", delay: "-4.5s", size: "5rem", opacity: 0.16 },
+      { top: "55%", left: "82%", delay: "-2s", size: "7rem", opacity: 0.14 },
+      { top: "68%", left: "28%", delay: "-5.5s", size: "4rem", opacity: 0.2 },
+      { top: "74%", left: "58%", delay: "-1s", size: "5.5rem", opacity: 0.11 },
+      { top: "85%", left: "14%", delay: "-3.5s", size: "6rem", opacity: 0.15 },
+      { top: "88%", left: "78%", delay: "-6s", size: "4.5rem", opacity: 0.17 },
+      { top: "22%", left: "52%", delay: "-2.5s", size: "3.5rem", opacity: 0.09 },
+      { top: "42%", left: "92%", delay: "-4s", size: "3rem", opacity: 0.13 },
+      { top: "62%", left: "48%", delay: "-0.5s", size: "8rem", opacity: 0.08 },
+    ];
+
+    function populate() {
+      if (container.dataset.ready) return;
+      container.dataset.ready = "1";
+
+      positions.forEach((pos) => {
+        const wrap = document.createElement("span");
+        wrap.className = "tg-deco__icon-wrap";
+        wrap.style.top = pos.top;
+        wrap.style.left = pos.left;
+
+        const span = document.createElement("span");
+        span.className = "material-symbols-outlined tg-deco__icon";
+        span.textContent = "send";
+        span.style.fontSize = pos.size;
+        span.style.opacity = String(pos.opacity);
+
+        if (!reducedMotion) {
+          wrap.style.animationDelay = pos.delay;
+          span.style.animationDelay = pos.delay;
+        } else {
+          wrap.style.animation = "none";
+          span.style.animation = "none";
+        }
+
+        wrap.appendChild(span);
+        container.appendChild(wrap);
+      });
+    }
+
+    const visibilityObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) populate();
+      },
+      { threshold: 0.35 }
+    );
+    visibilityObserver.observe(slide);
+  }
+
+  function initTelegramProgressBar(slide) {
+    const fill = slide.querySelector(".tg-completion__fill");
+    if (!fill) return;
+
+    const target = Number(fill.dataset.target) || 0;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function reset() {
+      fill.style.transition = "none";
+      fill.style.width = "0%";
+    }
+
+    function animate() {
+      if (reducedMotion) {
+        fill.style.transition = "none";
+        fill.style.width = `${target}%`;
+        return;
+      }
+      fill.style.transition = "none";
+      fill.style.width = "0%";
+      void fill.offsetWidth;
+      fill.style.transition = "";
+      requestAnimationFrame(() => {
+        fill.style.width = `${target}%`;
+      });
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) animate();
+          else reset();
+        });
+      },
+      { threshold: 0.35 }
+    );
+    observer.observe(slide);
+  }
+
+  function initPersonaConfetti(slide) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const colors = ["#ffbd49", "#e5a00d", "#96ceff", "#ff6b8a", "#fff8e7", "#49b5ff"];
+    let activeLayer = null;
+    let cleanupTimer = null;
+
+    function clearConfetti() {
+      if (cleanupTimer) {
+        window.clearTimeout(cleanupTimer);
+        cleanupTimer = null;
+      }
+      activeLayer?.remove();
+      activeLayer = null;
+    }
+
+    function burst() {
+      clearConfetti();
+
+      const layer = document.createElement("div");
+      layer.className = "persona-confetti";
+      layer.setAttribute("aria-hidden", "true");
+      slide.appendChild(layer);
+      activeLayer = layer;
+
+      for (let i = 0; i < 48; i++) {
+        const piece = document.createElement("span");
+        piece.className = "persona-confetti__piece";
+        const size = 6 + Math.random() * 8;
+        const startX = 20 + Math.random() * 60;
+        const drift = (Math.random() - 0.5) * 120;
+        const delay = Math.random() * 400;
+        const duration = 1800 + Math.random() * 1200;
+        piece.style.left = `${startX}%`;
+        piece.style.top = "-12px";
+        piece.style.width = `${size}px`;
+        piece.style.height = `${Math.random() > 0.5 ? size : size * 0.45}px`;
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.borderRadius = Math.random() > 0.6 ? "50%" : "2px";
+        piece.style.setProperty("--drift", `${drift}px`);
+        piece.style.animation = `persona-confetti-fall ${duration}ms ease-out ${delay}ms forwards`;
+        layer.appendChild(piece);
+      }
+
+      cleanupTimer = window.setTimeout(clearConfetti, 3500);
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) burst();
+          else clearConfetti();
+        });
+      },
+      { threshold: 0.35 }
+    );
+    observer.observe(slide);
   }
 
   function initTopListMotion(slide) {
@@ -463,6 +619,18 @@
     return `<div class="poster-stack poster-stack--top-shows" aria-hidden="true">${TOP_SHOWS_BG.map(
       (src) => `<img src="${src}" alt="" loading="lazy">`
     ).join("")}</div>`;
+  }
+
+  function buildServerVsPosterBg(serverThumb, userThumb) {
+    const thumbs = [serverThumb, userThumb]
+      .map((thumb) => posterUrl(thumb))
+      .filter(Boolean);
+    const sources = thumbs.length
+      ? Array.from({ length: 6 }, (_, i) => thumbs[i % thumbs.length])
+      : TOP_SHOWS_BG;
+    return `<div class="poster-stack poster-stack--server-vs" aria-hidden="true">${sources
+      .map((src) => `<img src="${escapeHtml(src)}" alt="" loading="lazy">`)
+      .join("")}</div>`;
   }
 
   function buildRankList(items, playsLabel, withPoster) {
@@ -685,17 +853,13 @@
                   <span class="tg-completion__label">voltooid</span>
                 </div>
                 <div class="tg-completion__track">
-                  <div class="tg-completion__fill" style="width:${percent}%"></div>
+                  <div class="tg-completion__fill" data-target="${percent}"></div>
                 </div>
                 <p class="tg-completion__note">${escapeHtml(buildTelegramCompletionNote(percent))}</p>
               </div>`
         : "";
 
-    return `<div class="tg-deco" aria-hidden="true">
-              <span class="material-symbols-outlined tg-deco__icon" style="top:18%;left:22%">send</span>
-              <span class="material-symbols-outlined tg-deco__icon" style="top:62%;right:18%;animation-delay:-2s">send</span>
-              <span class="material-symbols-outlined tg-deco__icon" style="top:42%;left:72%;animation-delay:-4s">send</span>
-            </div>
+    return `<div class="tg-deco" aria-hidden="true"></div>
             <div class="tg-layout">
               <div class="tg-header stack-sm">
                 <span class="label-md label-md--wide tg-header__label">Community vragen</span>
@@ -901,6 +1065,7 @@
     const plotW = width - padX * 2;
     const plotH = height - padTop - padBottom;
 
+    const bottomY = padTop + plotH;
     const points = counts.map((count, index) => ({
       x: padX + (index / 6) * plotW,
       y: padTop + plotH - (count / max) * plotH,
@@ -908,11 +1073,17 @@
       index,
     }));
 
-    const linePath = points
-      .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    const flatLinePath = points
+      .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${bottomY.toFixed(1)}`)
       .join(" ");
+    const flatAreaPath = `${flatLinePath} L ${points[6].x.toFixed(1)} ${bottomY.toFixed(1)} L ${points[0].x.toFixed(1)} ${bottomY.toFixed(1)} Z`;
 
-    const areaPath = `${linePath} L ${points[6].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} L ${points[0].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} Z`;
+    const pointPayload = points.map((point) => ({
+      x: point.x,
+      y: point.y,
+      count: point.count,
+      index: point.index,
+    }));
 
     const dots = points
       .map((point) => {
@@ -920,8 +1091,8 @@
         const r = isPeak ? 4.5 : 3;
         const label = point.count.toLocaleString("nl-NL");
         return `<g class="${isPeak ? "weekday-line-chart__point--peak" : ""}">
-          <circle class="weekday-line-chart__dot" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="${r}"></circle>
-          <text class="weekday-line-chart__value" x="${point.x.toFixed(1)}" y="${(point.y - 8).toFixed(1)}" text-anchor="middle">${label}</text>
+          <circle class="weekday-line-chart__dot" cx="${point.x.toFixed(1)}" cy="${bottomY.toFixed(1)}" data-target-y="${point.y.toFixed(1)}" r="${r}"></circle>
+          <text class="weekday-line-chart__value" x="${point.x.toFixed(1)}" y="${(bottomY - 8).toFixed(1)}" data-target-y="${(point.y - 8).toFixed(1)}" text-anchor="middle" opacity="0">${label}</text>
         </g>`;
       })
       .join("");
@@ -933,10 +1104,10 @@
       )
       .join("");
 
-    return `<div class="weekday-line-chart">
+    return `<div class="weekday-line-chart" data-bottom-y="${bottomY}" data-points="${escapeHtml(JSON.stringify(pointPayload))}">
       <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-        <path class="weekday-line-chart__area" d="${areaPath}"></path>
-        <path class="weekday-line-chart__line" d="${linePath}"></path>
+        <path class="weekday-line-chart__area" d="${flatAreaPath}"></path>
+        <path class="weekday-line-chart__line" d="${flatLinePath}"></path>
         ${dots}
         ${labels}
       </svg>
@@ -951,11 +1122,103 @@
     const clockClass = inline ? "when-clock when-clock--inline" : "when-clock";
     return `<div class="${clockClass}">
       <div class="when-clock__face">
-        <div class="when-clock__hand when-clock__hand--hour" style="transform:rotate(${hourAngle}deg)"></div>
+        <div class="when-clock__hand when-clock__hand--hour" style="--start-angle:${hourAngle}deg"></div>
         <div class="when-clock__hand when-clock__hand--minute"></div>
         <div class="when-clock__center"></div>
       </div>
     </div>`;
+  }
+
+  function applyWeekdayChartProgress(chart, progress) {
+    const bottomY = Number(chart.dataset.bottomY);
+    const points = JSON.parse(chart.getAttribute("data-points") || "[]");
+    if (!points.length || !Number.isFinite(bottomY)) return;
+
+    const eased = 1 - Math.pow(1 - Math.min(1, Math.max(0, progress)), 3);
+    const line = chart.querySelector(".weekday-line-chart__line");
+    const area = chart.querySelector(".weekday-line-chart__area");
+    const dots = chart.querySelectorAll(".weekday-line-chart__dot");
+    const values = chart.querySelectorAll(".weekday-line-chart__value");
+
+    const current = points.map((point) => ({
+      x: point.x,
+      y: bottomY + (point.y - bottomY) * eased,
+    }));
+
+    dots.forEach((dot, index) => {
+      dot.setAttribute("cy", current[index].y.toFixed(1));
+    });
+    values.forEach((text, index) => {
+      const targetY = Number(text.dataset.targetY);
+      const startY = bottomY - 8;
+      const y = startY + (targetY - startY) * eased;
+      text.setAttribute("y", y.toFixed(1));
+      text.setAttribute("opacity", String(eased));
+    });
+
+    const linePath = current
+      .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+      .join(" ");
+    line?.setAttribute("d", linePath);
+    area?.setAttribute(
+      "d",
+      `${linePath} L ${points[6].x.toFixed(1)} ${bottomY.toFixed(1)} L ${points[0].x.toFixed(1)} ${bottomY.toFixed(1)} Z`
+    );
+  }
+
+  function initWeekdayChart(slide) {
+    const chart = slide.querySelector(".weekday-line-chart");
+    if (!chart) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const duration = 1400;
+    let animFrame = null;
+    let animStart = 0;
+
+    function cancelAnim() {
+      if (animFrame) {
+        cancelAnimationFrame(animFrame);
+        animFrame = null;
+      }
+    }
+
+    function reset() {
+      cancelAnim();
+      applyWeekdayChartProgress(chart, 0);
+    }
+
+    function play() {
+      if (reducedMotion) {
+        applyWeekdayChartProgress(chart, 1);
+        return;
+      }
+      cancelAnim();
+      applyWeekdayChartProgress(chart, 0);
+      animStart = performance.now();
+
+      function frame(now) {
+        const progress = Math.min(1, (now - animStart) / duration);
+        applyWeekdayChartProgress(chart, progress);
+        if (progress < 1) {
+          animFrame = requestAnimationFrame(frame);
+        } else {
+          animFrame = null;
+        }
+      }
+
+      animFrame = requestAnimationFrame(frame);
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) play();
+          else reset();
+        });
+      },
+      { threshold: 0.35 }
+    );
+    observer.observe(slide);
   }
 
   function initWhenYouWatchWaves(slide) {
@@ -1031,12 +1294,12 @@
             ${
               d.avatar_url
                 ? `<img src="${escapeHtml(d.avatar_url)}" alt="${escapeHtml(d.display_name)}">`
-                : `<div style="width:12rem;height:12rem;border-radius:50%;background:var(--surface-container-high)"></div>`
+                : `<img class="avatar-default" src="/static/images/default-avatar.svg" alt="">`
             }
           </div>
-          <div class="stack-sm">
-            <h2 class="headline-lg">Hoi ${escapeHtml(d.display_name)}!</h2>
-            <p class="display-lg">Jouw ${year}<br>Plex Wrapped</p>
+          <div class="stack-sm welcome-copy">
+            <h2 class="headline-lg welcome-greeting">Hoi ${escapeHtml(d.display_name)}!</h2>
+            <p class="display-lg welcome-title">Jouw ${year}<br>Plex Wrapped</p>
             <p class="body-md">Laten we kijken naar jouw jaar in films en series.</p>
           </div>
         `),
@@ -1059,7 +1322,7 @@
 
     if (d.has_watch_history) {
       const hours = d.watch_hours ?? Math.floor((d.total_watch_seconds || 0) / 3600);
-      const days = d.watch_days ?? Math.floor(hours / 24);
+      const days = d.watch_days ?? Math.ceil(hours / 24);
 
       slides.push(
         createSlide(
@@ -1297,8 +1560,7 @@
                    <span class="material-symbols-outlined nav-icon-fill">calendar_today</span>
                    <span class="display-xl">${d.longest_streak_days}</span>
                  </div>
-                 <h2 class="headline-lg">${d.longest_streak_days} dagen op rij</h2>
-                 <p class="label-md streak-sub">Langste streak in ${year}</p>
+                 <h2 class="device-title">Langste streak<br><span class="text-primary">${d.longest_streak_days} dagen op rij</span></h2>
                </div>
                <div class="streak-dates">
                  <div class="glass-card streak-date-card">
@@ -1376,7 +1638,7 @@
                           </div>`
                        : ""
                    }
-                   <h2 class="headline-lg">Op de server</h2>
+                   <h2 class="headline-lg">Jouw plek op de server</h2>
                  </div>
                  <div class="rank-circle glass-card">
                    <span class="rank-circle__label">Rank</span>
@@ -1405,7 +1667,8 @@
 
         slides.push(
           createSlide(
-            `<div class="top-shows-glow" aria-hidden="true"></div>` +
+            buildServerVsPosterBg(serverThumb, userThumb) +
+              `<div class="top-shows-glow" aria-hidden="true"></div>` +
               slideMain(
               `<div class="server-vs-layout">
                  <h2 class="server-vs-headline">${buildComparisonHeadline(d, same)}</h2>
@@ -1642,7 +1905,10 @@
       slidesEl
         .querySelectorAll(".slide--welcome, .slide--when-you-watch, .slide--server-rank")
         .forEach(initWelcomeBokeh);
-      slidesEl.querySelectorAll(".slide--when-you-watch").forEach(initWhenYouWatchWaves);
+      slidesEl.querySelectorAll(".slide--when-you-watch").forEach((slide) => {
+        initWhenYouWatchWaves(slide);
+        initWeekdayChart(slide);
+      });
       slidesEl
         .querySelectorAll(".slide--watch-time, .slide--series-depth, .slide--longest-streak")
         .forEach(initWatchTimeBokeh);
@@ -1653,6 +1919,11 @@
       slidesEl
         .querySelectorAll(".slide--top-movies, .slide--top-shows")
         .forEach(initTopListMotion);
+      slidesEl.querySelectorAll(".slide--telegram-requests").forEach((slide) => {
+        initTelegramDeco(slide);
+        initTelegramProgressBar(slide);
+      });
+      slidesEl.querySelectorAll(".slide--persona").forEach(initPersonaConfetti);
 
       loading.classList.add("hidden");
       slidesEl.classList.remove("hidden");

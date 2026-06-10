@@ -40,6 +40,21 @@
 }
 
 /* 1 Welcome */
+.slide--welcome .welcome-greeting {
+  font-size: clamp(1.875rem, 6.5vw, 2.5rem);
+}
+.slide--welcome .welcome-title {
+  font-size: clamp(2.5rem, 10vw, 3.25rem);
+  color: var(--primary-container);
+}
+.slide--welcome .avatar-default {
+  width: 12rem;
+  height: 12rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid rgba(255, 189, 73, 0.25);
+  box-shadow: 0 0 60px 10px rgba(229, 160, 13, 0.15);
+}
 .slide--welcome .slide-bg {
   background: radial-gradient(circle at 50% 38%, #3d2b08 0%, #1f1508 32%, #131313 72%);
 }
@@ -108,7 +123,7 @@
 .slide--watch-time .watch-label {
   font-family: var(--font-body);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -290,8 +305,8 @@
 .slide--movies-vs-tv .mvt-label {
   display: block;
   font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -300,8 +315,8 @@
 }
 .slide--movies-vs-tv .mvt-title {
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 5vw, 1.75rem);
-  font-weight: 700;
+  font-size: clamp(2.5rem, 5vw, 1.75rem);
+  font-weight: 800;
   line-height: 1.2;
   color: var(--on-surface);
 }
@@ -499,8 +514,8 @@
 .slide--top-movies .slide-title,
 .slide--top-shows .slide-title {
   font-family: var(--font-display);
-  font-size: clamp(1.5rem, 5vw, 1.75rem);
-  font-weight: 700;
+  font-size: clamp(1.875rem, 6vw, 2.25rem);
+  font-weight: 800;
   line-height: 1.15;
   color: #fff;
   max-width: 360px;
@@ -581,7 +596,16 @@
   letter-spacing: 0.14em;
 }
 .slide--series-depth .series-depth-header .headline-lg {
-  font-size: clamp(1.875rem, 6.5vw, 2.5rem);
+  font-size: clamp(2.125rem, 7vw, 2.75rem);
+}
+.slide--series-depth .stair-step .headline-lg {
+  font-size: clamp(2.25rem, 9vw, 3rem);
+}
+.slide--series-depth .stair-step .display-lg {
+  font-size: clamp(2.75rem, 11vw, 3.75rem);
+}
+.slide--series-depth .stair-step .display-xl {
+  font-size: clamp(3.25rem, 13vw, 4.5rem);
 }
 .slide--series-depth .staircase {
   width: 100%;
@@ -598,7 +622,12 @@
   text-align: center;
   position: relative;
   width: 100%;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 189, 73, 0.22);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 20px rgba(255, 189, 73, 0.06);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 @keyframes stair-float-1 {
   0%, 100% { transform: translateX(0.75rem) rotate(-1deg) translateY(0); }
@@ -848,11 +877,27 @@
 .slide--when-you-watch .when-clock__hand--hour {
   height: 1rem;
   background: var(--primary);
+  transform: rotate(var(--start-angle, 0deg));
+  animation: when-clock-hour-spin 8s linear infinite;
 }
 .slide--when-you-watch .when-clock__hand--minute {
   height: 0.75rem;
   background: rgba(255, 255, 255, 0.4);
-  transform: rotate(0deg);
+  animation: when-clock-minute-spin 24s linear infinite;
+}
+@keyframes when-clock-hour-spin {
+  from { transform: rotate(var(--start-angle, 0deg)); }
+  to { transform: rotate(calc(var(--start-angle, 0deg) + 360deg)); }
+}
+@keyframes when-clock-minute-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide--when-you-watch .when-clock__hand--hour,
+  .slide--when-you-watch .when-clock__hand--minute {
+    animation: none;
+  }
 }
 .slide--when-you-watch .when-clock__center {
   width: 4px;
@@ -961,6 +1006,7 @@
   width: 100%;
   max-width: 360px;
 }
+.slide--longest-streak .device-title,
 .slide--favorite-device .device-title {
   font-family: var(--font-display);
   font-size: clamp(2.5rem, 10vw, 3.5rem);
@@ -1121,6 +1167,11 @@
   width: 100%;
   max-width: 360px;
   margin-bottom: 1.5rem;
+}
+.slide--movie-genres .genre-header .label-md,
+.slide--show-genres .genre-header .label-md {
+  font-size: clamp(0.875rem, 3.5vw, 1rem);
+  letter-spacing: 0.22em;
 }
 .slide--movie-genres .genre-title,
 .slide--show-genres .genre-title {
@@ -1537,12 +1588,36 @@
 
 /* 14 Server vs you */
 .slide--server-vs-you .slide-bg {
-  background:
-    radial-gradient(circle at 20% 30%, #432c00 0%, #131313 70%),
-    radial-gradient(circle at 80% 70%, #003351 0%, #131313 70%);
+  background: #131313;
 }
 .slide--server-vs-you .slide-bg--overlay {
-  display: none;
+  background:
+    radial-gradient(at 0% 0%, #2a1a00 0px, transparent 50%),
+    radial-gradient(at 100% 0%, #1a1a1a 0px, transparent 50%),
+    radial-gradient(at 100% 100%, #3b2a00 0px, transparent 50%),
+    radial-gradient(at 0% 100%, #131313 0px, transparent 50%);
+  animation: mesh-shift 60s ease infinite;
+}
+.slide--server-vs-you .poster-stack--server-vs {
+  position: absolute;
+  top: 10%;
+  left: -10%;
+  width: 120%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  transform: rotate(-10deg);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.4;
+  filter: blur(10px) brightness(0.4);
+}
+.slide--server-vs-you .poster-stack--server-vs img {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: 8px;
 }
 .slide--server-vs-you .top-shows-glow {
   position: absolute;
@@ -1749,14 +1824,22 @@
   overflow: hidden;
 }
 @keyframes tg-send-float {
-  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.15; }
-  50% { transform: translateY(-20px) rotate(10deg); opacity: 0.35; }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+@keyframes tg-send-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.slide--telegram-requests .tg-deco__icon-wrap {
+  position: absolute;
+  animation: tg-send-float 6s ease-in-out infinite;
 }
 .slide--telegram-requests .tg-deco__icon {
-  position: absolute;
+  display: block;
   font-size: clamp(4rem, 18vw, 6rem);
   color: var(--tertiary);
-  animation: tg-send-float 6s ease-in-out infinite;
+  animation: tg-send-spin 10s linear infinite;
 }
 .slide--telegram-requests .tg-layout {
   position: relative;
@@ -1901,10 +1984,12 @@
   overflow: hidden;
 }
 .slide--telegram-requests .tg-completion__fill {
+  width: 0%;
   height: 100%;
   border-radius: 999px;
   background: var(--primary);
   box-shadow: 0 0 15px rgba(255, 189, 73, 0.5);
+  transition: width 1.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .slide--telegram-requests .tg-completion__note {
   margin-top: 1rem;
@@ -1925,6 +2010,28 @@
 }
 
 /* 16 Persona (kroon) */
+.slide--persona .persona-confetti {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  overflow: hidden;
+}
+.slide--persona .persona-confetti__piece {
+  position: absolute;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+@keyframes persona-confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift, 0px), 110vh, 0) rotate(720deg);
+  }
+}
 .slide--persona .slide-bg {
   background: radial-gradient(circle at top right, #2d004b 0%, #131313 100%);
 }
@@ -2144,6 +2251,7 @@
   line-height: 1.2;
   color: #fff;
   margin: 0;
+  text-transform: capitalize;
 }
 .slide--summary .bento-card__value--md {
   font-size: 20px;

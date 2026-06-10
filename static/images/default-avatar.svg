@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Default avatar">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a2233"/>
+      <stop offset="100%" stop-color="#0e0e0e"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2a4a6b"/>
+      <stop offset="100%" stop-color="#131f2e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#ffbd49" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ffbd49" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="96" fill="url(#glow)"/>
+  <circle cx="100" cy="100" r="96" fill="none" stroke="#ffbd49" stroke-width="3" opacity="0.25"/>
+  <!-- TV body -->
+  <rect x="48" y="72" width="104" height="78" rx="14" fill="#2a2a2a" stroke="#ffbd49" stroke-width="3"/>
+  <rect x="58" y="82" width="84" height="54" rx="8" fill="url(#screen)"/>
+  <!-- Cute face on screen -->
+  <circle cx="82" cy="106" r="6" fill="#ffbd49"/>
+  <circle cx="118" cy="106" r="6" fill="#ffbd49"/>
+  <path d="M86 122 Q100 132 114 122" fill="none" stroke="#96ceff" stroke-width="4" stroke-linecap="round"/>
+  <!-- Antenna -->
+  <path d="M78 72 L68 48" stroke="#ffbd49" stroke-width="3" stroke-linecap="round"/>
+  <path d="M122 72 L132 48" stroke="#ffbd49" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="68" cy="46" r="4" fill="#ffbd49"/>
+  <circle cx="132" cy="46" r="4" fill="#ffbd49"/>
+  <!-- Stand -->
+  <path d="M88 150 L100 162 L112 150 Z" fill="#353535"/>
+  <rect x="74" y="158" width="52" height="8" rx="4" fill="#2a2a2a" stroke="#514534" stroke-width="2"/>
+  <!-- Remote in hand -->
+  <rect x="138" y="128" width="22" height="34" rx="6" fill="#353535" stroke="#96ceff" stroke-width="2"/>
+  <circle cx="149" cy="138" r="3" fill="#ffbd49"/>
+  <rect x="144" y="146" width="10" height="4" rx="2" fill="#96ceff" opacity="0.7"/>
+  <rect x="144" y="153" width="10" height="4" rx="2" fill="#96ceff" opacity="0.5"/>
+</svg>

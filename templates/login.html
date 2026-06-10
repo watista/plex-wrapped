@@ -1,19 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Plex Wrapped</title>
+  <meta name="theme-color" content="#131313">
+  <title>Inloggen — Plex Wrapped</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/wrapped.css">
+  <link rel="stylesheet" href="/static/css/login.css">
 </head>
 <body class="login-page">
-  <main class="login-card">
-    <h1>Plex Wrapped</h1>
-    <p class="subtitle">Your year in streaming, personalized.</p>
-    {% if error %}
-    <p class="error">{{ error }}</p>
-    {% endif %}
-    <a href="/auth/start" class="btn-primary">Sign in with Plex</a>
-  </main>
+  <div class="login-bg" aria-hidden="true">
+    <div class="login-bg__base"></div>
+    <div class="login-bg__mesh"></div>
+    <div class="login-bg__posters">
+      <img src="/static/designs/top_movies_bg_1.png" alt="">
+      <img src="/static/designs/top_movies_bg_2.png" alt="">
+      <img src="/static/designs/top_movies_bg_3.png" alt="">
+      <img src="/static/designs/top_shows_bg_4.png" alt="">
+      <img src="/static/designs/top_shows_bg_5.png" alt="">
+      <img src="/static/designs/top_shows_bg_6.png" alt="">
+    </div>
+    <div class="login-bg__glow"></div>
+    <div class="login-bg__icons">
+      <span class="material-symbols-outlined login-bg__icon login-bg__icon--1">movie</span>
+      <span class="material-symbols-outlined login-bg__icon login-bg__icon--2">live_tv</span>
+      <span class="material-symbols-outlined login-bg__icon login-bg__icon--3">play_circle</span>
+      <span class="material-symbols-outlined login-bg__icon login-bg__icon--4">theaters</span>
+    </div>
+  </div>
+
+  <div class="login-shell">
+    <header class="login-brand">
+      <img class="login-brand__logo" src="/static/images/plextv-tile.svg" alt="" aria-hidden="true">
+      <p class="login-brand__title">
+        <span class="login-brand__muted">Ple</span><span class="login-brand__accent">x</span><span class="login-brand__muted"> </span><span class="login-brand__muted">Wra</span><span class="login-brand__accent">pp</span><span class="login-brand__muted">ed</span>
+      </p>
+    </header>
+
+    <main class="login-card">
+      <p class="login-eyebrow">Welkom terug</p>
+      <h1 class="login-card__title">Jouw jaar in <span>streaming</span></h1>
+      <p class="login-subtitle">Ontdek je persoonlijke Wrapped — van kijktijd tot topfilms en jouw kroon.</p>
+
+      <ul class="login-features">
+        <li class="login-feature">
+          <span class="material-symbols-outlined login-feature__icon">schedule</span>
+          <span class="login-feature__label">Kijktijd</span>
+        </li>
+        <li class="login-feature">
+          <span class="material-symbols-outlined login-feature__icon">star</span>
+          <span class="login-feature__label">Toplijsten</span>
+        </li>
+        <li class="login-feature">
+          <span class="material-symbols-outlined login-feature__icon">workspace_premium</span>
+          <span class="login-feature__label">Jouw persona</span>
+        </li>
+      </ul>
+
+      {% if error %}
+      <div class="login-error" role="alert">
+        <span class="material-symbols-outlined">error</span>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <a href="/auth/start" class="login-btn">
+        <img class="login-btn__logo" src="/static/images/plextv-tile.svg" alt="" aria-hidden="true">
+        Inloggen met Plex
+      </a>
+    </main>
+
+    <p class="login-footnote">Veilig inloggen via Plex. We slaan geen wachtwoord op.</p>
+  </div>
 </body>
 </html>
