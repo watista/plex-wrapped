@@ -1,0 +1,91 @@
+{
+  "year": 2025,
+  "user_id": 8,
+  "display_name": "Halve kijker (test)",
+  "username": "halfwatch_test",
+  "avatar_url": null,
+
+  "total_watch_seconds": 540000,
+  "watch_hours": 150,
+  "watch_days": 7,
+  "total_plays": 320,
+  "movie_plays": 180,
+  "tv_plays": 140,
+
+  "top_movies": [
+    {"title": "Barbie", "thumb": null, "plays": 3, "duration_seconds": 16200},
+    {"title": "Top Gun: Maverick", "thumb": null, "plays": 2, "duration_seconds": 10800},
+    {"title": "Everything Everywhere All at Once", "thumb": null, "plays": 2, "duration_seconds": 9000}
+  ],
+  "top_shows": [
+    {"title": "Wednesday", "thumb": null, "plays": 18, "duration_seconds": 54000},
+    {"title": "The Mandalorian", "thumb": null, "plays": 12, "duration_seconds": 36000}
+  ],
+  "unique_series": 6,
+  "unique_seasons": 11,
+  "unique_episodes": 48,
+
+  "busiest_month": "augustus",
+  "busiest_month_index": 8,
+  "busiest_month_daily_plays": [
+    1, 0, 2, 3, 0, 4, 0, 1, 2, 0,
+    3, 4, 0, 1, 0, 2, 3, 0, 4, 1,
+    0, 2, 3, 0, 1, 4, 0, 2, 3, 0, 1
+  ],
+  "busiest_month_first_weekday": 3,
+  "plays_by_weekday": [32, 38, 41, 45, 52, 68, 44],
+  "peak_day": "zaterdag",
+  "peak_hour": 15,
+  "favorite_device": "Chrome",
+  "favorite_device_watch_percent": 48,
+  "longest_streak_days": 4,
+  "longest_streak_start": "2025-08-02",
+  "longest_streak_end": "2025-08-05",
+
+  "top_movie_genres": [
+    {"name": "Comedy", "plays": 42},
+    {"name": "Action", "plays": 36},
+    {"name": "Adventure", "plays": 28}
+  ],
+  "top_show_genres": [
+    {"name": "Comedy", "plays": 38},
+    {"name": "Fantasy", "plays": 24},
+    {"name": "Family", "plays": 18}
+  ],
+
+  "server": {
+    "rank": 6,
+    "server_name": "Thuis-Server",
+    "server_top_show": "Wednesday",
+    "server_top_show_thumb": null,
+    "more_active_than_percent": 51,
+    "rank_context": [
+      {"rank": 5, "watch_hours": 198, "is_you": false, "position_label": "Eén plek hoger"},
+      {"rank": 6, "watch_hours": 150, "is_you": true, "position_label": "Jij"},
+      {"rank": 7, "watch_hours": 132, "is_you": false, "position_label": "Eén plek lager"}
+    ]
+  },
+  "user_comparison_show": "Wednesday",
+  "user_comparison_show_thumb": null,
+  "user_comparison_reason": "most_played",
+  "comparison_same_show": true,
+  "comparison_headline_accent": null,
+  "comparison_caption": "Iedereen op de server draaide Wednesday — jij inclusief.",
+
+  "telegram": {
+    "film_requests": 22,
+    "serie_requests": 15,
+    "total_requests": 37,
+    "movies_requested": 22,
+    "movies_watched": 4,
+    "series_requested": 15,
+    "series_watched": 3,
+    "login_count": 18
+  },
+
+  "persona": "De Voltooier",
+  "persona_tagline": "Je wilt alles af — maar de lijst groeit sneller.",
+  "persona_id": "completionist",
+  "has_watch_history": true,
+  "has_telegram_activity": true
+}

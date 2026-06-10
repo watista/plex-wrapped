@@ -670,7 +670,7 @@
     crime: "policy",
     documentary: "menu_book",
     drama: "theater_comedy",
-    family: "family_rest",
+    family: "family_restroom",
     fantasy: "auto_awesome",
     history: "history_edu",
     horror: "skull",
@@ -720,8 +720,30 @@
     if (key.includes("anim")) return "animation";
     if (key.includes("war") || key.includes("oorlog")) return "military_tech";
     if (key.includes("music") || key.includes("muziek")) return "music_note";
-    if (key.includes("family") || key.includes("familie")) return "family_rest";
+    if (key.includes("family") || key.includes("familie")) return "family_restroom";
     return "movie";
+  }
+
+  function resolveTopFavoriteGenre(d) {
+    const merged = new Map();
+    for (const genre of [...(d.top_movie_genres || []), ...(d.top_show_genres || [])]) {
+      const name = (genre?.name || "").trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      const plays = Number(genre.plays) || 0;
+      const existing = merged.get(key);
+      if (existing) {
+        existing.plays += plays;
+      } else {
+        merged.set(key, { name, plays });
+      }
+    }
+
+    let top = null;
+    for (const entry of merged.values()) {
+      if (!top || entry.plays > top.plays) top = entry;
+    }
+    return top;
   }
 
   function genreToneClass(rankIndex) {
@@ -1754,11 +1776,12 @@
         ? tg.total_requests ?? (tg.film_requests || 0) + (tg.serie_requests || 0)
         : 0;
 
-      let bento = `<div class="summary-header">
-        <p class="summary-eyebrow">Jouw jaar in review</p>
-        <h2 class="summary-title">${year} Samenvatting</h2>
-      </div>
-      <div class="bento-grid">`;
+      let bento = `<div class="summary-export">
+        <div class="summary-header">
+          <p class="summary-eyebrow">Jouw jaar in review</p>
+          <h2 class="summary-title">${year} Samenvatting</h2>
+        </div>
+        <div class="bento-grid">`;
 
       if (d.has_watch_history) {
         bento += `<div class="glass-card bento-card">
@@ -1805,6 +1828,16 @@
           <p class="bento-card__label">Telegram-aanvragen</p>
           <p class="bento-card__value">${totalReq}</p>
         </div>`;
+      } else {
+        const topGenre = resolveTopFavoriteGenre(d);
+        if (topGenre) {
+          const icon = genreIcon(topGenre.name);
+          bento += `<div class="glass-card bento-card">
+            <span class="material-symbols-outlined bento-card__icon nav-icon-fill">${icon}</span>
+            <p class="bento-card__label">Favoriete genre</p>
+            <p class="bento-card__value">${escapeHtml(topGenre.name)}</p>
+          </div>`;
+        }
       }
 
       bento += `<div class="glass-card bento-span-2 bento-persona">
@@ -1816,16 +1849,15 @@
       </div>`;
 
       bento += `</div>
+        </div>
         <div class="share-actions">
           <button type="button" class="share-btn" id="btnShareSummary">
             <span class="material-symbols-outlined" style="font-size:20px">share</span>
-            Deel je jaar
+            <span class="share-btn__label">Deel je jaar</span>
           </button>
-          <div class="share-secondary" aria-hidden="true">
+          <button type="button" class="share-icon-btn" id="btnDownloadSummary" aria-label="Opslaan als afbeelding">
             <span class="material-symbols-outlined">download</span>
-            <span class="material-symbols-outlined">bookmark</span>
-            <span class="material-symbols-outlined">favorite</span>
-          </div>
+          </button>
         </div>`;
 
       slides.push(createSlide(slideMain(bento, "summary"), "summary"));
@@ -1853,23 +1885,142 @@
     return carousel?.getIndex() ?? 0;
   }
 
-  async function shareWrapped() {
-    const url = window.location.href;
-    const title = `Plex Wrapped ${document.body.dataset.year || ""}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, url });
-      } catch (e) {
-        if (e.name !== "AbortError") console.warn(e);
-      }
-    } else if (navigator.clipboard) {
-      await navigator.clipboard.writeText(url);
-      alert("Link gekopieerd naar klembord.");
+  function summaryYear() {
+    return document.body.dataset.year || "wrapped";
+  }
+
+  function getSummarySlide() {
+    return slidesEl.querySelector(".slide--summary");
+  }
+
+  async function waitForSummaryImages(slide) {
+    const images = slide.querySelectorAll("img");
+    await Promise.all(
+      Array.from(images).map(
+        (img) =>
+          new Promise((resolve) => {
+            if (img.complete) {
+              resolve();
+              return;
+            }
+            img.addEventListener("load", resolve, { once: true });
+            img.addEventListener("error", resolve, { once: true });
+          })
+      )
+    );
+  }
+
+  async function captureSummaryImage() {
+    const slide = getSummarySlide();
+    if (!slide) throw new Error("Summary slide not found");
+    if (typeof html2canvas !== "function") {
+      throw new Error("html2canvas not loaded");
     }
+
+    const shareActions = slide.querySelector(".share-actions");
+    const prevDisplay = shareActions?.style.display;
+    if (shareActions) shareActions.style.display = "none";
+
+    try {
+      await waitForSummaryImages(slide);
+      await document.fonts?.ready;
+
+      const scale = Math.max(2, Math.min(3, 1080 / Math.max(slide.clientWidth, 1)));
+      const canvas = await html2canvas(slide, {
+        scale,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: "#131313",
+        logging: false,
+        onclone: (doc) => {
+          const cloneSlide = doc.querySelector(".slide--summary");
+          const cloneActions = cloneSlide?.querySelector(".share-actions");
+          if (cloneActions) cloneActions.style.display = "none";
+        },
+      });
+
+      return await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error("Could not create image"))),
+          "image/png",
+          0.95
+        );
+      });
+    } finally {
+      if (shareActions) shareActions.style.display = prevDisplay || "";
+    }
+  }
+
+  function downloadSummaryBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function withSummaryCapture(button, action) {
+    if (!button || button.disabled) return;
+    const label = button.querySelector(".share-btn__label");
+    const prevLabel = label?.textContent;
+    button.disabled = true;
+    button.classList.add("is-busy");
+    if (label) label.textContent = "Bezig…";
+
+    try {
+      const blob = await captureSummaryImage();
+      await action(blob);
+    } catch (err) {
+      console.error(err);
+      alert("Kon de afbeelding niet maken. Probeer het opnieuw.");
+    } finally {
+      button.disabled = false;
+      button.classList.remove("is-busy");
+      if (label && prevLabel) label.textContent = prevLabel;
+    }
+  }
+
+  async function downloadSummaryImage(button) {
+    window.WrappedAnalytics?.trackButtonClick("download");
+    await withSummaryCapture(button, async (blob) => {
+      window.WrappedAnalytics?.track("summary_image_downloaded", { button: "download" });
+      downloadSummaryBlob(blob, `plex-wrapped-${summaryYear()}.png`);
+    });
+  }
+
+  async function shareSummaryImage(button) {
+    window.WrappedAnalytics?.trackButtonClick("share");
+    await withSummaryCapture(button, async (blob) => {
+      const year = summaryYear();
+      const filename = `plex-wrapped-${year}.png`;
+      const file = new File([blob], filename, { type: "image/png" });
+
+      if (navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: `Plex Wrapped ${year}`,
+          });
+          window.WrappedAnalytics?.track("summary_image_shared", { button: "share" });
+          return;
+        } catch (err) {
+          if (err.name === "AbortError") return;
+          console.warn(err);
+        }
+      }
+
+      window.WrappedAnalytics?.track("summary_image_shared", {
+        button: "share",
+        metadata: { fallback: "download" },
+      });
+      downloadSummaryBlob(blob, filename);
+    });
   }
 
   async function init() {
     btnClose?.addEventListener("click", () => {
+      window.WrappedAnalytics?.track("logout_click", { button: "logout" });
       window.location.href = "/auth/logout";
     });
 
@@ -1892,6 +2043,7 @@
       }
       const data = await res.json();
       const slides = buildSlides(data);
+      window.WrappedAnalytics?.trackWrappedLoaded(slides.length, data.persona);
 
       setupProgress(slides.length);
       carousel = createStoryCarousel({
@@ -1899,6 +2051,7 @@
         onChange: (index, slide) => {
           updateProgress(index);
           if (slide?.classList.contains("slide--summary")) ensureSummaryDots();
+          window.WrappedAnalytics?.trackSlideView(index, slide);
         },
       });
       carousel.mount(slides);
@@ -1935,7 +2088,11 @@
 
       document.getElementById("btnShareSummary")?.addEventListener("click", (e) => {
         e.stopPropagation();
-        shareWrapped();
+        shareSummaryImage(e.currentTarget);
+      });
+      document.getElementById("btnDownloadSummary")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        downloadSummaryImage(e.currentTarget);
       });
 
     } catch (err) {

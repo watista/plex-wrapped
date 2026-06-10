@@ -1,0 +1,86 @@
+{
+  "year": 2025,
+  "user_id": 7,
+  "display_name": "Lichte kijker (test)",
+  "username": "light_test",
+  "avatar_url": null,
+
+  "total_watch_seconds": 72000,
+  "watch_hours": 20,
+  "watch_days": 1,
+  "total_plays": 24,
+  "movie_plays": 14,
+  "tv_plays": 10,
+
+  "top_movies": [
+    {"title": "Paddington 2", "thumb": null, "plays": 2, "duration_seconds": 7200},
+    {"title": "Knives Out", "thumb": null, "plays": 1, "duration_seconds": 5400}
+  ],
+  "top_shows": [
+    {"title": "Taskmaster", "thumb": null, "plays": 6, "duration_seconds": 10800}
+  ],
+  "unique_series": 2,
+  "unique_seasons": 3,
+  "unique_episodes": 8,
+
+  "busiest_month": "april",
+  "busiest_month_index": 4,
+  "busiest_month_daily_plays": [
+    0, 1, 0, 2, 0, 0, 1, 0, 3, 0,
+    0, 1, 0, 0, 2, 0, 1, 0, 0, 1,
+    0, 0, 2, 0, 1, 0, 0, 1, 0, 0
+  ],
+  "busiest_month_first_weekday": 1,
+  "plays_by_weekday": [2, 3, 4, 3, 5, 4, 3],
+  "peak_day": "vrijdag",
+  "peak_hour": 19,
+  "favorite_device": "iPad",
+  "favorite_device_watch_percent": 55,
+  "longest_streak_days": 2,
+  "longest_streak_start": "2025-04-10",
+  "longest_streak_end": "2025-04-11",
+
+  "top_movie_genres": [
+    {"name": "Comedy", "plays": 8},
+    {"name": "Family", "plays": 4}
+  ],
+  "top_show_genres": [
+    {"name": "Comedy", "plays": 6},
+    {"name": "Reality", "plays": 4}
+  ],
+
+  "server": {
+    "rank": 12,
+    "server_name": "Thuis-Server",
+    "server_top_show": "Taskmaster",
+    "server_top_show_thumb": null,
+    "more_active_than_percent": 18,
+    "rank_context": [
+      {"rank": 11, "watch_hours": 28, "is_you": false, "position_label": "Eén plek hoger"},
+      {"rank": 12, "watch_hours": 20, "is_you": true, "position_label": "Jij"}
+    ]
+  },
+  "user_comparison_show": "Taskmaster",
+  "user_comparison_show_thumb": null,
+  "user_comparison_reason": "most_played",
+  "comparison_same_show": true,
+  "comparison_headline_accent": null,
+  "comparison_caption": "Iedereen op de server draaide Taskmaster — jij inclusief.",
+
+  "telegram": {
+    "film_requests": 0,
+    "serie_requests": 0,
+    "total_requests": 0,
+    "movies_requested": 0,
+    "movies_watched": 0,
+    "series_requested": 0,
+    "series_watched": 0,
+    "login_count": 0
+  },
+
+  "persona": "Toegewijde kijker",
+  "persona_tagline": "Stabiel en trouw.",
+  "persona_id": "dedicated_viewer",
+  "has_watch_history": true,
+  "has_telegram_activity": false
+}

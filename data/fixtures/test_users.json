@@ -3,12 +3,56 @@
     {
       "plex_user_id": 1,
       "display_name": "Alex (test)",
-      "fixture": "wrapped_test.json"
+      "fixture": "wrapped_test.json",
+      "description": "Full profile — films + series, telegram, server rank"
     },
     {
       "plex_user_id": 14983182,
       "display_name": "Wouter",
-      "fixture": "wrapped_test_user2.json"
+      "fixture": "wrapped_test_user2.json",
+      "description": "Film-heavy mixed viewer with posters"
+    },
+    {
+      "plex_user_id": 3,
+      "display_name": "Filmfan (test)",
+      "fixture": "wrapped_test_films_only.json",
+      "description": "Only movies watched — no series, no telegram"
+    },
+    {
+      "plex_user_id": 4,
+      "display_name": "Binger (test)",
+      "fixture": "wrapped_test_series_only.json",
+      "description": "Only series watched — no movies, no telegram"
+    },
+    {
+      "plex_user_id": 5,
+      "display_name": "Aanvrager (test)",
+      "fixture": "wrapped_test_telegram_only.json",
+      "description": "No watch history — telegram bot activity only"
+    },
+    {
+      "plex_user_id": 6,
+      "display_name": "Nieuweling (test)",
+      "fixture": "wrapped_test_no_activity.json",
+      "description": "No watch history and no telegram — empty wrapped"
+    },
+    {
+      "plex_user_id": 7,
+      "display_name": "Lichte kijker (test)",
+      "fixture": "wrapped_test_light_viewer.json",
+      "description": "Low watch time — few movies and one show"
+    },
+    {
+      "plex_user_id": 8,
+      "display_name": "Halve kijker (test)",
+      "fixture": "wrapped_test_mixed_low_completion.json",
+      "description": "Mixed films + series with low telegram completion rate"
+    },
+    {
+      "plex_user_id": 9,
+      "display_name": "Geen Telegram (test)",
+      "fixture": "wrapped_test_no_telegram.json",
+      "description": "Full watch profile — films + series, no telegram bot usage"
     }
   ]
 }

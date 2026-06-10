@@ -1,0 +1,88 @@
+{
+  "year": 2025,
+  "user_id": 3,
+  "display_name": "Filmfan (test)",
+  "username": "filmfan_test",
+  "avatar_url": null,
+
+  "total_watch_seconds": 864000,
+  "watch_hours": 240,
+  "watch_days": 10,
+  "total_plays": 186,
+  "movie_plays": 186,
+  "tv_plays": 0,
+
+  "top_movies": [
+    {"title": "Interstellar", "thumb": null, "plays": 6, "duration_seconds": 36000},
+    {"title": "Blade Runner 2049", "thumb": null, "plays": 4, "duration_seconds": 28800},
+    {"title": "The Grand Budapest Hotel", "thumb": null, "plays": 3, "duration_seconds": 16200},
+    {"title": "Mad Max: Fury Road", "thumb": null, "plays": 3, "duration_seconds": 14400},
+    {"title": "Arrival", "thumb": null, "plays": 2, "duration_seconds": 10800}
+  ],
+  "top_shows": [],
+  "unique_series": 0,
+  "unique_seasons": 0,
+  "unique_episodes": 0,
+
+  "busiest_month": "juli",
+  "busiest_month_index": 7,
+  "busiest_month_daily_plays": [
+    0, 2, 4, 0, 3, 5, 0, 1, 6, 0,
+    4, 7, 0, 2, 5, 8, 0, 3, 4, 0,
+    6, 0, 2, 5, 7, 0, 4, 3, 0, 5, 2
+  ],
+  "busiest_month_first_weekday": 1,
+  "plays_by_weekday": [18, 22, 24, 28, 35, 42, 17],
+  "peak_day": "vrijdag",
+  "peak_hour": 21,
+  "favorite_device": "LG webOS TV",
+  "favorite_device_watch_percent": 74,
+  "longest_streak_days": 5,
+  "longest_streak_start": "2025-07-08",
+  "longest_streak_end": "2025-07-12",
+
+  "top_movie_genres": [
+    {"name": "Science Fiction", "plays": 62},
+    {"name": "Drama", "plays": 48},
+    {"name": "Action", "plays": 41},
+    {"name": "Comedy", "plays": 19},
+    {"name": "Thriller", "plays": 16}
+  ],
+  "top_show_genres": [],
+
+  "server": {
+    "rank": 8,
+    "server_name": "Thuis-Server",
+    "server_top_show": "The Office",
+    "server_top_show_thumb": null,
+    "more_active_than_percent": 42,
+    "rank_context": [
+      {"rank": 7, "watch_hours": 312, "is_you": false, "position_label": "Eén plek hoger"},
+      {"rank": 8, "watch_hours": 240, "is_you": true, "position_label": "Jij"},
+      {"rank": 9, "watch_hours": 198, "is_you": false, "position_label": "Eén plek lager"}
+    ]
+  },
+  "user_comparison_show": "Interstellar",
+  "user_comparison_show_thumb": null,
+  "user_comparison_reason": "most_played",
+  "comparison_same_show": false,
+  "comparison_headline_accent": "eigenzinnige",
+  "comparison_caption": "Terwijl de server naar The Office keek, was Interstellar jouw nummer één.",
+
+  "telegram": {
+    "film_requests": 0,
+    "serie_requests": 0,
+    "total_requests": 0,
+    "movies_requested": 0,
+    "movies_watched": 0,
+    "series_requested": 0,
+    "series_watched": 0,
+    "login_count": 0
+  },
+
+  "persona": "Filmliefhebber",
+  "persona_tagline": "Films zijn jouw hoofdprogramma.",
+  "persona_id": "film_buff",
+  "has_watch_history": true,
+  "has_telegram_activity": false
+}

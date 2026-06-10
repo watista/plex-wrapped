@@ -12,6 +12,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from app.activity.schemas import ActivityEventBody
+from app.activity.service import ActivityService
 from app.admin.links import ShareLinkManager
 from app.auth.login_resolve import resolve_login_user_id
 from app.auth.plex_oauth import PlexOAuth, clear_session, get_session_user_id, set_session_user_id
@@ -19,6 +21,7 @@ from app.config import PROJECT_ROOT, Settings, get_settings
 from app.logging_setup import configure_logging
 from app.models.cache import WrappedCache
 from app.tautulli.client import TautulliClient, TautulliError
+from app.tautulli.devices import collect_unique_devices
 from app.models.schemas import WrappedPayload
 
 STATIC_DIR = PROJECT_ROOT / "static"
@@ -54,6 +57,7 @@ async def lifespan(app: FastAPI):
     app.state.cache = WrappedCache(settings, database_path=settings.active_database_path())
     app.state.plex_oauth = PlexOAuth(settings)
     app.state.share_links = ShareLinkManager(settings, app.state.cache)
+    app.state.activity = ActivityService(settings, app.state.cache)
     yield
     app.state.tautulli.close()
 
@@ -72,6 +76,17 @@ def require_user_id(request: Request) -> int:
     if user_id is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     return user_id
+
+
+def _wrapped_template_context(request: Request, *, year: int, user_id: int, share_mode: bool) -> dict[str, Any]:
+    settings: Settings = request.app.state.settings
+    return {
+        "request": request,
+        "year": year,
+        "user_id": user_id,
+        "share_mode": share_mode,
+        "google_analytics_id": (settings.google_analytics_id or "").strip(),
+    }
 
 
 class AdminLinkBody(BaseModel):
@@ -221,21 +236,31 @@ def auth_callback(
             {"request": request, "error": error},
         )
 
-    logger.info(
-        "Login success: session user_id=%s (plex_id=%s, test_mode=%s)",
-        user_id,
-        plex_user.get("id"),
-        settings.use_test_database,
+    plex_username = (plex_user.get("username") or plex_user.get("title") or "").strip()
+    activity: ActivityService = request.app.state.activity
+    activity.log_login(
+        request,
+        user_id=user_id,
+        username=plex_username or f"user_{user_id}",
+        login_method="login_portal",
+        year=settings.wrapped_year,
     )
+
     response = RedirectResponse("/wrapped", status_code=303)
-    set_session_user_id(response, user_id, settings)
+    set_session_user_id(response, user_id, settings, username=plex_username or None)
     response.delete_cookie("plex_pin_id")
     response.delete_cookie("plex_pin_code")
     return response
 
 
 @app.get("/auth/logout")
-def logout():
+def logout(request: Request):
+    settings: Settings = request.app.state.settings
+    user_id = get_session_user_id(request, settings)
+    if user_id is not None:
+        activity: ActivityService = request.app.state.activity
+        username = activity.resolve_username(request, user_id)
+        activity.logger.log(username, "logout", user_id=user_id, year=settings.wrapped_year)
     response = RedirectResponse("/")
     clear_session(response)
     return response
@@ -248,17 +273,29 @@ def share_wrapped(request: Request, token: str):
     if not result:
         raise HTTPException(404, "Invalid or expired link")
     user_id, year = result
+    settings: Settings = request.app.state.settings
+    activity: ActivityService = request.app.state.activity
+    cached = request.app.state.cache.get(user_id, year)
+    username = (
+        (cached or {}).get("username")
+        or (cached or {}).get("display_name")
+        or f"user_{user_id}"
+    )
+
+    activity.log_login(
+        request,
+        user_id=user_id,
+        username=username,
+        login_method="share_link",
+        year=year,
+    )
+
     response = templates.TemplateResponse(
         request,
         "wrapped.html",
-        {
-            "request": request,
-            "year": year,
-            "user_id": user_id,
-            "share_mode": True,
-        },
+        _wrapped_template_context(request, year=year, user_id=user_id, share_mode=True),
     )
-    set_session_user_id(response, user_id, request.app.state.settings)
+    set_session_user_id(response, user_id, settings, username=username)
     return response
 
 
@@ -271,12 +308,12 @@ def wrapped_page(request: Request):
     return templates.TemplateResponse(
         request,
         "wrapped.html",
-        {
-            "request": request,
-            "year": settings.wrapped_year,
-            "user_id": user_id,
-            "share_mode": False,
-        },
+        _wrapped_template_context(
+            request,
+            year=settings.wrapped_year,
+            user_id=user_id,
+            share_mode=False,
+        ),
     )
 
 
@@ -305,6 +342,37 @@ def api_wrapped(request: Request):
     return data
 
 
+@app.post("/api/activity")
+def api_activity(body: ActivityEventBody, request: Request):
+    settings: Settings = request.app.state.settings
+    user_id = get_session_user_id(request, settings)
+    if user_id is None:
+        raise HTTPException(401, "Not authenticated")
+
+    activity: ActivityService = request.app.state.activity
+    activity.record_client_event(request, user_id, body)
+    return {"ok": True}
+
+
+def _require_admin_secret(settings: Settings, x_admin_secret: str) -> None:
+    if not settings.admin_secret or x_admin_secret != settings.admin_secret:
+        raise HTTPException(403, "Forbidden")
+
+
+@app.get("/admin/devices")
+def admin_list_devices(
+    request: Request,
+    tautulli: TautulliClient = Depends(get_tautulli),
+    x_admin_secret: str = Header(..., alias="X-Admin-Secret"),
+):
+    settings: Settings = request.app.state.settings
+    _require_admin_secret(settings, x_admin_secret)
+    try:
+        return collect_unique_devices(tautulli)
+    except TautulliError as exc:
+        return JSONResponse({"status": "error", "message": str(exc)}, status_code=503)
+
+
 @app.post("/admin/links")
 def admin_create_link(
     body: AdminLinkBody,
@@ -312,8 +380,7 @@ def admin_create_link(
     x_admin_secret: str = Header(..., alias="X-Admin-Secret"),
 ):
     settings: Settings = request.app.state.settings
-    if not settings.admin_secret or x_admin_secret != settings.admin_secret:
-        raise HTTPException(403, "Forbidden")
+    _require_admin_secret(settings, x_admin_secret)
 
     share: ShareLinkManager = request.app.state.share_links
     url = share.create_link(body.plex_user_id, body.year, body.max_views)

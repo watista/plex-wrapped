@@ -1,0 +1,68 @@
+{
+  "year": 2025,
+  "user_id": 6,
+  "display_name": "Nieuweling (test)",
+  "username": "newbie_test",
+  "avatar_url": null,
+
+  "total_watch_seconds": 0,
+  "watch_hours": 0,
+  "watch_days": 0,
+  "total_plays": 0,
+  "movie_plays": 0,
+  "tv_plays": 0,
+
+  "top_movies": [],
+  "top_shows": [],
+  "unique_series": 0,
+  "unique_seasons": 0,
+  "unique_episodes": 0,
+
+  "busiest_month": null,
+  "busiest_month_index": null,
+  "busiest_month_daily_plays": [],
+  "busiest_month_first_weekday": 0,
+  "plays_by_weekday": [],
+  "peak_day": null,
+  "peak_hour": null,
+  "favorite_device": null,
+  "favorite_device_watch_percent": null,
+  "longest_streak_days": 0,
+  "longest_streak_start": null,
+  "longest_streak_end": null,
+
+  "top_movie_genres": [],
+  "top_show_genres": [],
+
+  "server": {
+    "rank": null,
+    "server_name": null,
+    "server_top_show": null,
+    "server_top_show_thumb": null,
+    "more_active_than_percent": null,
+    "rank_context": []
+  },
+  "user_comparison_show": null,
+  "user_comparison_show_thumb": null,
+  "user_comparison_reason": null,
+  "comparison_same_show": null,
+  "comparison_headline_accent": null,
+  "comparison_caption": null,
+
+  "telegram": {
+    "film_requests": 0,
+    "serie_requests": 0,
+    "total_requests": 0,
+    "movies_requested": 0,
+    "movies_watched": 0,
+    "series_requested": 0,
+    "series_watched": 0,
+    "login_count": 0
+  },
+
+  "persona": "Toegewijde kijker",
+  "persona_tagline": "Stabiel en trouw.",
+  "persona_id": "dedicated_viewer",
+  "has_watch_history": false,
+  "has_telegram_activity": false
+}

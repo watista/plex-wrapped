@@ -39,6 +39,11 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
 
+    telegram_bot_token: str = ""
+    telegram_channel_id: str = ""
+
+    google_analytics_id: str = "G-XZ4KKB4KXF"
+
     plex_server_url: str = ""
     plex_server_token: str = ""
 

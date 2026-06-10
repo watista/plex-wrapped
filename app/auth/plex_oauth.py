@@ -237,9 +237,18 @@ def _serializer(settings: Settings) -> URLSafeSerializer:
     return URLSafeSerializer(settings.secret_key, salt="plex-wrapped-session")
 
 
-def set_session_user_id(response: Response, user_id: int, settings: Settings | None = None) -> None:
+def set_session_user_id(
+    response: Response,
+    user_id: int,
+    settings: Settings | None = None,
+    *,
+    username: str | None = None,
+) -> None:
     settings = settings or get_settings()
-    token = _serializer(settings).dumps({"user_id": user_id})
+    payload: dict[str, Any] = {"user_id": user_id}
+    if username:
+        payload["username"] = username
+    token = _serializer(settings).dumps(payload)
     response.set_cookie(
         key="wrapped_session",
         value=token,
@@ -250,16 +259,38 @@ def set_session_user_id(response: Response, user_id: int, settings: Settings | N
     )
 
 
-def get_session_user_id(request: Request, settings: Settings | None = None) -> int | None:
+def _load_session(request: Request, settings: Settings | None = None) -> dict[str, Any] | None:
     settings = settings or get_settings()
     cookie = request.cookies.get("wrapped_session")
     if not cookie:
         return None
     try:
         data = _serializer(settings).loads(cookie)
-        return int(data.get("user_id"))
+        if not isinstance(data, dict):
+            return None
+        return data
     except (BadSignature, TypeError, ValueError):
         return None
+
+
+def get_session_user_id(request: Request, settings: Settings | None = None) -> int | None:
+    data = _load_session(request, settings)
+    if not data:
+        return None
+    try:
+        return int(data.get("user_id"))
+    except (TypeError, ValueError):
+        return None
+
+
+def get_session_username(request: Request, settings: Settings | None = None) -> str | None:
+    data = _load_session(request, settings)
+    if not data:
+        return None
+    username = data.get("username")
+    if isinstance(username, str) and username.strip():
+        return username.strip()
+    return None
 
 
 def clear_session(response: Response) -> None:

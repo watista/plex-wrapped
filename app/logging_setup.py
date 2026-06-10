@@ -15,3 +15,4 @@ def configure_logging(level: str = "INFO") -> None:
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
         stream=sys.stderr,
     )
+    logging.getLogger("plex.wrapped.activity").setLevel(log_level)

@@ -21,7 +21,7 @@
 
     const onPointerDown = (e) => {
       if (!e.isPrimary || !trackEl) return;
-      if (e.target.closest("button, a, .icon-btn, .share-btn, input, textarea, select, label")) return;
+      if (e.target.closest("button, a, .icon-btn, .share-btn, .share-icon-btn, input, textarea, select, label")) return;
 
       dragState = {
         pointerId: e.pointerId,
@@ -89,7 +89,7 @@
         suppressClick = false;
         return;
       }
-      if (e.target.closest("button, a, .icon-btn, .share-btn, input, textarea, select, label")) return;
+      if (e.target.closest("button, a, .icon-btn, .share-btn, .share-icon-btn, input, textarea, select, label")) return;
 
       const rect = root.getBoundingClientRect();
       const x = e.clientX - rect.left;

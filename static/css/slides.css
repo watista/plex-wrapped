@@ -2316,11 +2316,21 @@
   flex-shrink: 0;
   margin-left: auto;
 }
+.slide--summary .summary-export {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 .slide--summary .share-actions {
   width: 100%;
   max-width: none;
   margin-top: 0;
   padding-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
 }
 .slide--summary .share-btn {
   max-width: none;
@@ -2328,16 +2338,32 @@
   letter-spacing: 0.05em;
   color: #000;
 }
-.slide--summary .share-secondary {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  margin-top: 16px;
-  opacity: 0.6;
+.slide--summary .share-btn.is-busy,
+.slide--summary .share-icon-btn.is-busy {
+  opacity: 0.7;
+  pointer-events: none;
 }
-.slide--summary .share-secondary .material-symbols-outlined {
-  font-size: 24px;
+.slide--summary .share-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
   color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+.slide--summary .share-icon-btn .material-symbols-outlined {
+  font-size: 24px;
+}
+.slide--summary .share-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.slide--summary .share-icon-btn:active {
+  transform: scale(0.95);
 }
 
 /* Shared label tweaks */

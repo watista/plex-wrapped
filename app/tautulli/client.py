@@ -23,9 +23,14 @@ class TautulliClient:
     def _request(self, cmd: str, **params: Any) -> Any:
         url = f"{self.base_url}/api/v2"
         query = {"apikey": self.api_key, "cmd": cmd, **params}
-        response = self._client.get(url, params=query)
-        response.raise_for_status()
-        payload = response.json()
+        try:
+            response = self._client.get(url, params=query)
+            response.raise_for_status()
+            payload = response.json()
+        except httpx.HTTPError as exc:
+            raise TautulliError(f"Tautulli request failed: {exc}") from exc
+        except ValueError as exc:
+            raise TautulliError("Tautulli returned invalid JSON") from exc
         if payload.get("response", {}).get("result") != "success":
             message = payload.get("response", {}).get("message", "Unknown Tautulli error")
             raise TautulliError(message)

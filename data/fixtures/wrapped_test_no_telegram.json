@@ -1,0 +1,100 @@
+{
+  "year": 2025,
+  "user_id": 9,
+  "display_name": "Geen Telegram (test)",
+  "username": "no_telegram_test",
+  "avatar_url": null,
+
+  "total_watch_seconds": 1620000,
+  "watch_hours": 450,
+  "watch_days": 19,
+  "total_plays": 620,
+  "movie_plays": 245,
+  "tv_plays": 375,
+
+  "top_movies": [
+    {"title": "Parasite", "thumb": null, "plays": 4, "duration_seconds": 25200},
+    {"title": "Whiplash", "thumb": null, "plays": 3, "duration_seconds": 18900},
+    {"title": "La La Land", "thumb": null, "plays": 2, "duration_seconds": 10800},
+    {"title": "Get Out", "thumb": null, "plays": 2, "duration_seconds": 9000},
+    {"title": "The Social Network", "thumb": null, "plays": 2, "duration_seconds": 8400}
+  ],
+  "top_shows": [
+    {"title": "Parks and Recreation", "thumb": null, "plays": 48, "duration_seconds": 144000},
+    {"title": "The Good Place", "thumb": null, "plays": 32, "duration_seconds": 96000},
+    {"title": "Brooklyn Nine-Nine", "thumb": null, "plays": 28, "duration_seconds": 84000},
+    {"title": "Ted Lasso", "thumb": null, "plays": 18, "duration_seconds": 54000},
+    {"title": "Hacks", "thumb": null, "plays": 14, "duration_seconds": 42000}
+  ],
+  "unique_series": 22,
+  "unique_seasons": 58,
+  "unique_episodes": 286,
+
+  "busiest_month": "februari",
+  "busiest_month_index": 2,
+  "busiest_month_daily_plays": [
+    0, 3, 5, 7, 0, 4, 6, 8, 0, 2,
+    5, 7, 0, 3, 6, 9, 0, 4, 7, 10,
+    0, 3, 5, 8, 0, 4, 6, 9, 0, 2
+  ],
+  "busiest_month_first_weekday": 5,
+  "plays_by_weekday": [44, 58, 62, 71, 88, 142, 98],
+  "peak_day": "zaterdag",
+  "peak_hour": 20,
+  "favorite_device": "Samsung TV",
+  "favorite_device_watch_percent": 71,
+  "longest_streak_days": 9,
+  "longest_streak_start": "2025-02-14",
+  "longest_streak_end": "2025-02-22",
+
+  "top_movie_genres": [
+    {"name": "Drama", "plays": 58},
+    {"name": "Comedy", "plays": 42},
+    {"name": "Thriller", "plays": 31},
+    {"name": "Romance", "plays": 24},
+    {"name": "Crime", "plays": 18}
+  ],
+  "top_show_genres": [
+    {"name": "Comedy", "plays": 168},
+    {"name": "Drama", "plays": 92},
+    {"name": "Romance", "plays": 44},
+    {"name": "Crime", "plays": 36},
+    {"name": "Documentary", "plays": 12}
+  ],
+
+  "server": {
+    "rank": 4,
+    "server_name": "Thuis-Server",
+    "server_top_show": "Parks and Recreation",
+    "server_top_show_thumb": null,
+    "more_active_than_percent": 68,
+    "rank_context": [
+      {"rank": 3, "watch_hours": 512, "is_you": false, "position_label": "Eén plek hoger"},
+      {"rank": 4, "watch_hours": 450, "is_you": true, "position_label": "Jij"},
+      {"rank": 5, "watch_hours": 388, "is_you": false, "position_label": "Eén plek lager"}
+    ]
+  },
+  "user_comparison_show": "Parks and Recreation",
+  "user_comparison_show_thumb": null,
+  "user_comparison_reason": "most_played",
+  "comparison_same_show": true,
+  "comparison_headline_accent": null,
+  "comparison_caption": "Iedereen op de server draaide Parks and Recreation — jij inclusief.",
+
+  "telegram": {
+    "film_requests": 0,
+    "serie_requests": 0,
+    "total_requests": 0,
+    "movies_requested": 0,
+    "movies_watched": 0,
+    "series_requested": 0,
+    "series_watched": 0,
+    "login_count": 0
+  },
+
+  "persona": "Weekendstrijder",
+  "persona_tagline": "Vooral in het weekend ben je te vinden op de bank.",
+  "persona_id": "weekend_warrior",
+  "has_watch_history": true,
+  "has_telegram_activity": false
+}
