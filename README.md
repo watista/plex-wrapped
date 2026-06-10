@@ -4,7 +4,8 @@ A mobile-first, Spotify Wrapped–style year-in-review for your Plex server. Swi
 
 Built for self-hosted Plex setups that already use **Tautulli** for watch history and optionally a **Telegram bot** for film/series requests.
 
-**Full project plan:** [docs/PLAN.md](docs/PLAN.md)
+**Full project plan:** [docs/PLAN.md](docs/PLAN.md)  
+**Production deployment:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 ---
 
@@ -19,6 +20,7 @@ Built for self-hosted Plex setups that already use **Tautulli** for watch histor
 | **Optional — Telegram** | JSON export from your request bot + `config/user_mapping.json` to link Telegram IDs to Plex users |
 | **Optional — Docker** | Docker Compose provided; otherwise any host with Python 3.12 |
 | **Optional — posters** | `PLEX_SERVER_URL` + `PLEX_SERVER_TOKEN` for proxied poster images |
+| **Production web server** | Reverse proxy (Nginx/Caddy) + HTTPS; see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 
 **Python dependencies** (see `requirements.txt`): FastAPI, Uvicorn, httpx, Pydantic, Jinja2.
 
@@ -201,13 +203,34 @@ Dates use `DD-MM-YYYY HH:MM:SS`.
 
 ---
 
-## Docker
+## Running on a web server
+
+For production (HTTPS, reverse proxy, systemd, scheduled cache rebuilds), see **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
+
+Quick summary:
+
+1. Set `PUBLIC_URL` to your public `https://` URL (required for Plex OAuth and share links).
+2. Run Uvicorn on `127.0.0.1:8000` — do not expose it directly to the internet.
+3. Put **Nginx** or **Caddy** in front for TLS (example configs in `deploy/`).
+4. Run `compute_wrapped.py` after deploy and on a schedule (cron example in `deploy/`).
+
+Example files in [`deploy/`](deploy/):
+
+| File | Purpose |
+|------|---------|
+| `nginx.conf.example` | Reverse proxy to Uvicorn |
+| `plex-wrapped.service.example` | systemd service (no `--reload`) |
+| `compute-wrapped.cron.example` | Nightly cache rebuild |
+| `env.production.example` | Production `.env` starting point |
+
+### Docker
 
 ```bash
 docker compose up -d --build
+docker compose exec plex-wrapped python scripts/compute_wrapped.py --year 2025
 ```
 
-Mount your `.env`, `data/`, and `config/user_mapping.json` as in `docker-compose.yml`. Run `compute_wrapped.py` inside the container (or on the host against the shared `data/` volume) before users visit the site.
+Mount `.env`, `data/`, and `config/user_mapping.json` as in `docker-compose.yml`. Put a reverse proxy in front for HTTPS — details in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 

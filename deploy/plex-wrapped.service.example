@@ -1,0 +1,33 @@
+# systemd unit for Plex Wrapped (Uvicorn)
+#
+# Install:
+#   sudo cp deploy/plex-wrapped.service.example /etc/systemd/system/plex-wrapped.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now plex-wrapped
+#
+# Adjust paths if the project is not installed under /opt/plex-wrapped.
+
+[Unit]
+Description=Plex Wrapped (FastAPI / Uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=plexwrapped
+Group=plexwrapped
+WorkingDirectory=/opt/plex-wrapped
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/plex-wrapped/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+Restart=on-failure
+RestartSec=5
+
+# Hardening (optional — remove if it blocks reading .env or data/)
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/plex-wrapped/data
+ReadOnlyPaths=/opt/plex-wrapped/app /opt/plex-wrapped/templates /opt/plex-wrapped/static /opt/plex-wrapped/config
+
+[Install]
+WantedBy=multi-user.target

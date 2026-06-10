@@ -1,0 +1,15 @@
+# Cron job: rebuild Plex Wrapped cache
+#
+# Install:
+#   sudo cp deploy/compute-wrapped.cron.example /etc/cron.d/plex-wrapped-compute
+#
+# Runs daily at 03:15. Adjust schedule as needed.
+# Uses the production database (not USE_TEST_DATABASE).
+
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+
+15 3 * * * plexwrapped cd /opt/plex-wrapped && .venv/bin/python scripts/compute_wrapped.py --year 2025 >> /var/log/plex-wrapped-compute.log 2>&1
+
+# After the wrapped year changes, update --year (or rely on WRAPPED_YEAR in .env):
+# 15 3 * * * plexwrapped cd /opt/plex-wrapped && .venv/bin/python scripts/compute_wrapped.py >> /var/log/plex-wrapped-compute.log 2>&1
