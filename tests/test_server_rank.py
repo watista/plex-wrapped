@@ -1,4 +1,7 @@
-from app.wrapped.aggregator import _compute_server_stats
+from app.wrapped.aggregator import (
+    _compute_server_stats,
+    _ranked_users_from_server_history,
+)
 
 
 def _users_table(rows: list[dict], total: int | None = None) -> dict:
@@ -62,6 +65,43 @@ def test_compute_server_stats_top10_fallback():
     assert stats.rank == 2
     assert stats.more_active_than_percent == 33
     assert [entry.rank for entry in stats.rank_context] == [1, 2, 3]
+
+
+def test_ranked_users_from_server_history_aggregates_by_user():
+    ranked = _ranked_users_from_server_history(
+        [
+            {"user_id": 2, "friendly_name": "Bravo", "media_type": "movie", "duration": 1000},
+            {"user_id": 1, "friendly_name": "Alex", "media_type": "episode", "duration": 2000},
+            {"user_id": 1, "friendly_name": "Alex", "media_type": "movie", "duration": 500},
+            {"user_id": 2, "friendly_name": "Bravo", "media_type": "track", "duration": 9000},
+        ]
+    )
+
+    assert [row["user_id"] for row in ranked] == [1, 2]
+    assert ranked[0]["duration"] == 2500
+    assert ranked[1]["duration"] == 1000
+
+
+def test_compute_server_stats_year_ranked_uses_user_watch_seconds_for_you_row():
+    year_ranked = [
+        {"user_id": 10, "name": "Alpha", "username": "", "duration": 4_000_000},
+        {"user_id": 1, "name": "Alex", "username": "alex", "duration": 6_127_200},
+        {"user_id": 30, "name": "Charlie", "username": "", "duration": 2_000_000},
+    ]
+
+    stats = _compute_server_stats(
+        user_id=1,
+        display_name="Alex",
+        username="alex",
+        user_watch_seconds=993_600,
+        year_ranked=year_ranked,
+        total_users=12,
+    )
+
+    assert stats.rank == 2
+    you = next(entry for entry in stats.rank_context if entry.is_you)
+    assert you.watch_hours == 276
+    assert stats.rank_context[0].watch_hours == 1111
 
 
 def test_compute_server_stats_edge_rank_one():

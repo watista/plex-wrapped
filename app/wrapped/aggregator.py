@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 from calendar import monthrange
 from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
-from typing import Any
+from typing import Any, Literal
+
+logger = logging.getLogger(__name__)
 
 from app.config import Settings, get_settings
 from app.models.cache import WrappedCache
@@ -14,17 +17,19 @@ from app.telegram.loader import (
     count_unique_matched,
     load_telegram_data,
 )
+from app.wrapped.avatar import resolve_avatar_url
 from app.wrapped.locale import month_number_to_dutch, to_dutch_day, to_dutch_month, weekday_number_to_dutch
+from app.wrapped.posters import resolve_poster
 from app.wrapped.slides import apply_persona
 
 
 def _year_range(year: int) -> tuple[str, str, int]:
-    start = f"{year}-01-01"
-    end = f"{year}-12-31"
+    after = f"{year}-01-01"
+    before = f"{year}-12-31"
     start_dt = datetime(year, 1, 1)
     end_dt = datetime(year, 12, 31)
     days = (end_dt - start_dt).days + 1
-    return start, end, days
+    return after, before, days
 
 
 def _media_key(row: dict[str, Any], media_type: str) -> tuple[str, str | None]:
@@ -75,6 +80,77 @@ def _duration_from_top10_series(series: list[dict[str, Any]], index: int) -> int
         if index < len(data):
             total += int(data[index] or 0)
     return total
+
+
+def _ranked_users_from_top10(top_users: dict[str, Any]) -> list[dict[str, Any]]:
+    categories = top_users.get("categories", [])
+    series = top_users.get("series", [])
+    if not categories or not series:
+        return []
+    return [
+        {
+            "user_id": None,
+            "name": name,
+            "username": "",
+            "duration": _duration_from_top10_series(series, i),
+        }
+        for i, name in enumerate(categories)
+    ]
+
+
+def _ranked_users_from_server_history(history: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    totals: dict[int, dict[str, Any]] = {}
+    for row in history:
+        if row.get("media_type") not in ("movie", "episode"):
+            continue
+        raw_uid = row.get("user_id")
+        if raw_uid is None:
+            continue
+        uid = int(raw_uid)
+        duration = int(row.get("duration") or 0)
+        if uid not in totals:
+            totals[uid] = {
+                "user_id": uid,
+                "name": row.get("friendly_name") or row.get("user") or "",
+                "username": "",
+                "duration": 0,
+            }
+        totals[uid]["duration"] += duration
+        if not totals[uid]["name"]:
+            totals[uid]["name"] = row.get("friendly_name") or row.get("user") or ""
+    ranked = list(totals.values())
+    ranked.sort(key=lambda item: item["duration"], reverse=True)
+    return ranked
+
+
+def _fetch_year_ranked_users(
+    tautulli: TautulliClient,
+    *,
+    after: str,
+    before: str,
+    cache: "WrappedAggregator | None" = None,
+) -> list[dict[str, Any]]:
+    """User watch durations for the wrapped calendar period (not all-time)."""
+    if cache is not None and cache._year_ranked_users is not None:
+        return cache._year_ranked_users
+
+    ranked: list[dict[str, Any]] = []
+    try:
+        server_history = tautulli.fetch_server_history(after=after, before=before)
+        ranked = _ranked_users_from_server_history(server_history)
+        if ranked:
+            logger.info(
+                "Server rank source=server_history users=%s after=%s before=%s",
+                len(ranked),
+                after,
+                before,
+            )
+    except Exception:
+        logger.warning("Server history ranking failed", exc_info=True)
+
+    if cache is not None:
+        cache._year_ranked_users = ranked
+    return ranked
 
 
 def _position_label(offset: int) -> str:
@@ -136,15 +212,18 @@ def _compute_server_stats(
     display_name: str,
     username: str,
     user_watch_seconds: int,
-    users_table: dict[str, Any] | None,
-    top_users: dict[str, Any] | None,
+    year_ranked: list[dict[str, Any]] | None = None,
+    users_table: dict[str, Any] | None = None,
+    top_users: dict[str, Any] | None = None,
+    total_users: int | None = None,
 ) -> ServerStats:
     stats = ServerStats()
 
     ranked: list[dict[str, Any]] = []
-    total_users = 0
 
-    if users_table:
+    if year_ranked:
+        ranked = year_ranked
+    elif users_table:
         rows = users_table.get("data", [])
         if isinstance(rows, list):
             ranked = [
@@ -158,22 +237,9 @@ def _compute_server_stats(
                 if isinstance(row, dict)
             ]
             ranked.sort(key=lambda item: item["duration"], reverse=True)
-            total_users = int(users_table.get("recordsTotal") or len(ranked))
 
     if not ranked and top_users:
-        categories = top_users.get("categories", [])
-        series = top_users.get("series", [])
-        if categories and series:
-            ranked = [
-                {
-                    "user_id": None,
-                    "name": name,
-                    "username": "",
-                    "duration": _duration_from_top10_series(series, i),
-                }
-                for i, name in enumerate(categories)
-            ]
-            total_users = len(ranked)
+        ranked = _ranked_users_from_top10(top_users)
 
     if not ranked:
         return stats
@@ -191,6 +257,11 @@ def _compute_server_stats(
     stats.rank = rank
     stats.rank_context = _build_rank_context(ranked, user_index)
 
+    if total_users is None:
+        if users_table:
+            total_users = int(users_table.get("recordsTotal") or len(ranked))
+        else:
+            total_users = len(ranked)
     if total_users <= 0:
         total_users = len(ranked)
     if total_users > 0:
@@ -200,7 +271,7 @@ def _compute_server_stats(
 
     if stats.rank_context:
         for entry in stats.rank_context:
-            if entry.is_you and entry.watch_hours == 0 and user_watch_seconds > 0:
+            if entry.is_you:
                 entry.watch_hours = int(round(user_watch_seconds / 3600))
 
     return stats
@@ -256,77 +327,6 @@ def _compute_watch_timing(
     }
 
 
-class WrappedAggregator:
-    def __init__(
-        self,
-        tautulli: TautulliClient,
-        settings: Settings | None = None,
-        telegram: TelegramData | None = None,
-        cache: WrappedCache | None = None,
-        year: int | None = None,
-    ):
-        self.tautulli = tautulli
-        self.settings = settings or get_settings()
-        self.year = year if year is not None else self.settings.wrapped_year
-        self.telegram = telegram if telegram is not None else load_telegram_data(self.settings, self.year)
-        self.cache = cache or WrappedCache(self.settings)
-        self._metadata_cache: dict[str, list[str]] = {}
-        self._server_top_show: tuple[str | None, str | None] | None = None
-
-    def get_cached(self, user_id: int) -> WrappedPayload | None:
-        cached = self.cache.get(user_id, self.year)
-        if not cached:
-            return None
-        return WrappedPayload(**cached)
-
-    def get_or_compute(self, user_id: int, *, force: bool = False) -> WrappedPayload:
-        if not force:
-            cached = self.get_cached(user_id)
-            if cached:
-                return cached
-        payload = self.compute(user_id)
-        self.cache.set(user_id, self.year, payload.model_dump())
-        return payload
-
-    def _get_metadata_genres(self, rating_key: str | int) -> list[str]:
-        key = str(rating_key)
-        if key in self._metadata_cache:
-            return self._metadata_cache[key]
-        try:
-            meta = self.tautulli.get_metadata(rating_key=key)
-            genres = meta.get("genres") or []
-            names = [g if isinstance(g, str) else str(g) for g in genres if g]
-        except Exception:
-            names = []
-        self._metadata_cache[key] = names
-        return names
-
-    def _get_server_top_show(self, time_range_days: int) -> tuple[str | None, str | None]:
-        if self._server_top_show is not None:
-            return self._server_top_show
-        title: str | None = None
-        thumb: str | None = None
-        try:
-            stats = self.tautulli.get_home_stats(
-                time_range=time_range_days,
-                stat_id="top_tv",
-                stats_count=1,
-            )
-            for block in stats:
-                if block.get("stat_id") != "top_tv":
-                    continue
-                rows = block.get("rows") or []
-                if rows:
-                    row = rows[0]
-                    title = row.get("grandparent_title") or row.get("title") or row.get("full_title")
-                    thumb = row.get("grandparent_thumb") or row.get("thumb")
-                break
-        except Exception:
-            pass
-        self._server_top_show = (title, thumb)
-        return title, thumb
-
-
 _COMPARISON_HEADLINE_ACCENTS = ("eigenzinnige", "verfijnde", "unieke", "eigen")
 
 
@@ -358,20 +358,154 @@ def _build_comparison_caption(
         f"was {user_title} jouw nummer één."
     )
 
+
+class WrappedAggregator:
+    def __init__(
+        self,
+        tautulli: TautulliClient,
+        settings: Settings | None = None,
+        telegram: TelegramData | None = None,
+        cache: WrappedCache | None = None,
+        year: int | None = None,
+    ):
+        self.tautulli = tautulli
+        self.settings = settings or get_settings()
+        self.year = year if year is not None else self.settings.wrapped_year
+        self.telegram = telegram if telegram is not None else load_telegram_data(self.settings, self.year)
+        self.cache = cache or WrappedCache(self.settings)
+        self._metadata_cache: dict[str, dict[str, Any]] = {}
+        self._tmdb_poster_cache: dict[tuple[str, str], str | None] = {}
+        self._server_top_show: tuple[str | None, str | None] | None = None
+        self._year_ranked_users: list[dict[str, Any]] | None = None
+
+    def get_cached(self, user_id: int) -> WrappedPayload | None:
+        cached = self.cache.get(user_id, self.year)
+        if not cached:
+            return None
+        return WrappedPayload(**cached)
+
+    def get_or_compute(self, user_id: int, *, force: bool = False) -> WrappedPayload:
+        if not force:
+            cached = self.get_cached(user_id)
+            if cached:
+                logger.info(
+                    "Cache hit user_id=%s year=%s plays=%s watch_hours=%s",
+                    user_id,
+                    self.year,
+                    cached.total_plays,
+                    cached.watch_hours,
+                )
+                return cached
+        logger.info("Computing wrapped user_id=%s year=%s force=%s", user_id, self.year, force)
+        payload = self.compute(user_id)
+        self.cache.set(user_id, self.year, payload.model_dump())
+        return payload
+
+    def _get_metadata(self, rating_key: str | int) -> dict[str, Any]:
+        key = str(rating_key)
+        if key in self._metadata_cache:
+            return self._metadata_cache[key]
+        try:
+            meta = self.tautulli.get_metadata(rating_key=key)
+            cached = meta if isinstance(meta, dict) else {}
+        except Exception:
+            cached = {}
+        self._metadata_cache[key] = cached
+        return cached
+
+    def _get_metadata_genres(self, rating_key: str | int) -> list[str]:
+        meta = self._get_metadata(rating_key)
+        genres = meta.get("genres") or []
+        return [g if isinstance(g, str) else str(g) for g in genres if g]
+
+    def _resolve_poster(
+        self,
+        *,
+        thumb: str | None,
+        rating_key: str | int | None,
+        title: str,
+        media_kind: Literal["movie", "show"],
+    ) -> str | None:
+        return resolve_poster(
+            settings=self.settings,
+            thumb=thumb,
+            rating_key=rating_key,
+            title=title,
+            media_kind=media_kind,
+            get_metadata=self._get_metadata,
+            tmdb_cache=self._tmdb_poster_cache,
+        )
+
+    def _get_server_top_show(self, time_range_days: int) -> tuple[str | None, str | None]:
+        if self._server_top_show is not None:
+            return self._server_top_show
+        title: str | None = None
+        thumb: str | None = None
+        try:
+            stats = self.tautulli.get_home_stats(
+                time_range=time_range_days,
+                stat_id="top_tv",
+                stats_count=1,
+            )
+            for block in stats:
+                if block.get("stat_id") != "top_tv":
+                    continue
+                rows = block.get("rows") or []
+                if rows:
+                    row = rows[0]
+                    title = row.get("grandparent_title") or row.get("title") or row.get("full_title")
+                    thumb = row.get("grandparent_thumb") or row.get("thumb")
+                break
+        except Exception:
+            pass
+        self._server_top_show = (title, thumb)
+        return title, thumb
+
     def compute(self, user_id: int) -> WrappedPayload:
         user = self.tautulli.get_user(user_id)
-        start_date, end_date, time_range_days = _year_range(self.year)
+        after, before, time_range_days = _year_range(self.year)
+        logger.info(
+            "Fetching history user_id=%s after=%s before=%s time_range_days=%s",
+            user_id,
+            after,
+            before,
+            time_range_days,
+        )
 
         history = self.tautulli.fetch_all_history(
             user_id=user_id,
-            start_date=start_date,
-            end_date=end_date,
+            after=after,
+            before=before,
         )
         media_history = [r for r in history if r.get("media_type") in ("movie", "episode")]
+        media_types = Counter(row.get("media_type") or "unknown" for row in history)
+        logger.info(
+            "History rows user_id=%s total=%s movie_episode=%s by_media_type=%s",
+            user_id,
+            len(history),
+            len(media_history),
+            dict(media_types),
+        )
+        if not history:
+            logger.warning(
+                "No Tautulli history rows for user_id=%s between %s and %s",
+                user_id,
+                after,
+                before,
+            )
+        elif not media_history:
+            logger.warning(
+                "History rows present but none are movie/episode for user_id=%s: %s",
+                user_id,
+                dict(media_types),
+            )
 
         display_name = user.get("friendly_name") or user.get("username") or "Viewer"
         username = user.get("username") or ""
-        avatar = user.get("user_thumb")
+        avatar = resolve_avatar_url(
+            user.get("user_thumb"),
+            custom_thumb=user.get("custom_avatar_url") or user.get("custom_thumb"),
+        )
 
         total_seconds = 0
         movie_plays = tv_plays = 0
@@ -379,7 +513,7 @@ def _build_comparison_caption(
             lambda: {"plays": 0, "duration": 0, "thumb": None, "rating_key": None}
         )
         show_stats: dict[str, dict[str, Any]] = defaultdict(
-            lambda: {"plays": 0, "duration": 0, "thumb": None}
+            lambda: {"plays": 0, "duration": 0, "thumb": None, "rating_key": None}
         )
         history_titles: list[str] = []
         play_dates: list[date] = []
@@ -431,6 +565,7 @@ def _build_comparison_caption(
                 gp = row.get("grandparent_rating_key")
                 if gp is not None:
                     series_keys.add(str(gp))
+                    show_stats[title]["rating_key"] = show_stats[title]["rating_key"] or str(gp)
                     season_idx = row.get("parent_media_index")
                     season_keys.add((str(gp), str(season_idx if season_idx is not None else "")))
                     for genre in self._get_metadata_genres(gp):
@@ -443,20 +578,31 @@ def _build_comparison_caption(
         watch_hours = total_seconds // 3600
         watch_days = watch_hours // 24
 
-        def to_media_items(stats: dict[str, dict[str, Any]], limit: int = 5) -> list[MediaItem]:
+        def to_media_items(
+            stats: dict[str, dict[str, Any]],
+            limit: int,
+            media_kind: Literal["movie", "show"],
+        ) -> list[MediaItem]:
             ranked = sorted(stats.items(), key=lambda x: (-x[1]["plays"], -x[1]["duration"]))
-            return [
-                MediaItem(
-                    title=title,
-                    thumb=data.get("thumb"),
-                    plays=data["plays"],
-                    duration_seconds=data["duration"],
+            items: list[MediaItem] = []
+            for title, data in ranked[:limit]:
+                items.append(
+                    MediaItem(
+                        title=title,
+                        thumb=self._resolve_poster(
+                            thumb=data.get("thumb"),
+                            rating_key=data.get("rating_key"),
+                            title=title,
+                            media_kind=media_kind,
+                        ),
+                        plays=data["plays"],
+                        duration_seconds=data["duration"],
+                    )
                 )
-                for title, data in ranked[:limit]
-            ]
+            return items
 
-        top_movies = to_media_items(movie_stats, 5)
-        top_shows = to_media_items(show_stats, 5)
+        top_movies = to_media_items(movie_stats, 5, "movie")
+        top_shows = to_media_items(show_stats, 5, "show")
 
         streak_days, streak_start, streak_end = _longest_streak(play_dates)
 
@@ -554,27 +700,24 @@ def _build_comparison_caption(
             except Exception:
                 pass
 
-        users_table: dict[str, Any] | None = None
-        top_users: dict[str, Any] | None = None
+        year_ranked = _fetch_year_ranked_users(
+            self.tautulli,
+            after=after,
+            before=before,
+            cache=self,
+        )
+        server_user_count: int | None = None
         try:
-            users_table = self.tautulli.get_users_table(order_column="duration", order_dir="desc")
+            server_user_count = len(self.tautulli.get_users())
         except Exception:
             pass
-        if not users_table or not users_table.get("data"):
-            try:
-                top_users = self.tautulli.get_plays_by_top_10_users(
-                    time_range=time_range_days,
-                    y_axis="duration",
-                )
-            except Exception:
-                pass
         server_stats = _compute_server_stats(
             user_id=user_id,
             display_name=display_name,
             username=username,
             user_watch_seconds=total_seconds,
-            users_table=users_table,
-            top_users=top_users,
+            year_ranked=year_ranked or None,
+            total_users=server_user_count,
         )
         try:
             server_stats.server_name = self.tautulli.get_server_friendly_name()
@@ -582,11 +725,25 @@ def _build_comparison_caption(
             pass
         server_top_title, server_top_thumb = self._get_server_top_show(time_range_days)
         server_stats.server_top_show = server_top_title
-        server_stats.server_top_show_thumb = server_top_thumb
+        if server_top_title:
+            server_stats.server_top_show_thumb = self._resolve_poster(
+                thumb=server_top_thumb,
+                rating_key=None,
+                title=server_top_title,
+                media_kind="show",
+            )
+        else:
+            server_stats.server_top_show_thumb = server_top_thumb
 
         user_comparison_show_thumb: str | None = None
         if user_comparison_show and user_comparison_show in show_stats:
-            user_comparison_show_thumb = show_stats[user_comparison_show].get("thumb")
+            show_data = show_stats[user_comparison_show]
+            user_comparison_show_thumb = self._resolve_poster(
+                thumb=show_data.get("thumb"),
+                rating_key=show_data.get("rating_key"),
+                title=user_comparison_show,
+                media_kind="show",
+            )
         if not user_comparison_show_thumb and user_comparison_show:
             for item in top_shows:
                 if item.title == user_comparison_show:
@@ -677,4 +834,13 @@ def _build_comparison_caption(
             has_telegram_activity=has_telegram,
         )
         apply_persona(payload)
+        logger.info(
+            "Wrapped result user_id=%s plays=%s movies=%s tv=%s watch_hours=%s device=%s",
+            user_id,
+            payload.total_plays,
+            payload.movie_plays,
+            payload.tv_plays,
+            payload.watch_hours,
+            payload.favorite_device,
+        )
         return payload

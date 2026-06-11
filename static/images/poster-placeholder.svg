@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180" role="img" aria-label="Geen poster">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2937"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="180" rx="8" fill="url(#bg)"/>
+  <rect x="1" y="1" width="118" height="178" rx="7" fill="none" stroke="#374151" stroke-width="2"/>
+  <path fill="#6b7280" d="M48 62h24v8H48zm-8 20h40l-6 34H46z"/>
+</svg>

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -21,6 +22,7 @@ from app.config import PROJECT_ROOT, Settings, get_settings
 from app.logging_setup import configure_logging
 from app.models.cache import WrappedCache
 from app.tautulli.client import TautulliClient, TautulliError
+from app.wrapped.posters import plex_poster_paths, rating_key_from_poster_path
 from app.tautulli.devices import collect_unique_devices
 from app.models.schemas import WrappedPayload
 
@@ -331,7 +333,7 @@ def api_wrapped(request: Request):
             503,
             detail={
                 "ready": False,
-                "message": "Wrapped not generated yet. Run compute_wrapped.py first.",
+                "message": "De Plex Wrapped is nog niet beschikbaar, probeer het op een later moment nog eens.",
             },
         )
 
@@ -387,22 +389,59 @@ def admin_create_link(
     return {"url": url, "plex_user_id": body.plex_user_id, "year": body.year or settings.wrapped_year}
 
 
+def _is_image_response(resp: httpx.Response) -> bool:
+    content_type = (resp.headers.get("content-type") or "").lower()
+    return resp.status_code == 200 and content_type.startswith("image/")
+
+
 @app.get("/api/poster")
-def poster_proxy(path: str, request: Request):
+def poster_proxy(
+    path: str,
+    request: Request,
+    rating_key: str | None = None,
+):
     settings: Settings = request.app.state.settings
+    tautulli: TautulliClient = request.app.state.tautulli
     if not path.startswith("/"):
         raise HTTPException(400, "Invalid path")
-    if not settings.plex_server_url or not settings.plex_server_token:
-        raise HTTPException(501, "Poster proxy not configured")
 
-    import httpx
+    resolved_rating_key = rating_key or rating_key_from_poster_path(path)
+    resp: httpx.Response | None = None
 
-    url = f"{settings.plex_server_url.rstrip('/')}{path}"
-    with httpx.Client(timeout=15.0) as client:
-        resp = client.get(url, params={"X-Plex-Token": settings.plex_server_token})
-    if resp.status_code != 200:
-        raise HTTPException(resp.status_code, "Poster unavailable")
-    return Response(content=resp.content, media_type=resp.headers.get("content-type", "image/jpeg"))
+    if settings.plex_server_url and settings.plex_server_token:
+        base = settings.plex_server_url.rstrip("/")
+        with httpx.Client(timeout=15.0) as client:
+            for candidate in plex_poster_paths(path):
+                attempt = client.get(
+                    f"{base}{candidate}",
+                    params={"X-Plex-Token": settings.plex_server_token},
+                )
+                if _is_image_response(attempt):
+                    resp = attempt
+                    break
+                resp = attempt
+
+    if resp is None or not _is_image_response(resp):
+        for attempt in (
+            tautulli.fetch_pms_image(img=path, rating_key=resolved_rating_key, refresh=True),
+            tautulli.fetch_pms_image(rating_key=resolved_rating_key, refresh=True)
+            if resolved_rating_key
+            else None,
+        ):
+            if attempt is None:
+                continue
+            if _is_image_response(attempt):
+                resp = attempt
+                break
+            resp = attempt
+
+    if resp is None or not _is_image_response(resp):
+        status = resp.status_code if resp is not None else 502
+        raise HTTPException(status, "Poster unavailable")
+    return Response(
+        content=resp.content,
+        media_type=resp.headers.get("content-type", "image/jpeg"),
+    )
 
 
 # Jinja filters

@@ -16,7 +16,7 @@ PERSONAS: dict[str, PersonaResult] = {
     "curator": PersonaResult(
         "curator",
         "De Curator",
-        "Je vraagt meer aan dan je scrollt.",
+        "Je vraagt meer nieuwe content aan dan je kijkt, tijd te kort?",
     ),
     "series_devourer": PersonaResult(
         "series_devourer",
@@ -31,7 +31,7 @@ PERSONAS: dict[str, PersonaResult] = {
     "marathon_runner": PersonaResult(
         "marathon_runner",
         "Marathonloper",
-        "Je meet het leven in uren.",
+        "300+ uur gekeken dit jaar — jij kijkt op marathonniveau.",
     ),
     "binge_royalty": PersonaResult(
         "binge_royalty",
@@ -41,7 +41,7 @@ PERSONAS: dict[str, PersonaResult] = {
     "night_owl": PersonaResult(
         "night_owl",
         "Nachtuil",
-        "De server gloeit na 22:00.",
+        "De server gloeit na 23:00.",
     ),
     "early_bird": PersonaResult(
         "early_bird",
@@ -50,8 +50,8 @@ PERSONAS: dict[str, PersonaResult] = {
     ),
     "completionist": PersonaResult(
         "completionist",
-        "De Voltooier",
-        "Je proeft van alles.",
+        "Serie verkenner",
+        "Meer dan 20 series geprobeerd, je proeft van alles.",
     ),
     "genre_explorer": PersonaResult(
         "genre_explorer",
@@ -61,7 +61,7 @@ PERSONAS: dict[str, PersonaResult] = {
     "weekend_warrior": PersonaResult(
         "weekend_warrior",
         "Weekendstrijder",
-        "Za en zo is showtijd.",
+        "Zaterdag en zondag is showtijd.",
     ),
     "loyal_rewatcher": PersonaResult(
         "loyal_rewatcher",
@@ -89,20 +89,20 @@ def compute_persona(payload: WrappedPayload) -> PersonaResult:
 
     if requests_total >= 10 and payload.total_plays > 0 and requests_total > payload.total_plays * 0.3:
         return PERSONAS["curator"]
+    if payload.watch_hours >= 300:
+        return PERSONAS["marathon_runner"]
+    if payload.unique_series >= 20:
+        return PERSONAS["completionist"]
+    if payload.peak_hour is not None and payload.peak_hour >= 23:
+        return PERSONAS["night_owl"]
+    if payload.peak_hour is not None and payload.peak_hour <= 10:
+        return PERSONAS["early_bird"]
     if payload.tv_plays > payload.movie_plays * 2:
         return PERSONAS["series_devourer"]
     if payload.movie_plays > payload.tv_plays * 2:
         return PERSONAS["film_buff"]
-    if payload.watch_hours >= 300:
-        return PERSONAS["marathon_runner"]
-    if payload.longest_streak_days >= 7:
+    if payload.longest_streak_days >= 12:
         return PERSONAS["binge_royalty"]
-    if payload.peak_hour is not None and payload.peak_hour >= 22:
-        return PERSONAS["night_owl"]
-    if payload.peak_hour is not None and payload.peak_hour <= 8:
-        return PERSONAS["early_bird"]
-    if payload.unique_series >= 15:
-        return PERSONAS["completionist"]
     if _genre_count(payload) >= 6:
         return PERSONAS["genre_explorer"]
     if payload.peak_day and payload.peak_day.lower() in ("zaterdag", "zondag"):

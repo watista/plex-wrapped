@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from pathlib import Path
 
@@ -11,10 +12,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.config import get_settings
+from app.logging_setup import configure_logging
 from app.models.cache import WrappedCache
 from app.tautulli.client import TautulliClient
 from app.telegram.loader import load_telegram_data, load_user_mapping
 from app.wrapped.aggregator import WrappedAggregator
+
+logger = logging.getLogger(__name__)
 
 
 def main() -> None:
@@ -22,9 +26,12 @@ def main() -> None:
     parser.add_argument("--year", type=int, default=None, help="Wrapped year (default: WRAPPED_YEAR)")
     parser.add_argument("--force", action="store_true", help="Recompute even if cached")
     parser.add_argument("--user-id", type=int, default=None, help="Single user id only")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable DEBUG logging")
     args = parser.parse_args()
 
     settings = get_settings()
+    log_level = "DEBUG" if args.verbose else settings.log_level
+    configure_logging(log_level)
     year = args.year or settings.wrapped_year
 
     tautulli = TautulliClient(settings)
@@ -50,13 +57,37 @@ def main() -> None:
 
     aggregator = WrappedAggregator(tautulli, settings, telegram, cache, year=year)
 
+    logger.info(
+        "Starting compute year=%s users=%s force=%s tautulli=%s db=%s",
+        year,
+        len(user_ids),
+        args.force,
+        settings.tautulli_url,
+        cache.path,
+    )
+
     for uid in sorted(user_ids):
         print(f"Computing wrapped for user_id={uid} year={year}...")
         try:
+            from_cache = not args.force and aggregator.get_cached(uid) is not None
             payload = aggregator.get_or_compute(uid, force=args.force)
-            print(f"  OK: {payload.display_name} — {payload.total_plays} plays")
+            source = "cache" if from_cache else "computed"
+            print(
+                f"  OK: {payload.display_name} — {payload.total_plays} plays, "
+                f"{payload.watch_hours}h ({source})"
+            )
+            logger.info(
+                "Done user_id=%s name=%s plays=%s movies=%s tv=%s watch_hours=%s",
+                uid,
+                payload.display_name,
+                payload.total_plays,
+                payload.movie_plays,
+                payload.tv_plays,
+                payload.watch_hours,
+            )
         except Exception as exc:
             print(f"  ERROR: {exc}")
+            logger.exception("Failed user_id=%s year=%s", uid, year)
 
     tautulli.close()
     print("Done.")

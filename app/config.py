@@ -47,6 +47,8 @@ class Settings(BaseSettings):
     plex_server_url: str = ""
     plex_server_token: str = ""
 
+    tmdb_api_key: str = ""
+
     def resolve_path(self, path: str) -> Path:
         p = Path(path)
         if p.is_absolute():

@@ -68,7 +68,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 python scripts/compute_wrapped.py --year 2025
 ```
 
-The app serves **cached** stats only. Opening `/wrapped` without a cache entry shows a “not generated yet” message.
+The app serves **cached** stats only. Opening `/wrapped` without a cache entry shows a “not generated yet” message. Add `--force` to recompute users that are already cached. Add `-v` for verbose logging.
 
 7. Open `http://localhost:8000` (or your `PUBLIC_URL`) and sign in with Plex.
 
@@ -99,7 +99,7 @@ Edit fixtures under `data/fixtures/` and register users in `test_users.json`. Ea
 | User ID | Fixture | Scenario |
 |--------|---------|----------|
 | 1 | `wrapped_test.json` | Full profile (films + series + telegram) |
-| 14983182 | `wrapped_test_user2.json` | Film-heavy mixed viewer |
+| 2 | `wrapped_test_user2.json` | Film-heavy mixed viewer |
 | 3 | `wrapped_test_films_only.json` | Movies only, no series |
 | 4 | `wrapped_test_series_only.json` | Series only, no movies |
 | 5 | `wrapped_test_telegram_only.json` | Telegram only, no watch history |
@@ -160,6 +160,14 @@ Example response:
 - `devices` — per-device metadata: Tautulli `platform`, which users use it, and total play counts
 
 Player names match the `favorite_device` value shown in each user's wrapped recap.
+
+Device icons for the *Jouw scherm* slide are resolved in `static/js/device-icons.js` from `data/known_devices.json`. Regenerate after adding new players:
+
+```bash
+python scripts/generate_device_icons.py
+```
+
+Similar devices share one icon (for example all LG and Samsung TVs use `tv`, all iPhones use `phone_iphone`).
 
 ### Health check
 

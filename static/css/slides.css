@@ -962,6 +962,81 @@
   background: rgba(255, 255, 255, 0.03);
   transform: rotate(8deg) translate(3rem, 15rem);
 }
+.slide--favorite-device .phone-silhouette,
+.slide--favorite-device .tablet-silhouette,
+.slide--favorite-device .cast-silhouette,
+.slide--favorite-device .desktop-silhouette,
+.slide--favorite-device .console-silhouette {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 0 40px rgba(229, 160, 13, 0.1);
+}
+.slide--favorite-device .phone-silhouette {
+  width: 88px;
+  height: 168px;
+  border-radius: 18px;
+}
+.slide--favorite-device .phone-silhouette--1 {
+  background: rgba(255, 186, 62, 0.05);
+  transform: rotate(-8deg) translate(-3rem, -9rem);
+}
+.slide--favorite-device .phone-silhouette--2 {
+  background: rgba(255, 255, 255, 0.03);
+  transform: rotate(12deg) translate(3.5rem, 12rem);
+}
+.slide--favorite-device .tablet-silhouette {
+  width: 140px;
+  height: 190px;
+  border-radius: 16px;
+}
+.slide--favorite-device .tablet-silhouette--1 {
+  background: rgba(255, 186, 62, 0.05);
+  transform: rotate(-6deg) translate(-2.5rem, -10rem);
+}
+.slide--favorite-device .tablet-silhouette--2 {
+  background: rgba(255, 255, 255, 0.03);
+  transform: rotate(10deg) translate(3rem, 14rem);
+}
+.slide--favorite-device .cast-silhouette {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+}
+.slide--favorite-device .cast-silhouette--1 {
+  background: rgba(255, 186, 62, 0.05);
+  transform: rotate(-4deg) translate(-2rem, -8rem);
+}
+.slide--favorite-device .cast-silhouette--2 {
+  background: rgba(255, 255, 255, 0.03);
+  transform: rotate(6deg) translate(2.5rem, 11rem);
+}
+.slide--favorite-device .desktop-silhouette {
+  width: 220px;
+  height: 140px;
+  border-radius: 10px;
+}
+.slide--favorite-device .desktop-silhouette--1 {
+  background: rgba(255, 186, 62, 0.05);
+  transform: rotate(-4deg) translate(-1.5rem, -9rem);
+}
+.slide--favorite-device .desktop-silhouette--2 {
+  background: rgba(255, 255, 255, 0.03);
+  transform: rotate(7deg) translate(2rem, 13rem);
+}
+.slide--favorite-device .console-silhouette {
+  width: 180px;
+  height: 52px;
+  border-radius: 8px;
+}
+.slide--favorite-device .console-silhouette--1 {
+  background: rgba(255, 186, 62, 0.05);
+  transform: rotate(-3deg) translate(-2rem, -8rem);
+}
+.slide--favorite-device .console-silhouette--2 {
+  background: rgba(255, 255, 255, 0.03);
+  transform: rotate(5deg) translate(2.5rem, 12rem);
+}
 .slide--favorite-device .slide-main--favorite-device {
   justify-content: center;
   align-items: center;

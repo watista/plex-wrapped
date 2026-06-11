@@ -57,10 +57,69 @@
       .replace(/"/g, "&quot;");
   }
 
+  function resolveDeviceVisual(deviceName) {
+    if (globalThis.DeviceIcons && typeof globalThis.DeviceIcons.resolve === "function") {
+      return globalThis.DeviceIcons.resolve(deviceName);
+    }
+    return { icon: "tv", category: "generic", silhouette: "tv" };
+  }
+
+  function deviceSilhouetteHtml(silhouette) {
+    const kind = silhouette || "tv";
+    if (kind === "phone") {
+      return `<div class="device-silhouettes device-silhouettes--phone" aria-hidden="true">
+         <div class="phone-silhouette phone-silhouette--1"></div>
+         <div class="phone-silhouette phone-silhouette--2"></div>
+       </div>`;
+    }
+    if (kind === "tablet") {
+      return `<div class="device-silhouettes device-silhouettes--tablet" aria-hidden="true">
+         <div class="tablet-silhouette tablet-silhouette--1"></div>
+         <div class="tablet-silhouette tablet-silhouette--2"></div>
+       </div>`;
+    }
+    if (kind === "cast") {
+      return `<div class="device-silhouettes device-silhouettes--cast" aria-hidden="true">
+         <div class="cast-silhouette cast-silhouette--1"></div>
+         <div class="cast-silhouette cast-silhouette--2"></div>
+       </div>`;
+    }
+    if (kind === "desktop") {
+      return `<div class="device-silhouettes device-silhouettes--desktop" aria-hidden="true">
+         <div class="desktop-silhouette desktop-silhouette--1"></div>
+         <div class="desktop-silhouette desktop-silhouette--2"></div>
+       </div>`;
+    }
+    if (kind === "console") {
+      return `<div class="device-silhouettes device-silhouettes--console" aria-hidden="true">
+         <div class="console-silhouette console-silhouette--1"></div>
+         <div class="console-silhouette console-silhouette--2"></div>
+       </div>`;
+    }
+    return `<div class="device-silhouettes device-silhouettes--tv" aria-hidden="true">
+       <div class="tv-silhouette tv-silhouette--1"></div>
+       <div class="tv-silhouette tv-silhouette--2"></div>
+     </div>`;
+  }
+
+  const POSTER_FALLBACK = "/static/images/poster-placeholder.svg";
+
   function posterUrl(thumb) {
     if (!thumb) return null;
     if (thumb.startsWith("http")) return thumb;
     return `/api/poster?path=${encodeURIComponent(thumb)}`;
+  }
+
+  function posterPlaceholderHtml(className) {
+    const extra = className ? ` class="${className}"` : "";
+    return `<img src="${POSTER_FALLBACK}" alt=""${extra} aria-hidden="true">`;
+  }
+
+  function posterImgHtml(thumb, className) {
+    const url = posterUrl(thumb);
+    if (!url) return posterPlaceholderHtml(className);
+    const cls = className ? ` class="${className}"` : "";
+    return `<img src="${escapeHtml(url)}" alt="" loading="lazy"${cls} onerror="this.onerror=null;this.src='${POSTER_FALLBACK}'">`;
   }
 
   function hasTelegramActivity(tg) {
@@ -605,7 +664,10 @@
       .filter(Boolean);
     if (!thumbs.length) return "";
     return `<div class="poster-stack" aria-hidden="true">${thumbs
-      .map((src) => `<img src="${escapeHtml(src)}" alt="" loading="lazy">`)
+      .map(
+        (src) =>
+          `<img src="${escapeHtml(src)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${POSTER_FALLBACK}'">`
+      )
       .join("")}</div>`;
   }
 
@@ -629,7 +691,10 @@
       ? Array.from({ length: 6 }, (_, i) => thumbs[i % thumbs.length])
       : TOP_SHOWS_BG;
     return `<div class="poster-stack poster-stack--server-vs" aria-hidden="true">${sources
-      .map((src) => `<img src="${escapeHtml(src)}" alt="" loading="lazy">`)
+      .map(
+        (src) =>
+          `<img src="${escapeHtml(src)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${POSTER_FALLBACK}'">`
+      )
       .join("")}</div>`;
   }
 
@@ -639,9 +704,14 @@
     items.forEach((item, i) => {
       const hero = i === 0 ? " rank-item--hero" : "";
       const opacity = i === 0 ? "" : ` style="opacity:${Math.max(0.55, 1 - i * 0.12)}"`;
-      const thumb = withPoster && posterUrl(item.thumb);
-      const img = thumb
-        ? `<img src="${escapeHtml(thumb)}" alt="" loading="lazy">`
+      const img = withPoster
+        ? posterImgHtml(
+            item.thumb,
+            "",
+          ).replace(
+            "<img ",
+            '<img style="width:48px;height:72px;border-radius:8px;object-fit:cover" ',
+          )
         : `<div style="width:48px;height:72px;border-radius:8px;background:var(--surface-container-high)"></div>`;
       const verified =
         i === 0
@@ -839,7 +909,7 @@
   function buildVsPosterCard(side, title, thumb, badge) {
     const url = posterUrl(thumb);
     const img = url
-      ? `<img src="${escapeHtml(url)}" alt="" loading="lazy">`
+      ? `<img src="${escapeHtml(url)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='${POSTER_FALLBACK}'">`
       : `<div class="vs-poster__placeholder"><span class="material-symbols-outlined">tv</span></div>`;
     const sideClass = side === "user" ? " vs-poster-card--user" : " vs-poster-card--server";
     const badgeClass =
@@ -1334,7 +1404,7 @@
         createSlide(
           slideMain(
             `<h2 class="headline-lg">Geen activiteit in ${year}</h2>
-             <p class="body-md" style="margin-top:1rem">Begin met kijken of aanvragen om volgend jaar stats te zien.</p>`
+             <p class="body-md" style="margin-top:1rem">Begin met kijken om volgend jaar statistieken te zien.</p>`
           ),
           "welcome"
         )
@@ -1534,6 +1604,8 @@
       }
 
       if (d.favorite_device) {
+        const deviceVisual = resolveDeviceVisual(d.favorite_device);
+        const deviceIcon = deviceVisual.icon;
         const devicePercent =
           d.favorite_device_watch_percent !== null &&
           d.favorite_device_watch_percent !== undefined
@@ -1545,14 +1617,11 @@
             : "—% van je kijktijd";
         slides.push(
           createSlide(
-            `<div class="device-silhouettes" aria-hidden="true">
-               <div class="tv-silhouette tv-silhouette--1"></div>
-               <div class="tv-silhouette tv-silhouette--2"></div>
-             </div>` +
+            deviceSilhouetteHtml(deviceVisual.silhouette) +
               slideMain(
                 `<div class="device-hero-block">
-                   <div class="device-hero glass-card">
-                     <span class="material-symbols-outlined nav-icon-fill">tv</span>
+                   <div class="device-hero glass-card device-hero--${escapeHtml(deviceVisual.category)}">
+                     <span class="material-symbols-outlined nav-icon-fill">${escapeHtml(deviceIcon)}</span>
                    </div>
                    <div class="device-copy stack-sm">
                      <p class="label-md label-md--wide">Je favoriete venster</p>
@@ -1560,7 +1629,7 @@
                    </div>
                  </div>
                  <div class="glass-card device-badge">
-                   <span class="material-symbols-outlined nav-icon-fill" style="color:var(--primary)">tv</span>
+                   <span class="material-symbols-outlined nav-icon-fill" style="color:var(--primary)">${escapeHtml(deviceIcon)}</span>
                    <p>${escapeHtml(deviceBadgeText)}</p>
                  </div>`,
                 "favorite-device"
@@ -1797,9 +1866,8 @@
       }
 
       if (topMedia) {
-        const thumb = posterUrl(topMedia.thumb);
-        const img = thumb
-          ? `<img src="${escapeHtml(thumb)}" alt="">`
+        const img = topMedia.thumb
+          ? posterImgHtml(topMedia.thumb)
           : `<div class="bento-media__placeholder" aria-hidden="true"></div>`;
         bento += `<div class="glass-card bento-span-2 bento-media">
           ${img}
