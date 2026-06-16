@@ -34,14 +34,18 @@ def test_compute_server_stats_rank_context_and_percent():
 
     assert stats.rank == 3
     assert stats.more_active_than_percent == 75
-    assert len(stats.rank_context) == 3
-    assert stats.rank_context[0].rank == 2
-    assert stats.rank_context[0].position_label == "Eén plek hoger"
-    assert stats.rank_context[0].watch_hours == 984
-    assert stats.rank_context[1].is_you
-    assert stats.rank_context[1].watch_hours == 830
-    assert stats.rank_context[2].rank == 4
-    assert stats.rank_context[2].position_label == "Eén plek lager"
+    # Leader (#1) is always surfaced, plus the immediate neighbours.
+    assert [entry.rank for entry in stats.rank_context] == [1, 2, 3, 4]
+    assert stats.rank_context[0].rank == 1
+    assert stats.rank_context[0].position_label == "Koploper"
+    assert stats.rank_context[0].watch_hours == 1240
+    assert stats.rank_context[1].rank == 2
+    assert stats.rank_context[1].position_label == "Eén plek hoger"
+    assert stats.rank_context[1].watch_hours == 984
+    assert stats.rank_context[2].is_you
+    assert stats.rank_context[2].watch_hours == 830
+    assert stats.rank_context[3].rank == 4
+    assert stats.rank_context[3].position_label == "Eén plek lager"
 
 
 def test_compute_server_stats_top10_fallback():
@@ -102,6 +106,56 @@ def test_compute_server_stats_year_ranked_uses_user_watch_seconds_for_you_row():
     you = next(entry for entry in stats.rank_context if entry.is_you)
     assert you.watch_hours == 276
     assert stats.rank_context[0].watch_hours == 1111
+
+
+def test_compute_server_stats_leader_sees_spots_two_and_three():
+    table = _users_table(
+        [
+            {"user_id": 1, "friendly_name": "Alex", "duration": 7_200_000},
+            {"user_id": 2, "friendly_name": "Beta", "duration": 3_600_000},
+            {"user_id": 3, "friendly_name": "Gamma", "duration": 1_800_000},
+            {"user_id": 4, "friendly_name": "Delta", "duration": 900_000},
+        ]
+    )
+
+    stats = _compute_server_stats(
+        user_id=1,
+        display_name="Alex",
+        username="alex",
+        user_watch_seconds=7_200_000,
+        users_table=table,
+        top_users=None,
+    )
+
+    assert stats.rank == 1
+    assert [entry.rank for entry in stats.rank_context] == [1, 2, 3]
+    assert stats.rank_context[0].is_you
+    assert stats.rank_context[1].position_label == "Eén plek lager"
+    assert stats.rank_context[2].position_label == "2 plekken lager"
+
+
+def test_compute_server_stats_far_rank_includes_leader():
+    rows = [
+        {"user_id": 100 + i, "friendly_name": f"U{i}", "duration": (20 - i) * 360_000}
+        for i in range(10)
+    ]
+    # Put our user at index 5 (rank 6).
+    rows[5] = {"user_id": 1, "friendly_name": "Alex", "username": "alex", "duration": rows[5]["duration"]}
+    table = _users_table(rows)
+
+    stats = _compute_server_stats(
+        user_id=1,
+        display_name="Alex",
+        username="alex",
+        user_watch_seconds=rows[5]["duration"],
+        users_table=table,
+        top_users=None,
+    )
+
+    assert stats.rank == 6
+    ranks = [entry.rank for entry in stats.rank_context]
+    assert ranks == [1, 5, 6, 7]
+    assert stats.rank_context[0].position_label == "Koploper"
 
 
 def test_compute_server_stats_edge_rank_one():

@@ -152,7 +152,7 @@ class TautulliClient:
     def get_home_stats(
         self,
         *,
-        stat_id: str = "top_movies",
+        stat_id: str | None = "top_movies",
         stats_count: int = 1,
         stats_type: str = "plays",
         stats_start: int = 0,
@@ -162,12 +162,15 @@ class TautulliClient:
         grouping: int = 1,
     ) -> list[dict[str, Any]]:
         params: dict[str, Any] = {
-            "stat_id": stat_id,
             "stats_count": str(stats_count),
             "stats_type": stats_type,
             "stats_start": str(stats_start),
             "grouping": str(grouping),
         }
+        # Some Tautulli versions return an empty result when stat_id is supplied,
+        # so callers can omit it and filter the returned blocks themselves.
+        if stat_id is not None:
+            params["stat_id"] = stat_id
         if time_range is not None:
             params["time_range"] = str(time_range)
         if after:

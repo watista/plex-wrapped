@@ -70,13 +70,73 @@
       </div>
       {% endif %}
 
-      <a href="/auth/start" class="login-btn">
+      <a href="/auth/start" class="login-btn" id="loginBtn"
+         data-client-id="{{ plex_client_id }}" data-product="{{ plex_product }}">
         <img class="login-btn__logo" src="/static/images/plextv-tile.svg" alt="" aria-hidden="true">
-        Inloggen met Plex
+        <span class="login-btn__label">Inloggen met Plex</span>
       </a>
     </main>
 
     <p class="login-footnote">Veilig inloggen via Plex. We slaan geen wachtwoord op.</p>
   </div>
+
+  <script>
+    (function () {
+      var btn = document.getElementById("loginBtn");
+      if (!btn) return;
+      var clientId = (btn.dataset.clientId || "").trim();
+      var product = (btn.dataset.product || "PlexWrapped").trim();
+      // Without a client id we can only use the server-side flow (the href).
+      if (!clientId) return;
+
+      var labelEl = btn.querySelector(".login-btn__label");
+
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (btn.dataset.busy === "1") return;
+        btn.dataset.busy = "1";
+        if (labelEl) labelEl.textContent = "Bezig met inloggen…";
+
+        // Create the Plex PIN from the browser so it originates from the user's
+        // own IP. Plex then recognises the same device when claiming the PIN and
+        // skips the "another device is trying to sign in" security warning.
+        fetch("https://plex.tv/api/v2/pins", {
+          method: "POST",
+          headers: { "Accept": "application/json" },
+          body: new URLSearchParams({
+            "strong": "true",
+            "X-Plex-Product": product,
+            "X-Plex-Client-Identifier": clientId,
+          }),
+        })
+          .then(function (res) {
+            if (!res.ok) throw new Error("pin_create_failed");
+            return res.json();
+          })
+          .then(function (data) {
+            var pinId = data && data.id;
+            var code = data && data.code;
+            if (!pinId || !code) throw new Error("pin_missing_fields");
+            var forward =
+              window.location.origin +
+              "/auth/callback?pin_id=" +
+              encodeURIComponent(pinId) +
+              "&pin_code=" +
+              encodeURIComponent(code);
+            var params = new URLSearchParams({
+              clientID: clientId,
+              code: code,
+              forwardUrl: forward,
+              "context[device][product]": product,
+            });
+            window.location.href = "https://app.plex.tv/auth#?" + params.toString();
+          })
+          .catch(function () {
+            // Network/CORS issue — fall back to the server-side flow.
+            window.location.href = "/auth/start";
+          });
+      });
+    })();
+  </script>
 </body>
 </html>

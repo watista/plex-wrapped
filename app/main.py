@@ -80,6 +80,18 @@ def require_user_id(request: Request) -> int:
     return user_id
 
 
+def _login_context(request: Request, *, error: str | None = None) -> dict[str, Any]:
+    settings: Settings = request.app.state.settings
+    ctx: dict[str, Any] = {
+        "request": request,
+        "plex_client_id": (settings.plex_client_id or "").strip(),
+        "plex_product": settings.plex_product,
+    }
+    if error:
+        ctx["error"] = error
+    return ctx
+
+
 def _wrapped_template_context(request: Request, *, year: int, user_id: int, share_mode: bool) -> dict[str, Any]:
     settings: Settings = request.app.state.settings
     return {
@@ -123,7 +135,7 @@ def home(request: Request):
     user_id = get_session_user_id(request, request.app.state.settings)
     if user_id:
         return RedirectResponse("/wrapped")
-    return templates.TemplateResponse(request, "login.html", {"request": request})
+    return templates.TemplateResponse(request, "login.html", _login_context(request))
 
 
 @app.get("/auth/start")
@@ -181,7 +193,7 @@ def auth_callback(
         return templates.TemplateResponse(
             request,
             "login.html",
-            {"request": request, "error": "Plex login failed. Check server logs and try again."},
+            _login_context(request, error="Plex login failed. Check server logs and try again."),
         )
 
     if not auth_token:
@@ -192,7 +204,7 @@ def auth_callback(
         return templates.TemplateResponse(
             request,
             "login.html",
-            {"request": request, "error": "Login not completed. Please try again."},
+            _login_context(request, error="Login not completed. Please try again."),
         )
 
     try:
@@ -202,7 +214,7 @@ def auth_callback(
         return templates.TemplateResponse(
             request,
             "login.html",
-            {"request": request, "error": "Could not load your Plex profile. Try again."},
+            _login_context(request, error="Could not load your Plex profile. Try again."),
         )
 
     logger.info(
@@ -220,7 +232,7 @@ def auth_callback(
         return templates.TemplateResponse(
             request,
             "login.html",
-            {"request": request, "error": "Server stats unavailable. Try again later."},
+            _login_context(request, error="Server stats unavailable. Try again later."),
         )
 
     if user_id is None:
@@ -235,7 +247,7 @@ def auth_callback(
         return templates.TemplateResponse(
             request,
             "login.html",
-            {"request": request, "error": error},
+            _login_context(request, error=error),
         )
 
     plex_username = (plex_user.get("username") or plex_user.get("title") or "").strip()

@@ -18,7 +18,7 @@
   --safe-bottom: 48px;
   --header-h: 64px;
   --nav-h: 0px;
-  --story-max-w: 430px;
+  --story-max-w: 768px;
   --font-display: "Hanken Grotesk", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
 }
@@ -27,6 +27,36 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+/* Short viewports: tighten the safe-area paddings before any content scaling
+   kicks in, so slides never overflow vertically. */
+@media (max-height: 760px) {
+  :root {
+    --safe-top: 52px;
+    --safe-bottom: 36px;
+    --gutter: 18px;
+  }
+}
+@media (max-height: 660px) {
+  :root {
+    --safe-top: 44px;
+    --safe-bottom: 28px;
+    --gutter: 16px;
+  }
+}
+@media (max-height: 580px) {
+  :root {
+    --safe-top: 38px;
+    --safe-bottom: 22px;
+    --gutter: 14px;
+  }
+}
+
+/* Content auto-fit: JS sets --fit-scale when a slide's content would overflow. */
+.slide-main {
+  transform: scale(var(--fit-scale, 1));
+  transform-origin: center center;
 }
 
 html,

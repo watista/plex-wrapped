@@ -40,6 +40,8 @@ class ServerStats(BaseModel):
     server_name: str | None = None
     server_top_show: str | None = None
     server_top_show_thumb: str | None = None
+    server_top_movie: str | None = None
+    server_top_movie_thumb: str | None = None
     more_active_than_percent: int | None = None
     rank_context: list[ServerRankEntry] = Field(default_factory=list)
 
@@ -83,6 +85,8 @@ class WrappedPayload(BaseModel):
     server: ServerStats = Field(default_factory=ServerStats)
     user_comparison_show: str | None = None
     user_comparison_show_thumb: str | None = None
+    user_comparison_movie: str | None = None
+    user_comparison_movie_thumb: str | None = None
     user_comparison_reason: Literal["most_played", "first_played"] | None = None
     comparison_same_show: bool | None = None
     comparison_headline_accent: str | None = None

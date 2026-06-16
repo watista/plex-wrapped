@@ -169,18 +169,40 @@ def _build_rank_context(
     ranked: list[dict[str, Any]],
     user_index: int,
 ) -> list[ServerRankEntry]:
-    context: list[ServerRankEntry] = []
+    if not ranked:
+        return []
+
+    indices: set[int] = set()
     for offset in (-1, 0, 1):
         idx = user_index + offset
-        if idx < 0 or idx >= len(ranked):
-            continue
+        if 0 <= idx < len(ranked):
+            indices.add(idx)
+
+    # Always surface the server leader so everyone sees the #1 user's stats.
+    indices.add(0)
+
+    # When the viewer is the leader there is nobody above them, so show the
+    # chasing pack (spots 2 and 3) instead.
+    if user_index == 0:
+        for idx in (1, 2):
+            if idx < len(ranked):
+                indices.add(idx)
+
+    context: list[ServerRankEntry] = []
+    for idx in sorted(indices):
+        offset = idx - user_index
+        is_you = idx == user_index
+        if idx == 0 and not is_you and offset < -1:
+            label = "Koploper"
+        else:
+            label = _position_label(offset)
         row = ranked[idx]
         context.append(
             ServerRankEntry(
                 rank=idx + 1,
                 watch_hours=int(round(int(row.get("duration", 0)) / 3600)),
-                is_you=offset == 0,
-                position_label=_position_label(offset),
+                is_you=is_you,
+                position_label=label,
             )
         )
     return context
@@ -376,6 +398,8 @@ class WrappedAggregator:
         self._metadata_cache: dict[str, dict[str, Any]] = {}
         self._tmdb_poster_cache: dict[tuple[str, str], str | None] = {}
         self._server_top_show: tuple[str | None, str | None] | None = None
+        self._server_top_movie: tuple[str | None, str | None] | None = None
+        self._home_stats: list[dict[str, Any]] | None = None
         self._year_ranked_users: list[dict[str, Any]] | None = None
 
     def get_cached(self, user_id: int) -> WrappedPayload | None:
@@ -436,29 +460,53 @@ class WrappedAggregator:
             tmdb_cache=self._tmdb_poster_cache,
         )
 
+    def _get_home_stats(self, time_range_days: int) -> list[dict[str, Any]]:
+        if self._home_stats is not None:
+            return self._home_stats
+        blocks: list[dict[str, Any]] = []
+        try:
+            # NOTE: passing stat_id makes some Tautulli versions return nothing,
+            # so we fetch every block and filter by stat_id ourselves.
+            blocks = self.tautulli.get_home_stats(
+                time_range=time_range_days,
+                stat_id=None,
+                stats_count=5,
+            )
+        except Exception:
+            logger.warning("get_home_stats failed", exc_info=True)
+        self._home_stats = blocks
+        return blocks
+
+    def _home_stat_rows(self, time_range_days: int, stat_id: str) -> list[dict[str, Any]]:
+        for block in self._get_home_stats(time_range_days):
+            if block.get("stat_id") == stat_id:
+                return block.get("rows") or []
+        return []
+
     def _get_server_top_show(self, time_range_days: int) -> tuple[str | None, str | None]:
         if self._server_top_show is not None:
             return self._server_top_show
         title: str | None = None
         thumb: str | None = None
-        try:
-            stats = self.tautulli.get_home_stats(
-                time_range=time_range_days,
-                stat_id="top_tv",
-                stats_count=1,
-            )
-            for block in stats:
-                if block.get("stat_id") != "top_tv":
-                    continue
-                rows = block.get("rows") or []
-                if rows:
-                    row = rows[0]
-                    title = row.get("grandparent_title") or row.get("title") or row.get("full_title")
-                    thumb = row.get("grandparent_thumb") or row.get("thumb")
-                break
-        except Exception:
-            pass
+        rows = self._home_stat_rows(time_range_days, "top_tv")
+        if rows:
+            row = rows[0]
+            title = row.get("grandparent_title") or row.get("title") or row.get("full_title")
+            thumb = row.get("grandparent_thumb") or row.get("thumb")
         self._server_top_show = (title, thumb)
+        return title, thumb
+
+    def _get_server_top_movie(self, time_range_days: int) -> tuple[str | None, str | None]:
+        if self._server_top_movie is not None:
+            return self._server_top_movie
+        title: str | None = None
+        thumb: str | None = None
+        rows = self._home_stat_rows(time_range_days, "top_movies")
+        if rows:
+            row = rows[0]
+            title = row.get("title") or row.get("full_title")
+            thumb = row.get("thumb")
+        self._server_top_movie = (title, thumb)
         return title, thumb
 
     def compute(self, user_id: int) -> WrappedPayload:
@@ -510,10 +558,10 @@ class WrappedAggregator:
         total_seconds = 0
         movie_plays = tv_plays = 0
         movie_stats: dict[str, dict[str, Any]] = defaultdict(
-            lambda: {"plays": 0, "duration": 0, "thumb": None, "rating_key": None}
+            lambda: {"plays": 0, "duration": 0, "thumb": None, "rating_key": None, "last_ts": 0}
         )
         show_stats: dict[str, dict[str, Any]] = defaultdict(
-            lambda: {"plays": 0, "duration": 0, "thumb": None, "rating_key": None}
+            lambda: {"plays": 0, "duration": 0, "thumb": None, "rating_key": None, "last_ts": 0}
         )
         history_titles: list[str] = []
         play_dates: list[date] = []
@@ -532,6 +580,7 @@ class WrappedAggregator:
         for row in media_history:
             media_type = row.get("media_type", "")
             duration = int(row.get("duration") or 0)
+            row_ts = int(row.get("date") or 0)
             total_seconds += duration
             history_titles.append(
                 row.get("grandparent_title") or row.get("title") or row.get("full_title") or ""
@@ -550,6 +599,8 @@ class WrappedAggregator:
                 movie_stats[title]["plays"] += 1
                 movie_stats[title]["duration"] += duration
                 movie_stats[title]["thumb"] = movie_stats[title]["thumb"] or thumb
+                if row_ts > movie_stats[title]["last_ts"]:
+                    movie_stats[title]["last_ts"] = row_ts
                 rk = row.get("rating_key")
                 if rk is not None:
                     movie_stats[title]["rating_key"] = movie_stats[title]["rating_key"] or str(rk)
@@ -562,6 +613,8 @@ class WrappedAggregator:
                 show_stats[title]["plays"] += 1
                 show_stats[title]["duration"] += duration
                 show_stats[title]["thumb"] = show_stats[title]["thumb"] or thumb
+                if row_ts > show_stats[title]["last_ts"]:
+                    show_stats[title]["last_ts"] = row_ts
                 gp = row.get("grandparent_rating_key")
                 if gp is not None:
                     series_keys.add(str(gp))
@@ -583,7 +636,14 @@ class WrappedAggregator:
             limit: int,
             media_kind: Literal["movie", "show"],
         ) -> list[MediaItem]:
-            ranked = sorted(stats.items(), key=lambda x: (-x[1]["plays"], -x[1]["duration"]))
+            entries = list(stats.items())
+            # When nothing was rewatched, "top" by plays is arbitrary, so surface
+            # the most recently watched titles instead (newest first).
+            all_watched_once = bool(entries) and all(d["plays"] <= 1 for _, d in entries)
+            if all_watched_once:
+                ranked = sorted(entries, key=lambda x: (-(x[1].get("last_ts") or 0), x[0]))
+            else:
+                ranked = sorted(entries, key=lambda x: (-x[1]["plays"], -x[1]["duration"]))
             items: list[MediaItem] = []
             for title, data in ranked[:limit]:
                 items.append(
@@ -618,6 +678,18 @@ class WrappedAggregator:
                 first_row = sorted_episodes[0]
                 user_comparison_show = _media_key(first_row, "episode")[0]
                 user_comparison_reason = "first_played"
+
+        # Movie equivalent — used as a fallback for the "server vs you" slide when
+        # the user (or the server) has no series activity.
+        user_comparison_movie: str | None = None
+        if movie_stats:
+            movie_has_repeat = any(d["plays"] > 1 for d in movie_stats.values())
+            if movie_has_repeat:
+                user_comparison_movie = max(movie_stats.items(), key=lambda x: x[1]["plays"])[0]
+            else:
+                user_comparison_movie = max(
+                    movie_stats.items(), key=lambda x: x[1].get("last_ts") or 0
+                )[0]
 
         watch_timing = _compute_watch_timing(media_history, self.year)
         busiest_month = watch_timing["busiest_month"]
@@ -735,6 +807,18 @@ class WrappedAggregator:
         else:
             server_stats.server_top_show_thumb = server_top_thumb
 
+        server_top_movie_title, server_top_movie_thumb = self._get_server_top_movie(time_range_days)
+        server_stats.server_top_movie = server_top_movie_title
+        if server_top_movie_title:
+            server_stats.server_top_movie_thumb = self._resolve_poster(
+                thumb=server_top_movie_thumb,
+                rating_key=None,
+                title=server_top_movie_title,
+                media_kind="movie",
+            )
+        else:
+            server_stats.server_top_movie_thumb = server_top_movie_thumb
+
         user_comparison_show_thumb: str | None = None
         if user_comparison_show and user_comparison_show in show_stats:
             show_data = show_stats[user_comparison_show]
@@ -748,6 +832,21 @@ class WrappedAggregator:
             for item in top_shows:
                 if item.title == user_comparison_show:
                     user_comparison_show_thumb = item.thumb
+                    break
+
+        user_comparison_movie_thumb: str | None = None
+        if user_comparison_movie and user_comparison_movie in movie_stats:
+            movie_data = movie_stats[user_comparison_movie]
+            user_comparison_movie_thumb = self._resolve_poster(
+                thumb=movie_data.get("thumb"),
+                rating_key=movie_data.get("rating_key"),
+                title=user_comparison_movie,
+                media_kind="movie",
+            )
+        if not user_comparison_movie_thumb and user_comparison_movie:
+            for item in top_movies:
+                if item.title == user_comparison_movie:
+                    user_comparison_movie_thumb = item.thumb
                     break
 
         comparison_same_show: bool | None = None
@@ -825,6 +924,8 @@ class WrappedAggregator:
             server=server_stats,
             user_comparison_show=user_comparison_show,
             user_comparison_show_thumb=user_comparison_show_thumb,
+            user_comparison_movie=user_comparison_movie,
+            user_comparison_movie_thumb=user_comparison_movie_thumb,
             user_comparison_reason=user_comparison_reason,  # type: ignore[arg-type]
             comparison_same_show=comparison_same_show,
             comparison_headline_accent=comparison_headline_accent,

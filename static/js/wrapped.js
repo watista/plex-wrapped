@@ -990,19 +990,25 @@
   function buildRankContextRows(entries) {
     if (!entries || !entries.length) return "";
 
+    const youEntry = entries.find((entry) => entry.is_you);
+    const youRank = youEntry ? youEntry.rank : null;
+
     return entries
       .map((entry) => {
         const youClass = entry.is_you ? " rank-row--you" : "";
-        const edgeClass = entry.is_you
-          ? ""
-          : entry.position_label === "Eén plek hoger"
-            ? " rank-row--above"
-            : " rank-row--below";
-        return `<div class="rank-row glass-card${youClass}${edgeClass}">
+        const isLeader = entry.rank === 1 && !entry.is_you;
+        let edgeClass = "";
+        if (!entry.is_you && youRank != null) {
+          edgeClass = entry.rank < youRank ? " rank-row--above" : " rank-row--below";
+        }
+        const leaderClass = isLeader ? " rank-row--leader" : "";
+        const icon = isLeader ? "workspace_premium" : entry.is_you ? "account_circle" : "person";
+        const iconHtml = `<span class="material-symbols-outlined">${icon}</span>`;
+        return `<div class="rank-row glass-card${youClass}${edgeClass}${leaderClass}">
           <div class="rank-row__main">
             <span class="rank-row__num">#${entry.rank}</span>
             <span class="rank-row__avatar" aria-hidden="true">
-              <span class="material-symbols-outlined">${entry.is_you ? "account_circle" : "person"}</span>
+              ${iconHtml}
             </span>
             <span class="rank-row__label">${escapeHtml(entry.position_label)}</span>
           </div>
@@ -1394,7 +1400,21 @@
             <p class="display-lg welcome-title">Jouw ${year}<br>Plex Wrapped</p>
             <p class="body-md">Laten we kijken naar jouw jaar in films en series.</p>
           </div>
-        `),
+        `) +
+          `<div class="nav-hint" aria-hidden="true">
+             <div class="nav-hint__zone nav-hint__zone--left">
+               <span class="nav-hint__chip">
+                 <span class="material-symbols-outlined">chevron_left</span>
+               </span>
+               <span class="nav-hint__label">Terug</span>
+             </div>
+             <div class="nav-hint__zone nav-hint__zone--right">
+               <span class="nav-hint__chip nav-hint__chip--primary">
+                 <span class="material-symbols-outlined">chevron_right</span>
+               </span>
+               <span class="nav-hint__label">Tap of swipe</span>
+             </div>
+           </div>`,
         "welcome"
       )
     );
@@ -1490,7 +1510,7 @@
           createSlide(
             buildTopMoviesPosterBg() +
               slideMain(
-                `<h2 class="slide-title">Jouw <span class="text-primary">top 5</span> films</h2>
+                `<h2 class="slide-title">Jouw <span class="text-primary">top ${Math.min(5, d.top_movies.length)}</span> films</h2>
                  ${buildRankList(d.top_movies, "keer bekeken", true)}`,
                 "top-movies"
               ),
@@ -1505,7 +1525,7 @@
             buildTopShowsPosterBg() +
               `<div class="top-shows-glow" aria-hidden="true"></div>` +
               slideMain(
-                `<h2 class="slide-title">Jouw <span class="text-primary">top 5</span> series</h2>
+                `<h2 class="slide-title">Jouw <span class="text-primary">top ${Math.min(5, d.top_shows.length)}</span> series</h2>
                  ${buildRankList(d.top_shows, "afleveringen", true)}`,
                 "top-shows"
               ),
@@ -1567,6 +1587,9 @@
                          <span class="material-symbols-outlined nav-icon-fill">calendar_month</span>
                        </div>
                      </div>
+                     <div class="heatmap-weekdays" aria-hidden="true">${WEEKDAY_SHORT.map(
+                       (day) => `<span>${day}</span>`
+                     ).join("")}</div>
                      <div class="heatmap-grid">${buildHeatmapGrid(
                        d.busiest_month_daily_plays ?? d.busiest_month_active_days,
                        d.busiest_month_first_weekday,
@@ -1752,8 +1775,8 @@
           d.comparison_same_show != null
             ? d.comparison_same_show
             : serverTopShow.toLowerCase() === userTopShow.toLowerCase();
-        const serverThumb = d.server?.server_top_show_thumb;
-        const userThumb = d.user_comparison_show_thumb;
+        const serverThumb = d.server?.server_top_show_thumb || d.server?.server_top_movie_thumb;
+        const userThumb = d.user_comparison_show_thumb || d.user_comparison_movie_thumb;
         const caption = buildComparisonCaption(d, serverTopShow, userTopShow, same);
 
         slides.push(
@@ -1934,6 +1957,24 @@
     return slides;
   }
 
+  function fitSlideContent(slide) {
+    if (!slide) return;
+    const main = slide.querySelector(".slide-main");
+    if (!main) return;
+    main.style.setProperty("--fit-scale", "1");
+    const available = main.clientHeight;
+    if (!available) return;
+    const needed = main.scrollHeight;
+    if (needed > available + 1) {
+      const scale = Math.max(0.6, available / needed);
+      main.style.setProperty("--fit-scale", scale.toFixed(4));
+    }
+  }
+
+  function fitAllSlides() {
+    slidesEl.querySelectorAll(".slide").forEach(fitSlideContent);
+  }
+
   function setupProgress(count) {
     progressBar.innerHTML = "";
     for (let i = 0; i < count; i++) {
@@ -2019,6 +2060,37 @@
     }
   }
 
+  let summaryBlob = null;
+  let summaryBlobPromise = null;
+
+  function prepareSummaryImage() {
+    if (summaryBlob) return Promise.resolve(summaryBlob);
+    if (summaryBlobPromise) return summaryBlobPromise;
+    if (!getSummarySlide()) return Promise.reject(new Error("Summary slide not ready"));
+    summaryBlobPromise = captureSummaryImage()
+      .then((blob) => {
+        summaryBlob = blob;
+        return blob;
+      })
+      .catch((err) => {
+        summaryBlobPromise = null;
+        throw err;
+      });
+    return summaryBlobPromise;
+  }
+
+  function schedulePrepareSummaryImage() {
+    if (!getSummarySlide()) return;
+    const run = () => {
+      prepareSummaryImage().catch((err) => console.warn("Summary pre-render failed", err));
+    };
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(run, { timeout: 3000 });
+    } else {
+      window.setTimeout(run, 1200);
+    }
+  }
+
   function downloadSummaryBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -2051,38 +2123,64 @@
 
   async function downloadSummaryImage(button) {
     window.WrappedAnalytics?.trackButtonClick("download");
-    await withSummaryCapture(button, async (blob) => {
+    const filename = `plex-wrapped-${summaryYear()}.png`;
+    if (summaryBlob) {
       window.WrappedAnalytics?.track("summary_image_downloaded", { button: "download" });
-      downloadSummaryBlob(blob, `plex-wrapped-${summaryYear()}.png`);
+      downloadSummaryBlob(summaryBlob, filename);
+      return;
+    }
+    await withSummaryCapture(button, async (blob) => {
+      summaryBlob = blob;
+      window.WrappedAnalytics?.track("summary_image_downloaded", { button: "download" });
+      downloadSummaryBlob(blob, filename);
     });
+  }
+
+  async function nativeShareBlob(blob, year, filename) {
+    const file = new File([blob], filename, { type: "image/png" });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: `Plex Wrapped ${year}` });
+        window.WrappedAnalytics?.track("summary_image_shared", { button: "share" });
+        return true;
+      } catch (err) {
+        if (err.name === "AbortError") return true;
+        console.warn(err);
+      }
+    }
+    return false;
   }
 
   async function shareSummaryImage(button) {
     window.WrappedAnalytics?.trackButtonClick("share");
-    await withSummaryCapture(button, async (blob) => {
-      const year = summaryYear();
-      const filename = `plex-wrapped-${year}.png`;
-      const file = new File([blob], filename, { type: "image/png" });
+    const year = summaryYear();
+    const filename = `plex-wrapped-${year}.png`;
 
-      if (navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: `Plex Wrapped ${year}`,
-          });
-          window.WrappedAnalytics?.track("summary_image_shared", { button: "share" });
-          return;
-        } catch (err) {
-          if (err.name === "AbortError") return;
-          console.warn(err);
-        }
+    // Fast path: the image is already rendered, so we can open the share sheet
+    // immediately within the click gesture (required by iOS/Safari).
+    if (summaryBlob) {
+      const shared = await nativeShareBlob(summaryBlob, year, filename);
+      if (!shared) {
+        window.WrappedAnalytics?.track("summary_image_shared", {
+          button: "share",
+          metadata: { fallback: "download" },
+        });
+        downloadSummaryBlob(summaryBlob, filename);
       }
+      return;
+    }
 
-      window.WrappedAnalytics?.track("summary_image_shared", {
-        button: "share",
-        metadata: { fallback: "download" },
-      });
-      downloadSummaryBlob(blob, filename);
+    // Slow path: render on demand, then share or fall back to download.
+    await withSummaryCapture(button, async (blob) => {
+      summaryBlob = blob;
+      const shared = await nativeShareBlob(blob, year, filename);
+      if (!shared) {
+        window.WrappedAnalytics?.track("summary_image_shared", {
+          button: "share",
+          metadata: { fallback: "download" },
+        });
+        downloadSummaryBlob(blob, filename);
+      }
     });
   }
 
@@ -2118,7 +2216,9 @@
         root: slidesEl,
         onChange: (index, slide) => {
           updateProgress(index);
+          if (index !== 0) document.body.classList.add("has-navigated");
           if (slide?.classList.contains("slide--summary")) ensureSummaryDots();
+          fitSlideContent(slide);
           window.WrappedAnalytics?.trackSlideView(index, slide);
         },
       });
@@ -2150,9 +2250,22 @@
       slidesEl.classList.remove("hidden");
 
       requestAnimationFrame(() => {
-        requestAnimationFrame(ensureSummaryDots);
+        requestAnimationFrame(() => {
+          ensureSummaryDots();
+          fitAllSlides();
+        });
       });
       window.setTimeout(ensureSummaryDots, 120);
+      window.setTimeout(fitAllSlides, 200);
+      document.fonts?.ready.then(fitAllSlides).catch(() => {});
+
+      let fitResizeTimer = null;
+      window.addEventListener("resize", () => {
+        window.clearTimeout(fitResizeTimer);
+        fitResizeTimer = window.setTimeout(fitAllSlides, 150);
+      });
+
+      schedulePrepareSummaryImage();
 
       document.getElementById("btnShareSummary")?.addEventListener("click", (e) => {
         e.stopPropagation();

@@ -70,6 +70,83 @@
   to { transform: scale(1.1) translate(-2%, -2%); }
 }
 
+/* Welcome — tap navigation hint */
+.slide--welcome .nav-hint {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 6px;
+  pointer-events: none;
+  animation: nav-hint-autohide 0.8s ease 7s forwards;
+}
+.has-navigated .slide--welcome .nav-hint {
+  display: none;
+}
+@keyframes nav-hint-autohide {
+  to { opacity: 0; visibility: hidden; }
+}
+.slide--welcome .nav-hint__zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 38%;
+  max-width: 150px;
+}
+.slide--welcome .nav-hint__chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: nav-hint-pulse-left 1.8s ease-in-out infinite;
+}
+.slide--welcome .nav-hint__chip--primary {
+  background: rgba(229, 160, 13, 0.22);
+  border-color: rgba(255, 189, 73, 0.5);
+  color: var(--primary);
+  animation: nav-hint-pulse-right 1.8s ease-in-out infinite;
+}
+.slide--welcome .nav-hint__chip .material-symbols-outlined {
+  font-size: 28px;
+}
+.slide--welcome .nav-hint__label {
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(226, 226, 226, 0.75);
+  text-align: center;
+  line-height: 1.2;
+}
+.slide--welcome .nav-hint__zone--right .nav-hint__label {
+  color: var(--primary);
+}
+@keyframes nav-hint-pulse-left {
+  0%, 100% { transform: translateX(0); opacity: 0.6; }
+  50% { transform: translateX(-6px); opacity: 1; }
+}
+@keyframes nav-hint-pulse-right {
+  0%, 100% { transform: translateX(0); opacity: 0.7; }
+  50% { transform: translateX(6px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide--welcome .nav-hint__chip,
+  .slide--welcome .nav-hint__chip--primary {
+    animation: none;
+  }
+}
+
 /* 2 Watch time */
 .slide--watch-time .slide-bg {
   background: #000;
@@ -776,6 +853,26 @@
   column-gap: 45px;
   width: 100%;
 }
+.slide--when-you-watch .heatmap-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  column-gap: 45px;
+  width: 100%;
+  margin-top: 1.25rem;
+  margin-bottom: 8px;
+}
+.slide--when-you-watch .heatmap-weekdays span {
+  font-family: var(--font-body);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  text-align: center;
+  color: var(--on-surface-variant);
+}
+.slide--when-you-watch .when-card--month-heatmap .heatmap-weekdays + .heatmap-grid {
+  margin-top: 0;
+}
 .slide--when-you-watch .heat-dot {
   width: 100%;
   aspect-ratio: 1;
@@ -1084,11 +1181,16 @@
 .slide--longest-streak .device-title,
 .slide--favorite-device .device-title {
   font-family: var(--font-display);
-  font-size: clamp(2.5rem, 10vw, 3.5rem);
-  font-weight: 800;
+  font-size: clamp(1.5rem, 8vw, 2.5rem);
+  font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.02em;
   color: #fff;
+}
+.slide--longest-streak .device-title .text-primary,
+.slide--favorite-device .device-title .text-primary {
+  font-weight: 800;
+  font-size: clamp(2.5rem, 10vw, 3.5rem);
 }
 .slide--favorite-device .device-badge {
   display: flex;
@@ -1596,6 +1698,19 @@
   border: 2px solid rgba(229, 160, 13, 0.4);
   background: rgba(229, 160, 13, 0.08);
   box-shadow: 0 0 24px rgba(229, 160, 13, 0.12);
+}
+.slide--server-rank .rank-row--leader {
+  opacity: 1;
+  transform: none;
+  border: 1px solid rgba(255, 189, 73, 0.35);
+}
+.slide--server-rank .rank-row--leader .rank-row__avatar {
+  border-color: rgba(255, 189, 73, 0.6);
+  background: rgba(229, 160, 13, 0.18);
+}
+.slide--server-rank .rank-row--leader .rank-row__avatar .material-symbols-outlined {
+  color: var(--primary);
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 .slide--server-rank .rank-row__main {
   display: flex;
