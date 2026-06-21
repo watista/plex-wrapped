@@ -50,6 +50,11 @@
   ],
   "top_show_genres": [],
 
+  "top_actors": [
+    {"name": "Timothée Chalamet", "plays": 9, "title_count": 4, "thumb": "https://image.tmdb.org/t/p/h632/BE2Imv10vOR4Q0WH3SW0U5t5sil"},
+    {"name": "Zendaya", "plays": 6, "title_count": 3, "thumb": "https://image.tmdb.org/t/p/h632/jt2HyfR4b4Q8Fy6S0iF8z0x0x0x0"}
+  ],
+
   "server": {
     "rank": 8,
     "server_name": "Thuis-Server",

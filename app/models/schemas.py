@@ -17,6 +17,13 @@ class GenreStat(BaseModel):
     plays: int = 0
 
 
+class ActorStat(BaseModel):
+    name: str
+    plays: int = 0
+    title_count: int = 0
+    thumb: str | None = None
+
+
 class TelegramStats(BaseModel):
     film_requests: int = 0
     serie_requests: int = 0
@@ -88,6 +95,8 @@ class WrappedPayload(BaseModel):
 
     top_movie_genres: list[GenreStat] = Field(default_factory=list)
     top_show_genres: list[GenreStat] = Field(default_factory=list)
+
+    top_actors: list[ActorStat] = Field(default_factory=list)
 
     server: ServerStats = Field(default_factory=ServerStats)
     user_comparison_show: str | None = None

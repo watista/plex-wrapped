@@ -50,6 +50,11 @@
     {"name": "Science Fiction", "plays": 96}
   ],
 
+  "top_actors": [
+    {"name": "Dominic West", "plays": 88, "title_count": 5, "thumb": "https://image.tmdb.org/t/p/h632/5CqOHPxCzM4PLN0ZQLz5r3PWI0F"},
+    {"name": "Idris Elba", "plays": 64, "title_count": 3, "thumb": "https://image.tmdb.org/t/p/h632/be1bHHp4PjCL0EFdb4ZZsJ1T8ZZ"}
+  ],
+
   "server": {
     "rank": 1,
     "server_name": "Thuis-Server",

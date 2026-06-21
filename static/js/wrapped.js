@@ -196,6 +196,7 @@
       slideId === "series-depth" ||
       slideId === "when-you-watch" ||
       slideId === "longest-streak" ||
+      slideId === "favorite-actor" ||
       slideId === "server-rank"
         ? '<canvas class="slide-bokeh-canvas" aria-hidden="true"></canvas>'
         : "";
@@ -1437,9 +1438,9 @@
 
   function playsTagline(totalPlays) {
     const plays = Math.max(0, Number(totalPlays) || 0);
-    if (plays >= 1000) return "Meer dan duizend keer op play — jij houdt de server warm.";
-    if (plays >= 500) return "Een echte bingewatcher; de play-knop gloeit na bij jou.";
-    if (plays >= 200) return "Jij weet de play-knop wel te vinden.";
+    if (plays >= 500) return "Meer dan duizend keer op play — jij houdt de server warm.";
+    if (plays >= 250) return "Een echte bingewatcher; de play-knop gloeit na bij jou.";
+    if (plays >= 100) return "Jij weet de play-knop wel te vinden.";
     if (plays >= 50) return "Een trouwe kijker met een gezonde dosis play-knop.";
     if (plays > 0) return "Mondjesmaat, maar wel met smaak.";
     return "Klaar voor een nieuw kijkjaar.";
@@ -1454,6 +1455,77 @@
     if (series >= 10) return `${series} series aangesneden; jij durft aan een nieuw verhaal te beginnen.`;
     if (episodes > 0) return `${eps} afleveringen verder — elke serie kreeg jouw volle aandacht.`;
     return "Je dook dit jaar lekker diep in series.";
+  }
+
+  function actorTitlesLabel(count) {
+    const n = Math.max(0, Number(count) || 0);
+    return n === 1 ? "1 titel" : `${n.toLocaleString("nl-NL")} titels`;
+  }
+
+  function actorTagline(actor) {
+    const titles = Math.max(0, Number(actor?.title_count) || 0);
+    if (titles >= 10) return "Een vast gezicht in jouw kijkjaar.";
+    if (titles >= 5) return "Deze ster bleef maar terugkomen op je scherm.";
+    if (titles >= 2) return "Jij zocht deze ster meermaals op.";
+    return "Jouw uitschieter van het jaar.";
+  }
+
+  function actorHeroHtml(actor) {
+    if (actor.thumb) {
+      return `<img src="${escapeHtml(actor.thumb)}" alt="${escapeHtml(actor.name)}" loading="lazy" onerror="this.onerror=null;this.closest('.actor-hero').classList.add('actor-hero--fallback');this.replaceWith(Object.assign(document.createElement('span'),{className:'material-symbols-outlined nav-icon-fill',textContent:'person'}));">`;
+    }
+    return `<span class="material-symbols-outlined nav-icon-fill">person</span>`;
+  }
+
+  function actorAvatarHtml(actor, className) {
+    if (actor.thumb) {
+      return `<img class="${className}" src="${escapeHtml(actor.thumb)}" alt="" loading="lazy" onerror="this.onerror=null;this.classList.add('actor-avatar--fallback');">`;
+    }
+    return `<span class="${className} actor-avatar--fallback material-symbols-outlined">person</span>`;
+  }
+
+  function buildFavoriteActorSlide(d) {
+    const actors = (d.top_actors || []).filter((actor) => actor && actor.name);
+    if (!actors.length) return null;
+
+    const hero = actors[0];
+    const runners = actors.slice(1, 3);
+    const runnersHtml = runners.length
+      ? `<div class="actor-runners">
+           <p class="actor-runners__label">Ook vaak in beeld</p>
+           <div class="actor-runners__list">
+             ${runners
+               .map(
+                 (actor, i) => `<div class="actor-runner glass-card">
+                   <span class="actor-runner__rank">${i + 2}</span>
+                   ${actorAvatarHtml(actor, "actor-runner__avatar")}
+                   <span class="actor-runner__name">${escapeHtml(actor.name)}</span>
+                   <span class="actor-runner__meta">${escapeHtml(actorTitlesLabel(actor.title_count))}</span>
+                 </div>`
+               )
+               .join("")}
+           </div>
+         </div>`
+      : "";
+
+    return slideMain(
+      `<div class="actor-hero-block">
+         <div class="actor-hero glass-card">
+           ${actorHeroHtml(hero)}
+         </div>
+         <div class="actor-copy stack-sm">
+           <p class="label-md label-md--wide">Jouw favoriete ster</p>
+           <h2 class="device-title">Het gezicht van jouw jaar:<br><span class="text-primary">${escapeHtml(hero.name)}</span></h2>
+           <p class="actor-tagline">${escapeHtml(actorTagline(hero))}</p>
+         </div>
+       </div>
+       <div class="glass-card actor-badge">
+         <span class="material-symbols-outlined nav-icon-fill">movie</span>
+         <p>Te zien in <span class="text-primary">${escapeHtml(actorTitlesLabel(hero.title_count))}</span> die jij keek</p>
+       </div>
+       ${runnersHtml}`,
+      "favorite-actor"
+    );
   }
 
   function buildSlides(d) {
@@ -1768,6 +1840,11 @@
             "longest-streak"
           )
         );
+      }
+
+      const favoriteActorSlide = buildFavoriteActorSlide(d);
+      if (favoriteActorSlide) {
+        slides.push(createSlide(favoriteActorSlide, "favorite-actor"));
       }
 
       if (d.top_movie_genres && d.top_movie_genres.length) {
@@ -2519,7 +2596,9 @@
         initWeekdayChart(slide);
       });
       slidesEl
-        .querySelectorAll(".slide--watch-time, .slide--series-depth, .slide--longest-streak")
+        .querySelectorAll(
+          ".slide--watch-time, .slide--series-depth, .slide--longest-streak, .slide--favorite-actor"
+        )
         .forEach(initWatchTimeBokeh);
       slidesEl.querySelectorAll(".slide--total-plays").forEach(initTotalPlaysIcons);
       slidesEl

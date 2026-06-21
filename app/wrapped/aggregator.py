@@ -22,6 +22,7 @@ from app.wrapped.avatar import resolve_avatar_url
 from app.wrapped.locale import month_number_to_dutch, to_dutch_day, to_dutch_month, weekday_number_to_dutch
 from app.wrapped.posters import resolve_poster
 from app.wrapped.slides import apply_persona
+from app.wrapped.tmdb_actors import compute_top_actors
 
 
 def _year_range(year: int) -> tuple[str, str, int]:
@@ -402,6 +403,8 @@ class WrappedAggregator:
         self.ai = ai or CursorAIClient(self.settings)
         self._metadata_cache: dict[str, dict[str, Any]] = {}
         self._tmdb_poster_cache: dict[tuple[str, str], str | None] = {}
+        self._tmdb_credits_cache: dict[tuple[str, int], list[dict[str, Any]]] = {}
+        self._tmdb_search_cache: dict[tuple[str, str], int | None] = {}
         self._server_top_show: tuple[str | None, str | None] | None = None
         self._server_top_movie: tuple[str | None, str | None] | None = None
         self._home_stats: list[dict[str, Any]] | None = None
@@ -669,6 +672,23 @@ class WrappedAggregator:
 
         top_movies = to_media_items(movie_stats, 5, "movie")
         top_shows = to_media_items(show_stats, 5, "show")
+
+        top_actors = compute_top_actors(
+            movie_stats=movie_stats,
+            show_stats=show_stats,
+            get_metadata=self._get_metadata,
+            api_key=self.settings.tmdb_api_key,
+            credits_cache=self._tmdb_credits_cache,
+            search_cache=self._tmdb_search_cache,
+        )
+        if top_actors:
+            logger.info(
+                "Top actors user_id=%s leader=%s plays=%s titles=%s",
+                user_id,
+                top_actors[0].name,
+                top_actors[0].plays,
+                top_actors[0].title_count,
+            )
 
         streak_days, streak_start, streak_end = _longest_streak(play_dates)
 
@@ -950,6 +970,7 @@ class WrappedAggregator:
             longest_streak_end=streak_end.isoformat() if streak_end else None,
             top_movie_genres=_top_genres(movie_genre_counter),
             top_show_genres=_top_genres(show_genre_counter),
+            top_actors=top_actors,
             server=server_stats,
             user_comparison_show=user_comparison_show,
             user_comparison_show_thumb=user_comparison_show_thumb,

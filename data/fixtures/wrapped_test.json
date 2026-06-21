@@ -62,6 +62,12 @@
     {"name": "Mystery", "plays": 38}
   ],
 
+  "top_actors": [
+    {"name": "Bryan Cranston", "plays": 71, "title_count": 6, "thumb": "https://image.tmdb.org/t/p/h632/f4dwrxddLg2YOK9W66P4hArbSxL"},
+    {"name": "Aaron Paul", "plays": 58, "title_count": 4, "thumb": "https://image.tmdb.org/t/p/h632/YS1l7iR4pX3VDT3tQ3Lk3UVc1cV"},
+    {"name": "Pedro Pascal", "plays": 22, "title_count": 5, "thumb": "https://image.tmdb.org/t/p/h632/9d2qQ8b8XqJ8Q8Q8Q8Q8Q8Q8Q8Q"}
+  ],
+
   "server": {
     "rank": 3,
     "server_name": "Thuis-Server",
