@@ -23,6 +23,61 @@
     "/static/designs/top_shows_bg_6.png",
   ];
 
+  function createPlexLogoCanvas(displaySize = 24) {
+    const pixelSize = displaySize * 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = pixelSize;
+    canvas.height = pixelSize;
+    canvas.className = "summary-export-brand__logo";
+    canvas.setAttribute("aria-hidden", "true");
+
+    const ctx = canvas.getContext("2d");
+    const radius = pixelSize * 0.15;
+    ctx.fillStyle = "#282a2d";
+    ctx.beginPath();
+    ctx.moveTo(radius, 0);
+    ctx.lineTo(pixelSize - radius, 0);
+    ctx.quadraticCurveTo(pixelSize, 0, pixelSize, radius);
+    ctx.lineTo(pixelSize, pixelSize - radius);
+    ctx.quadraticCurveTo(pixelSize, pixelSize, pixelSize - radius, pixelSize);
+    ctx.lineTo(radius, pixelSize);
+    ctx.quadraticCurveTo(0, pixelSize, 0, pixelSize - radius);
+    ctx.lineTo(0, radius);
+    ctx.quadraticCurveTo(0, 0, radius, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    const scale = pixelSize / 512;
+    ctx.fillStyle = "#e5a00d";
+    ctx.beginPath();
+    ctx.moveTo(256 * scale, 70 * scale);
+    ctx.lineTo(148 * scale, 70 * scale);
+    ctx.lineTo(256 * scale, 256 * scale);
+    ctx.lineTo(148 * scale, 442 * scale);
+    ctx.lineTo(256 * scale, 442 * scale);
+    ctx.lineTo(364 * scale, 256 * scale);
+    ctx.closePath();
+    ctx.fill();
+
+    return canvas;
+  }
+
+  const PLEX_LOGO_RASTER = (() => {
+    const canvas = createPlexLogoCanvas(48);
+    return {
+      dataUrl: canvas.toDataURL("image/png"),
+      width: canvas.width,
+      height: canvas.height,
+      displaySize: 24,
+    };
+  })();
+
+  const PLEX_WRAPPED_BRAND = `<div class="summary-export-brand">
+    <span class="summary-export-brand__title">
+      <span class="summary-export-brand__muted">Ple</span><span class="summary-export-brand__accent">x</span><span class="summary-export-brand__muted"> </span><span class="summary-export-brand__muted">Wra</span><span class="summary-export-brand__accent">pp</span><span class="summary-export-brand__muted">ed</span>
+    </span>
+  </div>`;
+
   const PERSONA_ART = {
     curator: "/static/designs/personas/curator.png",
     series_devourer: "/static/designs/personas/series_devourer.png",
@@ -115,11 +170,12 @@
     return `<img src="${POSTER_FALLBACK}" alt=""${extra} aria-hidden="true">`;
   }
 
-  function posterImgHtml(thumb, className) {
+  function posterImgHtml(thumb, className, eager) {
     const url = posterUrl(thumb);
     if (!url) return posterPlaceholderHtml(className);
     const cls = className ? ` class="${className}"` : "";
-    return `<img src="${escapeHtml(url)}" alt="" loading="lazy"${cls} onerror="this.onerror=null;this.src='${POSTER_FALLBACK}'">`;
+    const loading = eager ? ' loading="eager"' : ' loading="lazy"';
+    return `<img src="${escapeHtml(url)}" alt=""${loading}${cls} onerror="this.onerror=null;this.src='${POSTER_FALLBACK}'">`;
   }
 
   function hasTelegramActivity(tg) {
@@ -652,9 +708,9 @@
     visibilityObserver.observe(slide);
   }
 
-  function slideMain(html, layout) {
+  function slideMain(html, layout, outsideFit = "") {
     const cls = layout ? `slide-main slide-main--${layout}` : "slide-main";
-    return `<main class="${cls}">${html}</main>`;
+    return `<main class="${cls}"><div class="slide-main__fit">${html}</div>${outsideFit}</main>`;
   }
 
   function buildPosterStack(items) {
@@ -1379,6 +1435,27 @@
     return "Een gebalanceerde mix van films en series.";
   }
 
+  function playsTagline(totalPlays) {
+    const plays = Math.max(0, Number(totalPlays) || 0);
+    if (plays >= 1000) return "Meer dan duizend keer op play — jij houdt de server warm.";
+    if (plays >= 500) return "Een echte bingewatcher; de play-knop gloeit na bij jou.";
+    if (plays >= 200) return "Jij weet de play-knop wel te vinden.";
+    if (plays >= 50) return "Een trouwe kijker met een gezonde dosis play-knop.";
+    if (plays > 0) return "Mondjesmaat, maar wel met smaak.";
+    return "Klaar voor een nieuw kijkjaar.";
+  }
+
+  function seriesDepthDefault(d) {
+    const series = Number(d.unique_series) || 0;
+    const episodes = Number(d.unique_episodes) || 0;
+    const eps = episodes.toLocaleString("nl-NL");
+    if (episodes >= 500) return `${eps} afleveringen?! Jij schakelde dit jaar bijna non-stop door.`;
+    if (episodes >= 200) return `${eps} afleveringen over ${series} series — jij weet van geen ophouden.`;
+    if (series >= 10) return `${series} series aangesneden; jij durft aan een nieuw verhaal te beginnen.`;
+    if (episodes > 0) return `${eps} afleveringen verder — elke serie kreeg jouw volle aandacht.`;
+    return "Je dook dit jaar lekker diep in series.";
+  }
+
   function buildSlides(d) {
     const slides = [];
     const year = d.year;
@@ -1448,12 +1525,12 @@
                  <div class="glass-card glass-card--days watch-days-card">
                    <p class="watch-days-text">Dat is <span class="text-primary">${days} dagen</span> kijkplezier</p>
                  </div>
-               </div>
-               <div class="slide-footnote watch-footnote">
+               </div>`,
+              "bottom-note",
+              `<div class="slide-footnote watch-footnote">
                  <div class="footnote-divider"></div>
                  <p class="watch-footnote-label">gestreamd in ${year}</p>
-               </div>`,
-              "bottom-note"
+               </div>`
             ),
           "watch-time"
         )
@@ -1469,7 +1546,7 @@
                  <p class="plays-subtitle">keer op de play-knop gedrukt</p>
                  <div class="plays-divider"></div>
                </div>
-               <p class="plays-tagline">Je bent een echte binge-watcher</p>`
+               <p class="plays-tagline">${escapeHtml(playsTagline(d.total_plays))}</p>`
             ),
           "total-plays"
         )
@@ -1557,7 +1634,7 @@
                      <span class="stair-label">afleveringen</span>
                    </div>
                  </div>
-                 <p class="stair-quote">"Je hebt genoeg content verslonden om een heel decennium te vullen."</p>
+                 <p class="stair-quote">"${escapeHtml(d.ai_copy?.series_depth || seriesDepthDefault(d))}"</p>
                </div>`
             ),
             "series-depth"
@@ -1612,14 +1689,14 @@
                      </div>
                    </div>
                  </div>
-               </div>
-               <div class="when-waves" aria-hidden="true">
+               </div>`,
+              "when-you-watch",
+              `<div class="when-waves" aria-hidden="true">
                  <svg viewBox="0 0 400 100" preserveAspectRatio="none">
                    <path class="when-wave when-wave--primary" d="M0,50 Q50,0 100,50 T200,50 T300,50 T400,50" fill="none" stroke="#ffbd49" stroke-width="2"></path>
                    <path class="when-wave when-wave--tertiary" d="M0,50 Q50,20 100,50 T200,50 T300,50 T400,50" fill="none" stroke="#96ceff" stroke-width="1"></path>
                  </svg>
-               </div>`,
-              "when-you-watch"
+               </div>`
             ),
             "when-you-watch"
           )
@@ -1700,7 +1777,7 @@
               slideMain(
                 `<div class="genre-header stack-sm">
                    <span class="label-md label-md--wide">Jouw vibe</span>
-                   <h2 class="genre-title">Top film <span class="text-primary-container">genres</span></h2>
+                   <h2 class="genre-title">Top <span class="text-primary-container">film</span> genres</h2>
                  </div>
                  ${buildGenreLayout(d.top_movie_genres, "Films", "films")}`,
                 "movie-genres"
@@ -1717,7 +1794,7 @@
               slideMain(
                 `<div class="genre-header stack-sm">
                    <span class="label-md label-md--wide">Jouw vibe</span>
-                   <h2 class="genre-title">Top series <span class="text-primary-container">genres</span></h2>
+                   <h2 class="genre-title">Top <span class="text-primary-container">series</span> genres</span></h2>
                  </div>
                  ${buildGenreLayout(d.top_show_genres, "Episodes", "episodes")}`,
                 "show-genres"
@@ -1777,7 +1854,8 @@
             : serverTopShow.toLowerCase() === userTopShow.toLowerCase();
         const serverThumb = d.server?.server_top_show_thumb || d.server?.server_top_movie_thumb;
         const userThumb = d.user_comparison_show_thumb || d.user_comparison_movie_thumb;
-        const caption = buildComparisonCaption(d, serverTopShow, userTopShow, same);
+        const caption =
+          d.ai_copy?.server_vs_you || buildComparisonCaption(d, serverTopShow, userTopShow, same);
 
         slides.push(
           createSlide(
@@ -1869,6 +1947,7 @@
         : 0;
 
       let bento = `<div class="summary-export">
+        ${PLEX_WRAPPED_BRAND}
         <div class="summary-header">
           <p class="summary-eyebrow">Jouw jaar in review</p>
           <h2 class="summary-title">${year} Samenvatting</h2>
@@ -1890,7 +1969,7 @@
 
       if (topMedia) {
         const img = topMedia.thumb
-          ? posterImgHtml(topMedia.thumb)
+          ? posterImgHtml(topMedia.thumb, "", true)
           : `<div class="bento-media__placeholder" aria-hidden="true"></div>`;
         bento += `<div class="glass-card bento-span-2 bento-media">
           ${img}
@@ -1940,8 +2019,9 @@
       </div>`;
 
       bento += `</div>
-        </div>
-        <div class="share-actions">
+        </div>`;
+
+      const shareActions = `<div class="share-actions">
           <button type="button" class="share-btn" id="btnShareSummary">
             <span class="material-symbols-outlined" style="font-size:20px">share</span>
             <span class="share-btn__label">Deel je jaar</span>
@@ -1951,23 +2031,76 @@
           </button>
         </div>`;
 
-      slides.push(createSlide(slideMain(bento, "summary"), "summary"));
+      slides.push(createSlide(slideMain(bento, "summary", shareActions), "summary"));
     }
 
     return slides;
   }
 
+  function measureFitHeight(fit) {
+    let needed = fit.scrollHeight;
+    const fitTop = fit.getBoundingClientRect().top;
+    let visualBottom = fitTop;
+    fit.querySelectorAll("*").forEach((el) => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) return;
+      visualBottom = Math.max(visualBottom, rect.bottom);
+    });
+    needed = Math.max(needed, visualBottom - fitTop);
+    return needed;
+  }
+
+  function reservedMainChrome(main) {
+    let reserved = 0;
+    main.querySelectorAll(":scope > *").forEach((child) => {
+      if (child.classList.contains("slide-main__fit")) return;
+      const style = getComputedStyle(child);
+      if (style.display === "none" || style.position === "absolute") return;
+      reserved +=
+        child.offsetHeight +
+        (parseFloat(style.marginTop) || 0) +
+        (parseFloat(style.marginBottom) || 0);
+    });
+    return reserved;
+  }
+
   function fitSlideContent(slide) {
     if (!slide) return;
     const main = slide.querySelector(".slide-main");
-    if (!main) return;
-    main.style.setProperty("--fit-scale", "1");
-    const available = main.clientHeight;
+    const fit = main?.querySelector(".slide-main__fit");
+    if (!main || !fit) return;
+
+    fit.style.setProperty("--fit-scale", "1");
+
+    const mainStyle = getComputedStyle(main);
+    const padTop = parseFloat(mainStyle.paddingTop) || 0;
+    const padBottom = parseFloat(mainStyle.paddingBottom) || 0;
+    const mainGap = parseFloat(mainStyle.rowGap || mainStyle.gap) || 0;
+    const chrome = reservedMainChrome(main);
+    const available =
+      slide.clientHeight - padTop - padBottom - chrome - (chrome > 0 ? mainGap : 0);
     if (!available) return;
-    const needed = main.scrollHeight;
+
+    const needed = measureFitHeight(fit);
     if (needed > available + 1) {
-      const scale = Math.max(0.6, available / needed);
-      main.style.setProperty("--fit-scale", scale.toFixed(4));
+      let scale = Math.max(0.48, (available / needed) * 0.97);
+      fit.style.setProperty("--fit-scale", scale.toFixed(4));
+
+      const maxBottom =
+        slide.getBoundingClientRect().bottom -
+        padBottom * 0.5 -
+        (chrome > 0 ? chrome + mainGap : 0);
+      for (let i = 0; i < 10; i++) {
+        let overflow = 0;
+        fit.querySelectorAll("*").forEach((el) => {
+          const rect = el.getBoundingClientRect();
+          if (rect.width === 0 && rect.height === 0) return;
+          overflow = Math.max(overflow, rect.bottom - maxBottom);
+        });
+        if (overflow <= 1) break;
+        scale = Math.max(0.48, scale * 0.96);
+        fit.style.setProperty("--fit-scale", scale.toFixed(4));
+      }
     }
   }
 
@@ -2019,6 +2152,96 @@
     );
   }
 
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function loadImageElement(src) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+      image.src = src;
+    });
+  }
+
+  async function loadImageBitmap(src, fallbackImg) {
+    try {
+      if (src.startsWith("data:")) {
+        return loadImageElement(src);
+      }
+      const response = await fetch(src, { credentials: "same-origin" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const dataUrl = await blobToDataUrl(await response.blob());
+      return loadImageElement(dataUrl);
+    } catch (err) {
+      if (fallbackImg?.complete && fallbackImg.naturalWidth) {
+        const canvas = document.createElement("canvas");
+        canvas.width = fallbackImg.naturalWidth;
+        canvas.height = fallbackImg.naturalHeight;
+        canvas.getContext("2d").drawImage(fallbackImg, 0, 0);
+        return loadImageElement(canvas.toDataURL("image/jpeg", 0.92));
+      }
+      throw err;
+    }
+  }
+
+  function drawImageCover(ctx, image, width, height) {
+    const iw = image.naturalWidth || image.width;
+    const ih = image.naturalHeight || image.height;
+    if (!iw || !ih) return;
+    const scale = Math.max(width / iw, height / ih);
+    const drawWidth = iw * scale;
+    const drawHeight = ih * scale;
+    const offsetX = (width - drawWidth) / 2;
+    const offsetY = (height - drawHeight) / 2;
+    ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+  }
+
+  function rasterDataUrl(bitmap, width, height, pixelRatio = 2) {
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * pixelRatio));
+    canvas.height = Math.max(1, Math.round(height * pixelRatio));
+    drawImageCover(canvas.getContext("2d"), bitmap, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.92);
+  }
+
+  function createBackgroundImageElement(doc, dataUrl, width, height, className, options = {}) {
+    const div = doc.createElement("div");
+    div.className = className;
+    div.setAttribute("aria-hidden", "true");
+    div.style.width = `${width}px`;
+    div.style.height = `${height}px`;
+    div.style.backgroundImage = `url("${dataUrl}")`;
+    div.style.backgroundSize = options.backgroundSize || "cover";
+    div.style.backgroundPosition = "center";
+    div.style.backgroundRepeat = "no-repeat";
+    div.style.borderRadius = options.borderRadius || "0";
+    div.style.flexShrink = "0";
+    div.style.display = "block";
+    return div;
+  }
+
+  function replaceWithBackgroundImage(doc, element, dataUrl, width, height, className, options = {}) {
+    element.replaceWith(createBackgroundImageElement(doc, dataUrl, width, height, className, options));
+  }
+
+  function resetSummaryFitScale(slide) {
+    const fit = slide.querySelector(".slide-main__fit");
+    if (!fit) return () => {};
+    const previousScale = fit.style.getPropertyValue("--fit-scale");
+    fit.style.setProperty("--fit-scale", "1");
+    return () => {
+      if (previousScale) fit.style.setProperty("--fit-scale", previousScale);
+      else fit.style.removeProperty("--fit-scale");
+    };
+  }
+
   async function captureSummaryImage() {
     const slide = getSummarySlide();
     if (!slide) throw new Error("Summary slide not found");
@@ -2026,25 +2249,76 @@
       throw new Error("html2canvas not loaded");
     }
 
-    const shareActions = slide.querySelector(".share-actions");
-    const prevDisplay = shareActions?.style.display;
-    if (shareActions) shareActions.style.display = "none";
+    await waitForSummaryImages(slide);
+    await document.fonts?.ready;
 
+    const slideImages = [...slide.querySelectorAll("img")];
+    const loadedBitmaps = new Map();
+    await Promise.all(
+      slideImages.map(async (img) => {
+        const src = img.currentSrc || img.src;
+        if (!src) return;
+        try {
+          loadedBitmaps.set(img, await loadImageBitmap(src, img));
+        } catch (err) {
+          console.warn("Summary capture: could not load image", src, err);
+        }
+      })
+    );
+
+    const captureScale = Math.max(2, Math.min(3, 1080 / Math.max(slide.clientWidth, 1)));
+    const posterDataUrls = new Map();
+    for (const img of slideImages) {
+      const bitmap = loadedBitmaps.get(img);
+      if (!bitmap) continue;
+      posterDataUrls.set(img, rasterDataUrl(bitmap, 64, 96, captureScale));
+    }
+
+    const restoreScale = resetSummaryFitScale(slide);
     try {
-      await waitForSummaryImages(slide);
-      await document.fonts?.ready;
-
-      const scale = Math.max(2, Math.min(3, 1080 / Math.max(slide.clientWidth, 1)));
       const canvas = await html2canvas(slide, {
-        scale,
+        scale: captureScale,
         useCORS: true,
         allowTaint: false,
         backgroundColor: "#131313",
         logging: false,
         onclone: (doc) => {
-          const cloneSlide = doc.querySelector(".slide--summary");
-          const cloneActions = cloneSlide?.querySelector(".share-actions");
+          const cloneBrand = doc.querySelector(".slide--summary .summary-export-brand");
+          if (cloneBrand) {
+            cloneBrand.style.display = "flex";
+            cloneBrand.insertBefore(
+              createBackgroundImageElement(
+                doc,
+                PLEX_LOGO_RASTER.dataUrl,
+                PLEX_LOGO_RASTER.displaySize,
+                PLEX_LOGO_RASTER.displaySize,
+                "summary-export-brand__logo",
+                { backgroundSize: "contain", borderRadius: "15%" }
+              ),
+              cloneBrand.firstChild
+            );
+          }
+
+          const cloneImgs = [...doc.querySelectorAll(".slide--summary img")];
+          cloneImgs.forEach((cloneImg, index) => {
+            const sourceImg = slideImages[index];
+            const dataUrl = sourceImg ? posterDataUrls.get(sourceImg) : null;
+            if (!dataUrl) return;
+            replaceWithBackgroundImage(
+              doc,
+              cloneImg,
+              dataUrl,
+              64,
+              96,
+              cloneImg.className,
+              { borderRadius: "8px" }
+            );
+          });
+
+          const cloneActions = doc.querySelector(".slide--summary .share-actions");
           if (cloneActions) cloneActions.style.display = "none";
+          const cloneFit = doc.querySelector(".slide--summary .slide-main__fit");
+          if (cloneFit) cloneFit.style.setProperty("--fit-scale", "1");
         },
       });
 
@@ -2056,20 +2330,29 @@
         );
       });
     } finally {
-      if (shareActions) shareActions.style.display = prevDisplay || "";
+      restoreScale();
     }
   }
 
+  const SUMMARY_CAPTURE_VERSION = 4;
   let summaryBlob = null;
   let summaryBlobPromise = null;
+  let summaryBlobVersion = 0;
+
+  function isSummaryBlobCurrent() {
+    return Boolean(summaryBlob && summaryBlobVersion === SUMMARY_CAPTURE_VERSION);
+  }
 
   function prepareSummaryImage() {
-    if (summaryBlob) return Promise.resolve(summaryBlob);
+    if (isSummaryBlobCurrent()) return Promise.resolve(summaryBlob);
     if (summaryBlobPromise) return summaryBlobPromise;
     if (!getSummarySlide()) return Promise.reject(new Error("Summary slide not ready"));
+    summaryBlob = null;
+    summaryBlobVersion = 0;
     summaryBlobPromise = captureSummaryImage()
       .then((blob) => {
         summaryBlob = blob;
+        summaryBlobVersion = SUMMARY_CAPTURE_VERSION;
         return blob;
       })
       .catch((err) => {
@@ -2124,13 +2407,14 @@
   async function downloadSummaryImage(button) {
     window.WrappedAnalytics?.trackButtonClick("download");
     const filename = `plex-wrapped-${summaryYear()}.png`;
-    if (summaryBlob) {
+    if (isSummaryBlobCurrent()) {
       window.WrappedAnalytics?.track("summary_image_downloaded", { button: "download" });
       downloadSummaryBlob(summaryBlob, filename);
       return;
     }
     await withSummaryCapture(button, async (blob) => {
       summaryBlob = blob;
+      summaryBlobVersion = SUMMARY_CAPTURE_VERSION;
       window.WrappedAnalytics?.track("summary_image_downloaded", { button: "download" });
       downloadSummaryBlob(blob, filename);
     });
@@ -2158,7 +2442,7 @@
 
     // Fast path: the image is already rendered, so we can open the share sheet
     // immediately within the click gesture (required by iOS/Safari).
-    if (summaryBlob) {
+    if (isSummaryBlobCurrent()) {
       const shared = await nativeShareBlob(summaryBlob, year, filename);
       if (!shared) {
         window.WrappedAnalytics?.track("summary_image_shared", {
@@ -2173,6 +2457,7 @@
     // Slow path: render on demand, then share or fall back to download.
     await withSummaryCapture(button, async (blob) => {
       summaryBlob = blob;
+      summaryBlobVersion = SUMMARY_CAPTURE_VERSION;
       const shared = await nativeShareBlob(blob, year, filename);
       if (!shared) {
         window.WrappedAnalytics?.track("summary_image_shared", {
@@ -2217,7 +2502,10 @@
         onChange: (index, slide) => {
           updateProgress(index);
           if (index !== 0) document.body.classList.add("has-navigated");
-          if (slide?.classList.contains("slide--summary")) ensureSummaryDots();
+          if (slide?.classList.contains("slide--summary")) {
+            ensureSummaryDots();
+            schedulePrepareSummaryImage();
+          }
           fitSlideContent(slide);
           window.WrappedAnalytics?.trackSlideView(index, slide);
         },
@@ -2258,14 +2546,25 @@
       window.setTimeout(ensureSummaryDots, 120);
       window.setTimeout(fitAllSlides, 200);
       document.fonts?.ready.then(fitAllSlides).catch(() => {});
+      slidesEl.querySelectorAll("img").forEach((img) => {
+        if (img.complete) return;
+        img.addEventListener(
+          "load",
+          () => fitSlideContent(img.closest(".slide")),
+          { once: true }
+        );
+        img.addEventListener(
+          "error",
+          () => fitSlideContent(img.closest(".slide")),
+          { once: true }
+        );
+      });
 
       let fitResizeTimer = null;
       window.addEventListener("resize", () => {
         window.clearTimeout(fitResizeTimer);
         fitResizeTimer = window.setTimeout(fitAllSlides, 150);
       });
-
-      schedulePrepareSummaryImage();
 
       document.getElementById("btnShareSummary")?.addEventListener("click", (e) => {
         e.stopPropagation();

@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
 
+from app.ai import CursorAIClient, build_facts, generate_ai_copy
 from app.config import Settings, get_settings
 from app.models.cache import WrappedCache
 from app.models.schemas import GenreStat, MediaItem, ServerRankEntry, ServerStats, TelegramStats, WrappedPayload
@@ -389,12 +390,16 @@ class WrappedAggregator:
         telegram: TelegramData | None = None,
         cache: WrappedCache | None = None,
         year: int | None = None,
+        ai: CursorAIClient | None = None,
     ):
         self.tautulli = tautulli
         self.settings = settings or get_settings()
         self.year = year if year is not None else self.settings.wrapped_year
         self.telegram = telegram if telegram is not None else load_telegram_data(self.settings, self.year)
         self.cache = cache or WrappedCache(self.settings)
+        # Connection to Cursor AI. Available during compute() so future features
+        # (e.g. dynamic punchlines) can call self.ai.generate_text(...).
+        self.ai = ai or CursorAIClient(self.settings)
         self._metadata_cache: dict[str, dict[str, Any]] = {}
         self._tmdb_poster_cache: dict[tuple[str, str], str | None] = {}
         self._server_top_show: tuple[str | None, str | None] | None = None
@@ -512,6 +517,7 @@ class WrappedAggregator:
     def compute(self, user_id: int) -> WrappedPayload:
         user = self.tautulli.get_user(user_id)
         after, before, time_range_days = _year_range(self.year)
+        logger.debug("Cursor AI enabled=%s for user_id=%s", self.ai.enabled, user_id)
         logger.info(
             "Fetching history user_id=%s after=%s before=%s time_range_days=%s",
             user_id,
@@ -890,6 +896,29 @@ class WrappedAggregator:
                 or telegram_stats.login_count > 0
             )
 
+        if user_comparison_show and user_comparison_show in show_stats:
+            user_top_plays = show_stats[user_comparison_show]["plays"]
+        elif user_comparison_movie and user_comparison_movie in movie_stats:
+            user_top_plays = movie_stats[user_comparison_movie]["plays"]
+        else:
+            user_top_plays = None
+
+        ai_copy = generate_ai_copy(
+            self.ai,
+            build_facts(
+                unique_series=len(series_keys),
+                unique_seasons=len(season_keys),
+                unique_episodes=len(episode_keys),
+                server_top_show=server_top_title,
+                server_top_movie=server_top_movie_title,
+                user_comparison_show=user_comparison_show,
+                user_comparison_movie=user_comparison_movie,
+                comparison_same_show=comparison_same_show,
+                user_top_plays=user_top_plays,
+                comparison_reason=user_comparison_reason,
+            ),
+        )
+
         payload = WrappedPayload(
             year=self.year,
             user_id=user_id,
@@ -931,6 +960,7 @@ class WrappedAggregator:
             comparison_headline_accent=comparison_headline_accent,
             comparison_caption=comparison_caption,
             telegram=telegram_stats,
+            ai_copy=ai_copy,
             has_watch_history=total_plays > 0,
             has_telegram_activity=has_telegram,
         )

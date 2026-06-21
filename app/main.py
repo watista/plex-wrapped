@@ -80,12 +80,19 @@ def require_user_id(request: Request) -> int:
     return user_id
 
 
-def _login_context(request: Request, *, error: str | None = None) -> dict[str, Any]:
+def _login_context(
+    request: Request,
+    *,
+    error: str | None = None,
+    logged_in: bool = False,
+) -> dict[str, Any]:
     settings: Settings = request.app.state.settings
     ctx: dict[str, Any] = {
         "request": request,
         "plex_client_id": (settings.plex_client_id or "").strip(),
         "plex_product": settings.plex_product,
+        "use_test_database": settings.use_test_database,
+        "logged_in": logged_in,
     }
     if error:
         ctx["error"] = error
@@ -132,10 +139,13 @@ def health(tautulli: TautulliClient = Depends(get_tautulli)):
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    user_id = get_session_user_id(request, request.app.state.settings)
-    if user_id:
-        return RedirectResponse("/wrapped")
-    return templates.TemplateResponse(request, "login.html", _login_context(request))
+    settings: Settings = request.app.state.settings
+    user_id = get_session_user_id(request, settings)
+    return templates.TemplateResponse(
+        request,
+        "login.html",
+        _login_context(request, logged_in=user_id is not None),
+    )
 
 
 @app.get("/auth/start")

@@ -49,6 +49,16 @@ class Settings(BaseSettings):
 
     tmdb_api_key: str = ""
 
+    # Cursor AI (used to generate dynamic copy when computing wrapped data).
+    # Uses the Cursor Python SDK with the local runtime, so the `cursor-agent`
+    # runtime must be installed on the machine that runs the compute step.
+    cursor_ai_enabled: bool = False
+    cursor_api_key: str = ""
+    cursor_model: str = "auto"
+    cursor_timeout_seconds: int = 120
+    # Working directory the local agent runs against. Empty -> project root.
+    cursor_agent_cwd: str = ""
+
     def resolve_path(self, path: str) -> Path:
         p = Path(path)
         if p.is_absolute():

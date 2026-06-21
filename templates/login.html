@@ -14,7 +14,11 @@
   <link rel="stylesheet" href="/static/css/wrapped.css">
   <link rel="stylesheet" href="/static/css/login.css">
 </head>
-<body class="login-page">
+<body
+  class="login-page"
+  data-test-database="{{ 'true' if use_test_database else 'false' }}"
+  data-logged-in="{{ 'true' if logged_in else 'false' }}"
+>
   <div class="login-bg" aria-hidden="true">
     <div class="login-bg__base"></div>
     <div class="login-bg__mesh"></div>
@@ -43,7 +47,13 @@
       </p>
     </header>
 
-    <main class="login-card">
+    <main class="login-card login-card--desktop-block hidden" id="loginDesktopBlock" aria-live="polite">
+      <span class="material-symbols-outlined login-desktop-block__icon">smartphone</span>
+      <h1 class="login-card__title">Alleen op mobiel</h1>
+      <p class="login-subtitle">Plex Wrapped is alleen beschikbaar op je telefoon. Open deze pagina op een mobiel apparaat om je jaar in streaming te ontdekken.</p>
+    </main>
+
+    <main class="login-card" id="loginCard">
       <p class="login-eyebrow">Welkom terug</p>
       <h1 class="login-card__title">Jouw jaar in <span>streaming</span></h1>
       <p class="login-subtitle">Ontdek je persoonlijke Wrapped — van kijktijd tot topfilms en jouw kroon.</p>
@@ -77,11 +87,50 @@
       </a>
     </main>
 
-    <p class="login-footnote">Veilig inloggen via Plex. We slaan geen wachtwoord op.</p>
+    <p class="login-footnote" id="loginFootnote">Veilig inloggen via Plex. We slaan geen wachtwoord op.</p>
   </div>
 
   <script>
     (function () {
+      var DESKTOP_MIN_WIDTH = 769;
+      var body = document.body;
+      var testMode = body.dataset.testDatabase === "true";
+      var loggedIn = body.dataset.loggedIn === "true";
+      var loginCard = document.getElementById("loginCard");
+      var desktopBlock = document.getElementById("loginDesktopBlock");
+      var loginFootnote = document.getElementById("loginFootnote");
+
+      function isDesktopViewport() {
+        return window.innerWidth >= DESKTOP_MIN_WIDTH;
+      }
+
+      function applyViewportGate() {
+        if (testMode) {
+          if (loggedIn) {
+            window.location.replace("/wrapped");
+          }
+          return;
+        }
+
+        if (isDesktopViewport()) {
+          loginCard?.classList.add("hidden");
+          desktopBlock?.classList.remove("hidden");
+          loginFootnote?.classList.add("hidden");
+          return;
+        }
+
+        loginCard?.classList.remove("hidden");
+        desktopBlock?.classList.add("hidden");
+        loginFootnote?.classList.remove("hidden");
+
+        if (loggedIn) {
+          window.location.replace("/wrapped");
+        }
+      }
+
+      applyViewportGate();
+      window.addEventListener("resize", applyViewportGate);
+
       var btn = document.getElementById("loginBtn");
       if (!btn) return;
       var clientId = (btn.dataset.clientId || "").trim();

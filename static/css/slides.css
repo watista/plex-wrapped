@@ -236,7 +236,7 @@
 }
 .slide--watch-time .watch-footnote {
   position: absolute;
-  bottom: 8rem;
+  bottom: calc(var(--safe-bottom) + 1.5rem);
   left: var(--gutter);
   right: var(--gutter);
   z-index: 10;
@@ -399,8 +399,8 @@
 }
 .slide--movies-vs-tv .chart-wrap {
   position: relative;
-  width: 280px;
-  height: 280px;
+  width: min(280px, 72vw);
+  height: min(280px, 72vw);
   margin: 0 auto 40px;
 }
 .slide--movies-vs-tv .chart-wrap svg {
@@ -1013,6 +1013,11 @@
   pointer-events: none;
   z-index: 5;
 }
+@media (max-height: 700px) {
+  .slide--when-you-watch .when-waves {
+    display: none;
+  }
+}
 .slide--when-you-watch .when-waves svg {
   width: 100%;
   height: 56px;
@@ -1230,7 +1235,9 @@
 }
 .slide--longest-streak .slide-main--longest-streak {
   justify-content: center;
-  gap: 2rem;
+}
+.slide--longest-streak .slide-main__fit {
+  gap: 1.5rem;
 }
 .slide--longest-streak .streak-content {
   display: flex;
@@ -1837,7 +1844,7 @@
 .slide--server-vs-you .server-vs-headline {
   font-family: var(--font-display);
   font-size: clamp(2rem, 8vw, 2.25rem);
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.15;
   letter-spacing: -0.02em;
   text-align: center;
@@ -1846,6 +1853,7 @@
 }
 .slide--server-vs-you .server-vs-headline .text-primary {
   color: var(--primary);
+  font-weight: 800;
 }
 .slide--server-vs-you .server-vs-posters {
   position: relative;
@@ -2386,7 +2394,8 @@
 .slide--summary .summary-dot--drift-g { animation-name: summary-dot-drift-g; }
 .slide--summary .summary-dot--drift-h { animation-name: summary-dot-drift-h; }
 .slide--summary .slide-main--summary {
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: 12px;
   padding-top: calc(var(--safe-top) + 24px);
   text-align: left;
   align-items: stretch;
@@ -2418,8 +2427,7 @@
 }
 .slide--summary .bento-grid {
   max-width: none;
-  flex: 1;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 .slide--summary .bento-grid .glass-card {
   border-radius: 12px;
@@ -2507,20 +2515,54 @@
   margin-left: auto;
 }
 .slide--summary .summary-export {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  width: 100%;
+}
+.slide--summary .summary-export-brand {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  width: 100%;
+}
+.slide--summary .summary-export-brand__logo {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border-radius: 15%;
+}
+.slide--summary .summary-export-brand__title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+.slide--summary .summary-export-brand__muted {
+  color: #949494;
+}
+.slide--summary .summary-export-brand__accent {
+  color: var(--primary);
 }
 .slide--summary .share-actions {
   width: 100%;
   max-width: none;
   margin-top: 0;
-  padding-bottom: 16px;
+  padding-bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+.slide--summary .share-actions .share-btn {
+  margin-top: 0;
 }
 .slide--summary .share-btn {
   max-width: none;
@@ -2556,6 +2598,12 @@
   transform: scale(0.95);
 }
 
+@media (max-height: 700px) {
+  .slide--summary .share-icon-btn {
+    display: none;
+  }
+}
+
 /* Shared label tweaks */
 .slide .label-md--wide {
   letter-spacing: 0.2em;
@@ -2565,4 +2613,268 @@
   font-size: clamp(1.125rem, 4vw, 1.25rem);
   font-weight: 600;
   color: var(--on-surface);
+}
+
+/* Short viewports — tighten fixed sizes before JS scaling kicks in */
+@media (max-height: 700px) {
+  .slide--welcome .avatar-default,
+  .avatar-wrap img {
+    width: 9rem;
+    height: 9rem;
+  }
+
+  .slide--movies-vs-tv .slide-main--movies-vs-tv,
+  .slide--top-movies .slide-main--top-movies,
+  .slide--top-shows .slide-main--top-shows {
+    padding-top: calc(var(--safe-top) + 2.5rem);
+  }
+
+  .slide--movies-vs-tv .chart-wrap {
+    width: min(220px, 64vw);
+    height: min(220px, 64vw);
+    margin-bottom: 24px;
+  }
+
+  .slide--movies-vs-tv .mvt-header {
+    margin-bottom: 16px;
+  }
+
+  .slide--movies-vs-tv .mvt-narrative {
+    margin-top: 24px;
+  }
+
+  .slide--series-depth .series-depth-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .slide--series-depth .staircase {
+    gap: 1.5rem;
+  }
+
+  .slide--series-depth .stair-step {
+    padding: 1rem;
+  }
+
+  .slide--series-depth .stair-quote {
+    margin-top: 1.25rem;
+  }
+
+  .slide--when-you-watch .slide-main {
+    padding-bottom: calc(var(--safe-bottom) + var(--nav-h) + 32px);
+  }
+
+  .slide--when-you-watch .when-stack {
+    gap: 12px;
+  }
+
+  .slide--when-you-watch .heatmap-grid,
+  .slide--when-you-watch .heatmap-weekdays {
+    column-gap: 28px;
+  }
+
+  .slide--longest-streak .streak-ring {
+    width: min(14rem, 60vw);
+    height: min(14rem, 60vw);
+  }
+
+  .slide--longest-streak .streak-ring .material-symbols-outlined {
+    font-size: 56px;
+  }
+
+  .slide--favorite-device .device-hero {
+    width: min(13rem, 56vw);
+    height: min(13rem, 56vw);
+  }
+
+  .slide--total-plays .plays-hero-card {
+    padding: 1.75rem;
+  }
+
+  .slide--total-plays .plays-tagline {
+    margin-top: 1.5rem;
+  }
+
+  .slide--persona .persona-hero {
+    margin-bottom: 16px;
+  }
+
+  .slide--persona .persona-title {
+    font-size: clamp(1.75rem, 9vw, 2.5rem);
+  }
+
+  .slide--summary .summary-title {
+    font-size: clamp(1.75rem, 8vw, 2.25rem);
+  }
+
+  .slide--summary .summary-header {
+    margin-bottom: 16px;
+  }
+
+  .slide--summary .bento-grid {
+    margin-bottom: 16px;
+  }
+}
+
+@media (max-height: 600px) {
+  .slide--welcome .avatar-default,
+  .avatar-wrap img {
+    width: 7.5rem;
+    height: 7.5rem;
+  }
+
+  .slide--welcome .welcome-copy {
+    gap: 4px;
+  }
+
+  .slide--movies-vs-tv .slide-main--movies-vs-tv,
+  .slide--top-movies .slide-main--top-movies,
+  .slide--top-shows .slide-main--top-shows {
+    padding-top: calc(var(--safe-top) + 1.5rem);
+  }
+
+  .slide--movies-vs-tv .chart-wrap {
+    width: min(180px, 58vw);
+    height: min(180px, 58vw);
+    margin-bottom: 16px;
+  }
+
+  .slide--movies-vs-tv .mvt-narrative {
+    margin-top: 16px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .slide--top-movies .slide-title,
+  .slide--top-shows .slide-title {
+    margin-bottom: 12px;
+  }
+
+  .slide--series-depth .staircase {
+    gap: 0.875rem;
+  }
+
+  .slide--series-depth .stair-step {
+    padding: 0.75rem;
+  }
+
+  .slide--series-depth .stair-quote {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .slide--when-you-watch .slide-main {
+    padding-top: calc(var(--safe-top) + 12px);
+    padding-bottom: calc(var(--safe-bottom) + var(--nav-h) + 20px);
+  }
+
+  .slide--when-you-watch .when-content {
+    gap: 0.625rem;
+  }
+
+  .slide--when-you-watch .when-stack {
+    gap: 8px;
+  }
+
+  .slide--when-you-watch .when-card {
+    padding: 0.75rem;
+  }
+
+  .slide--when-you-watch .heatmap-grid,
+  .slide--when-you-watch .heatmap-weekdays {
+    column-gap: 16px;
+    row-gap: 6px;
+  }
+
+  .slide--watch-time .watch-days-card {
+    padding: 16px;
+  }
+
+  .slide--longest-streak .slide-main__fit {
+    gap: 1.25rem;
+  }
+
+  .slide--longest-streak .streak-ring {
+    width: min(11rem, 52vw);
+    height: min(11rem, 52vw);
+    margin-bottom: 0.75rem;
+  }
+
+  .slide--longest-streak .streak-ring .material-symbols-outlined {
+    font-size: 44px;
+  }
+
+  .slide--favorite-device .device-copy {
+    margin-top: 0.75rem;
+  }
+
+  .slide--favorite-device .device-badge {
+    margin-top: 0.75rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .slide--movie-genres .genre-header,
+  .slide--show-genres .genre-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .slide--movie-genres .genre-layout,
+  .slide--show-genres .genre-layout {
+    gap: 8px;
+  }
+
+  .slide--server-rank .server-rank-layout {
+    gap: 0.625rem;
+  }
+
+  .slide--server-rank .rank-circle {
+    width: 9rem;
+    height: 9rem;
+  }
+
+  .slide--server-vs-you .server-vs-layout {
+    gap: 0.75rem;
+  }
+
+  .slide--server-vs-you .vs-poster-card__poster {
+    width: 7rem;
+  }
+
+  .slide--server-vs-you .vs-poster-card--user .vs-poster-card__poster {
+    width: 7.5rem;
+  }
+
+  .slide--telegram-requests .tg-stat-card,
+  .slide--telegram-requests .tg-conv-card {
+    padding: 1rem 0.75rem;
+  }
+
+  .slide--telegram-requests .tg-completion {
+    padding: 1rem;
+  }
+
+  .slide--persona .persona-title {
+    font-size: clamp(1.5rem, 8vw, 2rem);
+  }
+
+  .slide--persona .persona-tagline {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .slide--summary .slide-main--summary {
+    padding-top: calc(var(--safe-top) + 12px);
+  }
+
+  .slide--summary .bento-grid .glass-card {
+    padding: 12px;
+  }
+
+  .slide--summary .bento-card__value {
+    font-size: 22px;
+  }
+
+  .slide--summary .share-actions {
+    gap: 10px;
+    margin-top: 12px;
+  }
 }

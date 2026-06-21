@@ -35,6 +35,13 @@ class ServerRankEntry(BaseModel):
     position_label: str = ""
 
 
+class AICopy(BaseModel):
+    """AI-generated punchlines. Any field may be None -> frontend uses its default."""
+
+    series_depth: str | None = None
+    server_vs_you: str | None = None
+
+
 class ServerStats(BaseModel):
     rank: int | None = None
     server_name: str | None = None
@@ -93,6 +100,8 @@ class WrappedPayload(BaseModel):
     comparison_caption: str | None = None
 
     telegram: TelegramStats = Field(default_factory=TelegramStats)
+
+    ai_copy: AICopy = Field(default_factory=AICopy)
 
     persona: str = "Toegewijde kijker"
     persona_tagline: str = "Stabiel en trouw."
