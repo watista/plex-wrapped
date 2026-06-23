@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -8,7 +9,7 @@ from urllib.parse import urlparse
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -25,6 +26,8 @@ from app.tautulli.client import TautulliClient, TautulliError
 from app.wrapped.posters import plex_poster_paths, rating_key_from_poster_path
 from app.tautulli.devices import collect_unique_devices
 from app.models.schemas import WrappedPayload
+
+from app.wrapped.youtube_audio import is_valid_video_id
 
 STATIC_DIR = PROJECT_ROOT / "static"
 TEMPLATES_DIR = PROJECT_ROOT / "templates"
@@ -464,6 +467,33 @@ def poster_proxy(
         content=resp.content,
         media_type=resp.headers.get("content-type", "image/jpeg"),
     )
+
+
+_AUDIO_FILE_RE = re.compile(r"^[A-Za-z0-9_-]+\.(mp3|m4a|aac)$", re.IGNORECASE)
+
+
+@app.get("/api/audio/{filename}")
+def audio_file(filename: str, request: Request):
+    settings: Settings = request.app.state.settings
+    user_id = get_session_user_id(request, settings)
+    if user_id is None:
+        raise HTTPException(401, "Not authenticated")
+    if not _AUDIO_FILE_RE.match(filename):
+        raise HTTPException(400, "Invalid filename")
+
+    cache_dir = settings.resolve_path(settings.audio_cache_path)
+    direct = cache_dir / filename
+    if direct.is_file():
+        return FileResponse(direct, media_type="audio/mpeg")
+
+    stem = Path(filename).stem
+    if is_valid_video_id(stem):
+        for path in cache_dir.glob(f"{stem}.*"):
+            if path.is_file() and path.stat().st_size > 0:
+                media = "audio/mpeg" if path.suffix.lower() == ".mp3" else "audio/mp4"
+                return FileResponse(path, media_type=media)
+
+    raise HTTPException(404, "Audio not found")
 
 
 # Jinja filters

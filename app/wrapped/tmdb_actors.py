@@ -149,10 +149,13 @@ def _accumulate_title_cast(
                 "name": member["name"],
                 "plays": 0,
                 "titles": set(),
+                "title_plays": {},
                 "thumb": profile_url(member.get("profile_path")),
             }
         actor_stats[pid]["plays"] += plays
         actor_stats[pid]["titles"].add(title)
+        title_plays = actor_stats[pid]["title_plays"]
+        title_plays[title] = int(title_plays.get(title) or 0) + plays
         if not actor_stats[pid]["thumb"]:
             actor_stats[pid]["thumb"] = profile_url(member.get("profile_path"))
 
@@ -200,15 +203,29 @@ def compute_top_actors(
             search_cache=search_cache,
         )
 
-    entries = [
-        ActorStat(
-            name=data["name"],
-            plays=data["plays"],
-            title_count=len(data["titles"]),
-            thumb=data.get("thumb"),
+    entries: list[ActorStat] = []
+    for data in actor_stats.values():
+        if data["plays"] <= 0:
+            continue
+        title_plays: dict[str, int] = data.get("title_plays") or {}
+        top_title: str | None = None
+        if title_plays:
+            top_title = max(title_plays.items(), key=lambda item: (item[1], item[0]))[0]
+        top_title_kind: MediaKind | None = None
+        if top_title:
+            if top_title in show_stats:
+                top_title_kind = "show"
+            elif top_title in movie_stats:
+                top_title_kind = "movie"
+        entries.append(
+            ActorStat(
+                name=data["name"],
+                plays=data["plays"],
+                title_count=len(data["titles"]),
+                thumb=data.get("thumb"),
+                top_title=top_title,
+                top_title_kind=top_title_kind,
+            )
         )
-        for data in actor_stats.values()
-        if data["plays"] > 0
-    ]
     entries.sort(key=lambda actor: (-actor.plays, -actor.title_count, actor.name))
     return entries[:limit]

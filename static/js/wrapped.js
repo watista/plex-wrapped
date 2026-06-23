@@ -3,7 +3,9 @@
   const slidesEl = document.getElementById("slides");
   const progressBar = document.getElementById("progressBar");
   const btnClose = document.getElementById("btnClose");
+  const btnMusic = document.getElementById("btnMusic");
   let carousel = null;
+  let musicPlayer = null;
 
   const TOP_MOVIES_BG = [
     "/static/designs/top_movies_bg_1.png",
@@ -2574,6 +2576,13 @@
       window.WrappedAnalytics?.trackWrappedLoaded(slides.length, data.persona);
 
       setupProgress(slides.length);
+      if (typeof createWrappedMusic === "function" && data.music) {
+        musicPlayer = createWrappedMusic({
+          music: data.music,
+          btnMusic,
+          root: slidesEl,
+        });
+      }
       carousel = createStoryCarousel({
         root: slidesEl,
         onChange: (index, slide) => {
@@ -2584,10 +2593,12 @@
             schedulePrepareSummaryImage();
           }
           fitSlideContent(slide);
+          musicPlayer?.onSlideChange(index, slide);
           window.WrappedAnalytics?.trackSlideView(index, slide);
         },
       });
       carousel.mount(slides);
+      musicPlayer?.start(null);
       slidesEl
         .querySelectorAll(".slide--welcome, .slide--when-you-watch, .slide--server-rank")
         .forEach(initWelcomeBokeh);

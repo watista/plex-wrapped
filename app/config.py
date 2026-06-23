@@ -49,6 +49,19 @@ class Settings(BaseSettings):
 
     tmdb_api_key: str = ""
 
+    # Background music (downloaded at compute time via yt-dlp + ffmpeg).
+    music_enabled: bool = True
+    music_download_enabled: bool = True
+    audio_cache_path: str = "data/audio/cache"
+    audio_genre_path: str = "static/audio/genres"
+    audio_year_path: str = "static/audio/year"
+    youtube_api_key: str = ""
+    # Optional path to ffmpeg binary or its directory (for yt-dlp mp3 conversion).
+    ffmpeg_location: str = ""
+
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
+
     # Cursor AI (used to generate dynamic copy when computing wrapped data).
     # Uses the Cursor Python SDK with the local runtime, so the `cursor-agent`
     # runtime must be installed on the machine that runs the compute step.

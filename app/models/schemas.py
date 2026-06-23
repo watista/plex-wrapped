@@ -22,6 +22,15 @@ class ActorStat(BaseModel):
     plays: int = 0
     title_count: int = 0
     thumb: str | None = None
+    top_title: str | None = None
+    top_title_kind: Literal["movie", "show"] | None = None
+
+
+class WrappedMusic(BaseModel):
+    """Slide background music URLs (local static paths or /api/audio/…)."""
+
+    default_pool: list[str] = Field(default_factory=list)
+    slides: dict[str, str] = Field(default_factory=dict)
 
 
 class TelegramStats(BaseModel):
@@ -117,6 +126,7 @@ class WrappedPayload(BaseModel):
     persona_id: str = "dedicated_viewer"
     has_watch_history: bool = True
     has_telegram_activity: bool = False
+    music: WrappedMusic = Field(default_factory=WrappedMusic)
 
     def model_dump(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
         return super().model_dump(*args, **kwargs)

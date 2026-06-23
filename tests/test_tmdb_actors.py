@@ -78,6 +78,8 @@ def test_compute_top_actors_weights_show_plays(monkeypatch):
     assert actors[0].name == "Bryan Cranston"
     assert actors[0].plays == 62
     assert actors[0].title_count == 1
+    assert actors[0].top_title == "Breaking Bad"
+    assert actors[0].top_title_kind == "show"
     assert actors[0].thumb == "https://image.tmdb.org/t/p/h632/bryan.jpg"
 
 

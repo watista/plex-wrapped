@@ -13,6 +13,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from app.config import get_settings
 from app.fixtures.test_wrapped import find_test_user, load_test_payload, load_test_user_entries
 from app.models.cache import WrappedCache
+from app.wrapped.music import attach_wrapped_music
 
 
 def _resolve_entries(settings, user_id: int | None, all_test_users: bool):
@@ -84,6 +85,9 @@ def main() -> None:
             fixture_path=args.fixture or entry.fixture,
             settings=settings,
         )
+        if settings.music_enabled:
+            test_settings = settings.model_copy(update={"music_download_enabled": False})
+            attach_wrapped_music(payload, test_settings)
         db.set(entry.plex_user_id, year, payload.model_dump())
         print(
             f"Wrote user_id={entry.plex_user_id} year={year} "

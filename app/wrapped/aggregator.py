@@ -22,6 +22,7 @@ from app.wrapped.avatar import resolve_avatar_url
 from app.wrapped.locale import month_number_to_dutch, to_dutch_day, to_dutch_month, weekday_number_to_dutch
 from app.wrapped.posters import resolve_poster
 from app.wrapped.slides import apply_persona
+from app.wrapped.music import attach_wrapped_music
 from app.wrapped.tmdb_actors import compute_top_actors
 
 
@@ -986,6 +987,7 @@ class WrappedAggregator:
             has_telegram_activity=has_telegram,
         )
         apply_persona(payload)
+        attach_wrapped_music(payload, self.settings)
         logger.info(
             "Wrapped result user_id=%s plays=%s movies=%s tv=%s watch_hours=%s device=%s",
             user_id,
