@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Plex Wrapped"
+    # UI language — loads translate/{language}.json (english default).
+    # Aliases: en, nl, fr, de, pl, es, it, pt, sv, no, da, fi, el, ro, hu (+ native names).
+    language: str = "english"
+    translations_path: str = "translate"
     public_url: str = "http://localhost:8000"
     secret_key: str = "dev-secret-change-in-production"
     wrapped_year: int = 2025

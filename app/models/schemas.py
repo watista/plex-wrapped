@@ -121,8 +121,8 @@ class WrappedPayload(BaseModel):
 
     ai_copy: AICopy = Field(default_factory=AICopy)
 
-    persona: str = "Toegewijde kijker"
-    persona_tagline: str = "Stabiel en trouw."
+    persona: str = "Dedicated Viewer"
+    persona_tagline: str = "Steady and loyal."
     persona_id: str = "dedicated_viewer"
     has_watch_history: bool = True
     has_telegram_activity: bool = False

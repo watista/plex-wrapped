@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import re
 from contextlib import asynccontextmanager
@@ -20,6 +21,7 @@ from app.admin.links import ShareLinkManager
 from app.auth.login_resolve import resolve_login_user_id
 from app.auth.plex_oauth import PlexOAuth, clear_session, get_session_user_id, set_session_user_id
 from app.config import PROJECT_ROOT, Settings, get_settings
+from app.i18n import get_translator, localize_wrapped_payload
 from app.logging_setup import configure_logging
 from app.models.cache import WrappedCache
 from app.tautulli.client import TautulliClient, TautulliError
@@ -72,6 +74,20 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 
+def _translator_for(request: Request) -> Any:
+    settings: Settings = request.app.state.settings
+    return get_translator(settings.language)
+
+
+def _i18n_context(request: Request) -> dict[str, Any]:
+    translator = _translator_for(request)
+    return {
+        "t": translator.t,
+        "html_lang": translator.html_lang(),
+        "i18n_json": json.dumps(translator.client_bundle()),
+    }
+
+
 def get_tautulli(request: Request) -> TautulliClient:
     return request.app.state.tautulli
 
@@ -96,6 +112,7 @@ def _login_context(
         "plex_product": settings.plex_product,
         "use_test_database": settings.use_test_database,
         "logged_in": logged_in,
+        **_i18n_context(request),
     }
     if error:
         ctx["error"] = error
@@ -110,6 +127,7 @@ def _wrapped_template_context(request: Request, *, year: int, user_id: int, shar
         "user_id": user_id,
         "share_mode": share_mode,
         "google_analytics_id": (settings.google_analytics_id or "").strip(),
+        **_i18n_context(request),
     }
 
 
@@ -144,10 +162,12 @@ def health(tautulli: TautulliClient = Depends(get_tautulli)):
 def home(request: Request):
     settings: Settings = request.app.state.settings
     user_id = get_session_user_id(request, settings)
+    translator = get_translator(settings.language)
     return templates.TemplateResponse(
         request,
         "login.html",
         _login_context(request, logged_in=user_id is not None),
+        headers={"Content-Language": translator.html_lang()},
     )
 
 
@@ -183,6 +203,7 @@ def auth_callback(
     settings: Settings = request.app.state.settings
     oauth: PlexOAuth = request.app.state.plex_oauth
     tautulli: TautulliClient = request.app.state.tautulli
+    translator = get_translator(settings.language)
 
     pin_id = pin_id or request.query_params.get("pin_id") or request.cookies.get("plex_pin_id")
     pin_code = pin_code or request.query_params.get("pin_code") or request.cookies.get("plex_pin_code")
@@ -206,7 +227,7 @@ def auth_callback(
         return templates.TemplateResponse(
             request,
             "login.html",
-            _login_context(request, error="Plex login failed. Check server logs and try again."),
+            _login_context(request, error=translator.t("auth.plex_login_failed")),
         )
 
     if not auth_token:
@@ -217,7 +238,7 @@ def auth_callback(
         return templates.TemplateResponse(
             request,
             "login.html",
-            _login_context(request, error="Login not completed. Please try again."),
+            _login_context(request, error=translator.t("auth.login_not_completed")),
         )
 
     try:
@@ -227,7 +248,7 @@ def auth_callback(
         return templates.TemplateResponse(
             request,
             "login.html",
-            _login_context(request, error="Could not load your Plex profile. Try again."),
+            _login_context(request, error=translator.t("auth.profile_load_failed")),
         )
 
     logger.info(
@@ -245,18 +266,17 @@ def auth_callback(
         return templates.TemplateResponse(
             request,
             "login.html",
-            _login_context(request, error="Server stats unavailable. Try again later."),
+            _login_context(request, error=translator.t("auth.server_unavailable")),
         )
 
     if user_id is None:
         if settings.use_test_database:
-            error = (
-                "No test profile for this Plex account. "
-                "Run: python scripts/load_test_wrapped.py --user-id "
-                f"{plex_user.get('id')} (or add yourself to data/fixtures/test_users.json)."
+            error = translator.t(
+                "auth.test_profile_missing",
+                plex_id=plex_user.get("id"),
             )
         else:
-            error = "Your Plex account is not linked to this server. Contact the admin."
+            error = translator.t("auth.account_not_linked")
         return templates.TemplateResponse(
             request,
             "login.html",
@@ -353,12 +373,13 @@ def api_wrapped(request: Request):
 
     cache: WrappedCache = request.app.state.cache
     cached = cache.get(user_id, settings.wrapped_year)
+    translator = get_translator(settings.language)
     if not cached:
         raise HTTPException(
             503,
             detail={
                 "ready": False,
-                "message": "De Plex Wrapped is nog niet beschikbaar, probeer het op een later moment nog eens.",
+                "message": translator.t("api.wrapped_not_ready"),
             },
         )
 
@@ -366,6 +387,7 @@ def api_wrapped(request: Request):
 
     data = payload.model_dump()
     data["total_watch_time_formatted"] = _format_duration(payload.total_watch_seconds)
+    localize_wrapped_payload(data, translator)
     return data
 
 

@@ -1,0 +1,259 @@
+{
+  "meta": {
+    "html_lang": "nl",
+    "date_locale": "nl-NL"
+  },
+  "locale": {
+    "weekdays": ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"],
+    "weekdays_short": ["ma", "di", "wo", "do", "vr", "za", "zo"],
+    "months": ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"],
+    "months_short": ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"]
+  },
+  "login": {
+    "title": "Inloggen — Plex Wrapped",
+    "desktop_title": "Alleen op mobiel",
+    "desktop_subtitle": "Plex Wrapped is alleen beschikbaar op je telefoon. Open deze pagina op een mobiel apparaat om je jaar in streaming te ontdekken.",
+    "eyebrow": "Welkom terug",
+    "heading": "Jouw jaar in <span>streaming</span>",
+    "subtitle": "Ontdek je persoonlijke Wrapped — van kijktijd tot topfilms en jouw kroon.",
+    "feature_watch_time": "Kijktijd",
+    "feature_top_lists": "Toplijsten",
+    "feature_persona": "Jouw persona",
+    "sign_in": "Inloggen met Plex",
+    "signing_in": "Bezig met inloggen…",
+    "footnote": "Veilig inloggen via Plex. We slaan geen wachtwoord op."
+  },
+  "auth": {
+    "plex_login_failed": "Plex-inloggen mislukt. Controleer de serverlogs en probeer het opnieuw.",
+    "login_not_completed": "Inloggen niet voltooid. Probeer het opnieuw.",
+    "profile_load_failed": "Kon je Plex-profiel niet laden. Probeer het opnieuw.",
+    "server_unavailable": "Serverstatistieken niet beschikbaar. Probeer het later opnieuw.",
+    "test_profile_missing": "Geen testprofiel voor dit Plex-account. Voer uit: python scripts/load_test_wrapped.py --user-id {plex_id} (of voeg jezelf toe aan data/fixtures/test_users.json).",
+    "account_not_linked": "Je Plex-account is niet gekoppeld aan deze server. Neem contact op met de beheerder."
+  },
+  "api": {
+    "wrapped_not_ready": "De Plex Wrapped is nog niet beschikbaar, probeer het op een later moment nog eens.",
+    "wrapped_not_generated": "Wrapped is nog niet gegenereerd. Vraag de beheerder om compute_wrapped.py te draaien."
+  },
+  "wrapped": {
+    "page_title": "Jouw Plex Wrapped",
+    "loading": "Je wrapped wordt geladen…",
+    "logout": "Uitloggen",
+    "music_mute": "Muziek dempen",
+    "music_unmute": "Muziek aanzetten",
+    "welcome": {
+      "greeting": "Hoi {name}!",
+      "title": "Jouw {year}<br>Plex Wrapped",
+      "subtitle": "Laten we kijken naar jouw jaar in films en series.",
+      "back": "Terug",
+      "next_hint": "Tap of swipe",
+      "no_activity_title": "Geen activiteit in {year}",
+      "no_activity_subtitle": "Begin met kijken om volgend jaar statistieken te zien."
+    },
+    "watch_time": {
+      "label": "Totale Kijktijd",
+      "hours": "{hours} uur",
+      "days": "Dat is <span class=\"text-primary\">{days} dagen</span> kijkplezier",
+      "footnote": "gestreamd in {year}"
+    },
+    "total_plays": {
+      "subtitle": "keer op de play-knop gedrukt",
+      "tagline_500": "Meer dan duizend keer op play — jij houdt de server warm.",
+      "tagline_250": "Een echte bingewatcher; de play-knop gloeit na bij jou.",
+      "tagline_100": "Jij weet de play-knop wel te vinden.",
+      "tagline_50": "Een trouwe kijker met een gezonde dosis play-knop.",
+      "tagline_low": "Mondjesmaat, maar wel met smaak.",
+      "tagline_none": "Klaar voor een nieuw kijkjaar."
+    },
+    "movies_vs_tv": {
+      "label": "De grote balans",
+      "title": "Films vs series",
+      "movies": "Films",
+      "episodes": "Afleveringen",
+      "stats_label": "Statistieken",
+      "film_only": "Pure filmmodus: geen series, alleen films.",
+      "show_only": "Pure seriesmodus: geen films, alleen afleveringen.",
+      "film_almost": "Pure filmmodus: (bijna) geen series, alleen films.",
+      "show_almost": "Pure seriesmodus: (bijna) geen films, alleen afleveringen.",
+      "film_ratio": "Films stonden centraal — {ratio} films voor elke aflevering.",
+      "show_ratio": "Je bent een echte serie-bingewatcher. Voor elke film keek je maar liefst {ratio} afleveringen.",
+      "balanced": "Een gebalanceerde mix van films en series."
+    },
+    "top_movies": {
+      "title": "Jouw <span class=\"text-primary\">top {count}</span> films",
+      "plays_label": "keer bekeken"
+    },
+    "top_shows": {
+      "title": "Jouw <span class=\"text-primary\">top {count}</span> series",
+      "plays_label": "afleveringen"
+    },
+    "series_depth": {
+      "eyebrow": "Diepe duik",
+      "title": "Serie diepte",
+      "series": "series",
+      "seasons": "seizoenen",
+      "episodes": "afleveringen",
+      "tagline_500": "{episodes} afleveringen?! Jij schakelde dit jaar bijna non-stop door.",
+      "tagline_200": "{episodes} afleveringen over {series} series — jij weet van geen ophouden.",
+      "tagline_series": "{series} series aangesneden; jij durft aan een nieuw verhaal te beginnen.",
+      "tagline_default": "{episodes} afleveringen verder — elke serie kreeg jouw volle aandacht.",
+      "tagline_fallback": "Je dook dit jaar lekker diep in series."
+    },
+    "when_you_watch": {
+      "eyebrow": "Jouw ritme",
+      "title": "Wanneer kijk je",
+      "busiest_month": "Drukste maand",
+      "busiest_day": "Drukste dag",
+      "busiest_hour": "Drukste uur",
+      "heatmap_title": "{count} keer"
+    },
+    "favorite_device": {
+      "eyebrow": "Je favoriete venster",
+      "title": "Jouw scherm:<br><span class=\"text-primary\">{device}</span>",
+      "percent": "{percent}% van je kijktijd",
+      "percent_unknown": "—% van je kijktijd"
+    },
+    "longest_streak": {
+      "title": "Langste streak<br><span class=\"text-primary\">{days} dagen op rij</span>",
+      "start": "Start",
+      "end": "Einde"
+    },
+    "favorite_actor": {
+      "eyebrow": "Jouw favoriete ster",
+      "title": "Het gezicht van jouw jaar:<br><span class=\"text-primary\">{name}</span>",
+      "badge": "Te zien in <span class=\"text-primary\">{titles}</span> die jij keek",
+      "runners_label": "Ook vaak in beeld",
+      "title_one": "1 titel",
+      "title_many": "{count} titels",
+      "tagline_10": "Een vast gezicht in jouw kijkjaar.",
+      "tagline_5": "Deze ster bleef maar terugkomen op je scherm.",
+      "tagline_2": "Jij zocht deze ster meermaals op.",
+      "tagline_default": "Jouw uitschieter van het jaar."
+    },
+    "genres": {
+      "eyebrow": "Jouw vibe",
+      "movie_title": "Top <span class=\"text-primary-container\">film</span> genres",
+      "show_title": "Top <span class=\"text-primary-container\">series</span> genres",
+      "rank_label": "#1 Genre",
+      "movie_stat": "Films",
+      "episode_stat": "Episodes",
+      "movie_compact": "films",
+      "episode_compact": "episodes"
+    },
+    "server_rank": {
+      "title": "Jouw plek op de server",
+      "rank_label": "Rank",
+      "more_active": "Je bent actiever dan <strong>{percent}%</strong> van de gebruikers"
+    },
+    "server_vs": {
+      "headline_same": "Je bent <span class=\"text-primary\">perfect in sync</span> met de server.",
+      "headline_different": "Je hebt een <span class=\"text-primary\">{accent}</span> smaak.",
+      "server_badge": "Server #1",
+      "user_badge": "Jouw #1"
+    },
+    "telegram": {
+      "eyebrow": "Community vragen",
+      "title": "Telegram bot",
+      "movies": "Films",
+      "shows": "Series",
+      "requests": "aanvragen",
+      "logins": "logins",
+      "watched": "bekeken",
+      "completed": "voltooid",
+      "completion_80": "Je houdt je wachtrij goed bij!",
+      "completion_50": "Meer dan de helft van je aanvragen heb je al bekeken.",
+      "completion_low": "Er staat nog genoeg op je lijst.",
+      "completion_none": "Tijd om je aanvragen af te werken."
+    },
+    "persona": {
+      "label": "Jouw persona",
+      "title": "Jouw kroon:<br><span class=\"persona-title__name\">{name}</span>"
+    },
+    "summary": {
+      "eyebrow": "Jouw jaar in review",
+      "title": "{year} Samenvatting",
+      "watch_time": "Kijktijd",
+      "total_started": "Totaal gestart",
+      "top_show": "Topserie",
+      "top_movie": "Topfilm",
+      "most_watched_show": "Meest bekeken serie",
+      "most_watched_movie": "Meest bekeken film",
+      "busiest_month": "Drukste maand",
+      "telegram_requests": "Telegram-aanvragen",
+      "favorite_genre": "Favoriete genre",
+      "persona": "Jouw Persona",
+      "share": "Deel je jaar",
+      "download": "Opslaan als afbeelding",
+      "busy": "Bezig…",
+      "capture_failed": "Kon de afbeelding niet maken. Probeer het opnieuw."
+    },
+    "rank_hours": "{hours} u",
+    "genre_rank_plays": "{plays} PLAYS"
+  },
+  "persona": {
+    "curator": {
+      "name": "De Curator",
+      "tagline": "Je vraagt meer nieuwe content aan dan je kijkt, tijd te kort?"
+    },
+    "series_devourer": {
+      "name": "Serieverslinder",
+      "tagline": "Afleveringen zijn je comfortfood."
+    },
+    "film_buff": {
+      "name": "Filmliefhebber",
+      "tagline": "Films zijn jouw hoofdprogramma."
+    },
+    "marathon_runner": {
+      "name": "Marathonloper",
+      "tagline": "300+ uur gekeken dit jaar — jij kijkt op marathonniveau."
+    },
+    "binge_royalty": {
+      "name": "Binge-koning(in)",
+      "tagline": "Streaks zijn je superkracht."
+    },
+    "night_owl": {
+      "name": "Nachtuil",
+      "tagline": "De server gloeit na 23:00."
+    },
+    "early_bird": {
+      "name": "Vroege vogel",
+      "tagline": "Eerste licht, eerste play."
+    },
+    "completionist": {
+      "name": "Serie verkenner",
+      "tagline": "Meer dan 20 series geprobeerd, je proeft van alles."
+    },
+    "genre_explorer": {
+      "name": "Genreverkenner",
+      "tagline": "Je kiest niet één pad."
+    },
+    "weekend_warrior": {
+      "name": "Weekendstrijder",
+      "tagline": "Zaterdag en zondag is showtijd."
+    },
+    "loyal_rewatcher": {
+      "name": "Trouwe herkijker",
+      "tagline": "Favorieten verdienen een herkansing."
+    },
+    "dedicated_viewer": {
+      "name": "Toegewijde kijker",
+      "tagline": "Stabiel en trouw."
+    }
+  },
+  "rank": {
+    "you": "Jij",
+    "leader": "Koploper",
+    "one_higher": "Eén plek hoger",
+    "one_lower": "Eén plek lager",
+    "higher": "{count} plekken hoger",
+    "lower": "{count} plekken lager"
+  },
+  "comparison": {
+    "accents": ["eigenzinnige", "verfijnde", "unieke", "eigen"],
+    "caption": {
+      "same": "Iedereen op de server draaide {server_title} — jij inclusief. Great minds think alike.",
+      "first_played": "Terwijl de server massaal naar {server_title} keek, startte jij het jaar met {user_title}.",
+      "different": "Terwijl de server naar {server_title} keek, was {user_title} jouw nummer één."
+    }
+  }
+}

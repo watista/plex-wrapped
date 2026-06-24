@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="nl" class="dark">
+<html lang="{{ html_lang }}" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#131313">
   <link rel="icon" href="/static/images/plextv-tile.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/static/images/plextv-tile.svg">
-  <title>Inloggen — Plex Wrapped</title>
+  <title>{{ t('login.title') }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
@@ -49,27 +49,27 @@
 
     <main class="login-card login-card--desktop-block hidden" id="loginDesktopBlock" aria-live="polite">
       <span class="material-symbols-outlined login-desktop-block__icon">smartphone</span>
-      <h1 class="login-card__title">Alleen op mobiel</h1>
-      <p class="login-subtitle">Plex Wrapped is alleen beschikbaar op je telefoon. Open deze pagina op een mobiel apparaat om je jaar in streaming te ontdekken.</p>
+      <h1 class="login-card__title">{{ t('login.desktop_title') }}</h1>
+      <p class="login-subtitle">{{ t('login.desktop_subtitle') }}</p>
     </main>
 
     <main class="login-card" id="loginCard">
-      <p class="login-eyebrow">Welkom terug</p>
-      <h1 class="login-card__title">Jouw jaar in <span>streaming</span></h1>
-      <p class="login-subtitle">Ontdek je persoonlijke Wrapped — van kijktijd tot topfilms en jouw kroon.</p>
+      <p class="login-eyebrow">{{ t('login.eyebrow') }}</p>
+      <h1 class="login-card__title">{{ t('login.heading') | safe }}</h1>
+      <p class="login-subtitle">{{ t('login.subtitle') }}</p>
 
       <ul class="login-features">
         <li class="login-feature">
           <span class="material-symbols-outlined login-feature__icon">schedule</span>
-          <span class="login-feature__label">Kijktijd</span>
+          <span class="login-feature__label">{{ t('login.feature_watch_time') }}</span>
         </li>
         <li class="login-feature">
           <span class="material-symbols-outlined login-feature__icon">star</span>
-          <span class="login-feature__label">Toplijsten</span>
+          <span class="login-feature__label">{{ t('login.feature_top_lists') }}</span>
         </li>
         <li class="login-feature">
           <span class="material-symbols-outlined login-feature__icon">workspace_premium</span>
-          <span class="login-feature__label">Jouw persona</span>
+          <span class="login-feature__label">{{ t('login.feature_persona') }}</span>
         </li>
       </ul>
 
@@ -83,16 +83,21 @@
       <a href="/auth/start" class="login-btn" id="loginBtn"
          data-client-id="{{ plex_client_id }}" data-product="{{ plex_product }}">
         <img class="login-btn__logo" src="/static/images/plextv-tile.svg" alt="" aria-hidden="true">
-        <span class="login-btn__label">Inloggen met Plex</span>
+        <span class="login-btn__label">{{ t('login.sign_in') }}</span>
       </a>
     </main>
 
-    <p class="login-footnote" id="loginFootnote">Veilig inloggen via Plex. We slaan geen wachtwoord op.</p>
+    <p class="login-footnote" id="loginFootnote">{{ t('login.footnote') }}</p>
   </div>
 
   <script>
+    window.__I18N__ = {{ i18n_json | safe }};
+  </script>
+  <script src="/static/js/i18n.js"></script>
+  <script>
     (function () {
       var DESKTOP_MIN_WIDTH = 769;
+      var signingInLabel = window.I18n.t("login.signing_in");
       var body = document.body;
       var testMode = body.dataset.testDatabase === "true";
       var loggedIn = body.dataset.loggedIn === "true";
@@ -135,7 +140,6 @@
       if (!btn) return;
       var clientId = (btn.dataset.clientId || "").trim();
       var product = (btn.dataset.product || "PlexWrapped").trim();
-      // Without a client id we can only use the server-side flow (the href).
       if (!clientId) return;
 
       var labelEl = btn.querySelector(".login-btn__label");
@@ -144,11 +148,8 @@
         e.preventDefault();
         if (btn.dataset.busy === "1") return;
         btn.dataset.busy = "1";
-        if (labelEl) labelEl.textContent = "Bezig met inloggen…";
+        if (labelEl) labelEl.textContent = signingInLabel;
 
-        // Create the Plex PIN from the browser so it originates from the user's
-        // own IP. Plex then recognises the same device when claiming the PIN and
-        // skips the "another device is trying to sign in" security warning.
         fetch("https://plex.tv/api/v2/pins", {
           method: "POST",
           headers: { "Accept": "application/json" },
@@ -181,7 +182,6 @@
             window.location.href = "https://app.plex.tv/auth#?" + params.toString();
           })
           .catch(function () {
-            // Network/CORS issue — fall back to the server-side flow.
             window.location.href = "/auth/start";
           });
       });

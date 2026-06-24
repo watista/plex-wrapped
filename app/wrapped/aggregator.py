@@ -19,7 +19,13 @@ from app.telegram.loader import (
     load_telegram_data,
 )
 from app.wrapped.avatar import resolve_avatar_url
-from app.wrapped.locale import month_number_to_dutch, to_dutch_day, to_dutch_month, weekday_number_to_dutch
+from app.i18n import Translator, comparison_caption, get_translator, position_label
+from app.wrapped.locale import (
+    month_number_to_localized,
+    to_localized_day,
+    to_localized_month,
+    weekday_number_to_localized,
+)
 from app.wrapped.posters import resolve_poster
 from app.wrapped.slides import apply_persona
 from app.wrapped.music import attach_wrapped_music
@@ -156,21 +162,14 @@ def _fetch_year_ranked_users(
     return ranked
 
 
-def _position_label(offset: int) -> str:
-    if offset == 0:
-        return "Jij"
-    if offset == -1:
-        return "Eén plek hoger"
-    if offset == 1:
-        return "Eén plek lager"
-    if offset < -1:
-        return f"{abs(offset)} plekken hoger"
-    return f"{offset} plekken lager"
+def _position_label(offset: int, translator: Translator) -> str:
+    return position_label(translator, offset)
 
 
 def _build_rank_context(
     ranked: list[dict[str, Any]],
     user_index: int,
+    translator: Translator,
 ) -> list[ServerRankEntry]:
     if not ranked:
         return []
@@ -196,9 +195,9 @@ def _build_rank_context(
         offset = idx - user_index
         is_you = idx == user_index
         if idx == 0 and not is_you and offset < -1:
-            label = "Koploper"
+            label = translator.t("rank.leader")
         else:
-            label = _position_label(offset)
+            label = _position_label(offset, translator)
         row = ranked[idx]
         context.append(
             ServerRankEntry(
@@ -237,6 +236,7 @@ def _compute_server_stats(
     display_name: str,
     username: str,
     user_watch_seconds: int,
+    translator: Translator,
     year_ranked: list[dict[str, Any]] | None = None,
     users_table: dict[str, Any] | None = None,
     top_users: dict[str, Any] | None = None,
@@ -280,7 +280,7 @@ def _compute_server_stats(
 
     rank = user_index + 1
     stats.rank = rank
-    stats.rank_context = _build_rank_context(ranked, user_index)
+    stats.rank_context = _build_rank_context(ranked, user_index, translator)
 
     if total_users is None:
         if users_table:
@@ -312,6 +312,7 @@ def _history_row_date(row: dict[str, Any]) -> date | None:
 def _compute_watch_timing(
     media_history: list[dict[str, Any]],
     year: int,
+    language: str,
 ) -> dict[str, Any]:
     """Per-month activity, busiest-month calendar, and weekday play counts from history."""
     month_play_counts: Counter[int] = Counter()
@@ -334,7 +335,7 @@ def _compute_watch_timing(
 
     if month_play_counts:
         busiest_month_index = max(month_play_counts, key=month_play_counts.get)
-        busiest_month = month_number_to_dutch(busiest_month_index)
+        busiest_month = month_number_to_localized(busiest_month_index, language)
         days_in_month = monthrange(year, busiest_month_index)[1]
         day_counts = month_day_play_counts[busiest_month_index]
         busiest_month_daily_plays = [day_counts.get(day, 0) for day in range(1, days_in_month + 1)]
@@ -346,19 +347,22 @@ def _compute_watch_timing(
         "busiest_month_daily_plays": busiest_month_daily_plays,
         "busiest_month_first_weekday": busiest_month_first_weekday,
         "plays_by_weekday": plays_by_weekday,
-        "peak_day": weekday_number_to_dutch(max(range(7), key=lambda i: weekday_play_counts.get(i, 0)))
+        "peak_day": weekday_number_to_localized(
+            max(range(7), key=lambda i: weekday_play_counts.get(i, 0)),
+            language,
+        )
         if weekday_play_counts
         else None,
     }
 
 
-_COMPARISON_HEADLINE_ACCENTS = ("eigenzinnige", "verfijnde", "unieke", "eigen")
-
-
-def _comparison_headline_accent(server_title: str, user_title: str) -> str:
+def _comparison_headline_accent(server_title: str, user_title: str, translator: Translator) -> str:
+    accents = translator.list_values("comparison.accents")
+    if not accents:
+        return "distinctive"
     key = f"{server_title.lower()}|{user_title.lower()}"
-    idx = sum(ord(c) for c in key) % len(_COMPARISON_HEADLINE_ACCENTS)
-    return _COMPARISON_HEADLINE_ACCENTS[idx]
+    idx = sum(ord(c) for c in key) % len(accents)
+    return accents[idx]
 
 
 def _build_comparison_caption(
@@ -367,20 +371,14 @@ def _build_comparison_caption(
     *,
     same_show: bool,
     reason: str | None,
+    translator: Translator,
 ) -> str:
-    if same_show:
-        return (
-            f"Iedereen op de server draaide {server_title} — jij inclusief. "
-            "Great minds think alike."
-        )
-    if reason == "first_played":
-        return (
-            f"Terwijl de server massaal naar {server_title} keek, "
-            f"startte jij het jaar met {user_title}."
-        )
-    return (
-        f"Terwijl de server naar {server_title} keek, "
-        f"was {user_title} jouw nummer één."
+    return comparison_caption(
+        translator,
+        server_title,
+        user_title,
+        same_show=same_show,
+        reason=reason,
     )
 
 
@@ -519,6 +517,7 @@ class WrappedAggregator:
         return title, thumb
 
     def compute(self, user_id: int) -> WrappedPayload:
+        translator = get_translator(self.settings.language)
         user = self.tautulli.get_user(user_id)
         after, before, time_range_days = _year_range(self.year)
         logger.debug("Cursor AI enabled=%s for user_id=%s", self.ai.enabled, user_id)
@@ -718,7 +717,7 @@ class WrappedAggregator:
                     movie_stats.items(), key=lambda x: x[1].get("last_ts") or 0
                 )[0]
 
-        watch_timing = _compute_watch_timing(media_history, self.year)
+        watch_timing = _compute_watch_timing(media_history, self.year, self.settings.language)
         busiest_month = watch_timing["busiest_month"]
         busiest_month_index = watch_timing["busiest_month_index"]
         busiest_month_daily_plays = watch_timing["busiest_month_daily_plays"]
@@ -739,7 +738,7 @@ class WrappedAggregator:
                     ]
                     if totals:
                         idx = totals.index(max(totals))
-                        busiest_month = to_dutch_month(categories[idx])
+                        busiest_month = to_localized_month(categories[idx], self.settings.language)
             except Exception:
                 pass
 
@@ -754,7 +753,7 @@ class WrappedAggregator:
                         for i in range(len(categories))
                     ]
                     if totals:
-                        peak_day = to_dutch_day(categories[totals.index(max(totals))])
+                        peak_day = to_localized_day(categories[totals.index(max(totals))], self.settings.language)
             except Exception:
                 pass
 
@@ -815,6 +814,7 @@ class WrappedAggregator:
             display_name=display_name,
             username=username,
             user_watch_seconds=total_seconds,
+            translator=translator,
             year_ranked=year_ranked or None,
             total_users=server_user_count,
         )
@@ -885,12 +885,14 @@ class WrappedAggregator:
                 comparison_headline_accent = _comparison_headline_accent(
                     server_top_title,
                     user_comparison_show,
+                    translator,
                 )
             comparison_caption = _build_comparison_caption(
                 server_top_title,
                 user_comparison_show,
                 same_show=comparison_same_show,
                 reason=user_comparison_reason,
+                translator=translator,
             )
 
         tg = self.telegram.by_plex_user_id.get(user_id)
@@ -986,7 +988,7 @@ class WrappedAggregator:
             has_watch_history=total_plays > 0,
             has_telegram_activity=has_telegram,
         )
-        apply_persona(payload)
+        apply_persona(payload, translator)
         attach_wrapped_music(payload, self.settings)
         logger.info(
             "Wrapped result user_id=%s plays=%s movies=%s tv=%s watch_hours=%s device=%s",

@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="nl" class="dark">
+<html lang="{{ html_lang }}" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#131313">
   <link rel="icon" href="/static/images/plextv-tile.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/static/images/plextv-tile.svg">
-  <title>Jouw Plex Wrapped</title>
+  <title>{{ t('wrapped.page_title') }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
@@ -28,7 +28,7 @@
     <div class="progress-bar" id="progressBar" aria-hidden="true"></div>
 
     <header class="story-header">
-      <button type="button" class="icon-btn" id="btnClose" aria-label="Uitloggen">
+      <button type="button" class="icon-btn" id="btnClose" aria-label="{{ t('wrapped.logout') }}">
         <span class="material-symbols-outlined">logout</span>
       </button>
       <h1 class="story-header-brand">
@@ -38,18 +38,22 @@
         </span>
       </h1>
       <div class="story-header-spacer" aria-hidden="true"></div>
-      <button type="button" class="icon-btn icon-btn--music" id="btnMusic" aria-label="Muziek dempen" aria-pressed="false">
+      <button type="button" class="icon-btn icon-btn--music" id="btnMusic" aria-label="{{ t('wrapped.music_mute') }}" aria-pressed="false">
         <span class="material-symbols-outlined">music_note</span>
       </button>
     </header>
 
     <div id="loading" class="loading">
       <div class="spinner"></div>
-      <p>Je wrapped wordt geladen…</p>
+      <p>{{ t('wrapped.loading') }}</p>
     </div>
 
     <div id="slides" class="slides hidden"></div>
   </div>
+  <script>
+    window.__I18N__ = {{ i18n_json | safe }};
+  </script>
+  <script src="/static/js/i18n.js"></script>
   <script src="/static/js/carousel.js"></script>
   <script src="/static/js/music.js"></script>
   <script src="/static/js/html2canvas.min.js"></script>

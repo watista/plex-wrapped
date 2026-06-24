@@ -1,0 +1,259 @@
+{
+  "meta": {
+    "html_lang": "en",
+    "date_locale": "en-US"
+  },
+  "locale": {
+    "weekdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "weekdays_short": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "months_short": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  },
+  "login": {
+    "title": "Sign in — Plex Wrapped",
+    "desktop_title": "Mobile only",
+    "desktop_subtitle": "Plex Wrapped is only available on your phone. Open this page on a mobile device to discover your year in streaming.",
+    "eyebrow": "Welcome back",
+    "heading": "Your year in <span>streaming</span>",
+    "subtitle": "Discover your personal Wrapped — from watch time to top movies and your crown.",
+    "feature_watch_time": "Watch time",
+    "feature_top_lists": "Top lists",
+    "feature_persona": "Your persona",
+    "sign_in": "Sign in with Plex",
+    "signing_in": "Signing in…",
+    "footnote": "Secure sign-in via Plex. We never store your password."
+  },
+  "auth": {
+    "plex_login_failed": "Plex login failed. Check server logs and try again.",
+    "login_not_completed": "Login not completed. Please try again.",
+    "profile_load_failed": "Could not load your Plex profile. Try again.",
+    "server_unavailable": "Server stats unavailable. Try again later.",
+    "test_profile_missing": "No test profile for this Plex account. Run: python scripts/load_test_wrapped.py --user-id {plex_id} (or add yourself to data/fixtures/test_users.json).",
+    "account_not_linked": "Your Plex account is not linked to this server. Contact the admin."
+  },
+  "api": {
+    "wrapped_not_ready": "Plex Wrapped is not available yet. Please try again later.",
+    "wrapped_not_generated": "Wrapped has not been generated yet. Ask the admin to run compute_wrapped.py."
+  },
+  "wrapped": {
+    "page_title": "Your Plex Wrapped",
+    "loading": "Loading your Wrapped…",
+    "logout": "Log out",
+    "music_mute": "Mute music",
+    "music_unmute": "Unmute music",
+    "welcome": {
+      "greeting": "Hi {name}!",
+      "title": "Your {year}<br>Plex Wrapped",
+      "subtitle": "Let's look back at your year in movies and TV.",
+      "back": "Back",
+      "next_hint": "Tap or swipe",
+      "no_activity_title": "No activity in {year}",
+      "no_activity_subtitle": "Start watching to see stats next year."
+    },
+    "watch_time": {
+      "label": "Total watch time",
+      "hours": "{hours} hours",
+      "days": "That's <span class=\"text-primary\">{days} days</span> of viewing",
+      "footnote": "streamed in {year}"
+    },
+    "total_plays": {
+      "subtitle": "times you hit play",
+      "tagline_500": "More than a thousand plays — you keep the server warm.",
+      "tagline_250": "A true binge watcher; the play button glows for you.",
+      "tagline_100": "You definitely know where the play button is.",
+      "tagline_50": "A loyal viewer with a healthy dose of play.",
+      "tagline_low": "Quality over quantity.",
+      "tagline_none": "Ready for a new viewing year."
+    },
+    "movies_vs_tv": {
+      "label": "The big balance",
+      "title": "Movies vs shows",
+      "movies": "Movies",
+      "episodes": "Episodes",
+      "stats_label": "Stats",
+      "film_only": "Pure movie mode: no shows, just films.",
+      "show_only": "Pure show mode: no movies, just episodes.",
+      "film_almost": "Pure movie mode: (almost) no shows, just films.",
+      "show_almost": "Pure show mode: (almost) no movies, just episodes.",
+      "film_ratio": "Movies took center stage — {ratio} movies for every episode.",
+      "show_ratio": "You're a true series binge watcher. For every movie you watched {ratio} episodes.",
+      "balanced": "A balanced mix of movies and shows."
+    },
+    "top_movies": {
+      "title": "Your <span class=\"text-primary\">top {count}</span> movies",
+      "plays_label": "times watched"
+    },
+    "top_shows": {
+      "title": "Your <span class=\"text-primary\">top {count}</span> shows",
+      "plays_label": "episodes"
+    },
+    "series_depth": {
+      "eyebrow": "Deep dive",
+      "title": "Show depth",
+      "series": "shows",
+      "seasons": "seasons",
+      "episodes": "episodes",
+      "tagline_500": "{episodes} episodes?! You barely stopped watching this year.",
+      "tagline_200": "{episodes} episodes across {series} shows — you don't know when to quit.",
+      "tagline_series": "{series} shows started; you're not afraid of a new story.",
+      "tagline_default": "{episodes} episodes in — every show got your full attention.",
+      "tagline_fallback": "You went deep on shows this year."
+    },
+    "when_you_watch": {
+      "eyebrow": "Your rhythm",
+      "title": "When you watch",
+      "busiest_month": "Busiest month",
+      "busiest_day": "Busiest day",
+      "busiest_hour": "Busiest hour",
+      "heatmap_title": "{count} times"
+    },
+    "favorite_device": {
+      "eyebrow": "Your favorite window",
+      "title": "Your screen:<br><span class=\"text-primary\">{device}</span>",
+      "percent": "{percent}% of your watch time",
+      "percent_unknown": "—% of your watch time"
+    },
+    "longest_streak": {
+      "title": "Longest streak<br><span class=\"text-primary\">{days} days in a row</span>",
+      "start": "Start",
+      "end": "End"
+    },
+    "favorite_actor": {
+      "eyebrow": "Your favorite star",
+      "title": "The face of your year:<br><span class=\"text-primary\">{name}</span>",
+      "badge": "Seen in <span class=\"text-primary\">{titles}</span> you watched",
+      "runners_label": "Also on screen a lot",
+      "title_one": "1 title",
+      "title_many": "{count} titles",
+      "tagline_10": "A familiar face in your viewing year.",
+      "tagline_5": "This star kept coming back on your screen.",
+      "tagline_2": "You sought out this star more than once.",
+      "tagline_default": "Your standout of the year."
+    },
+    "genres": {
+      "eyebrow": "Your vibe",
+      "movie_title": "Top <span class=\"text-primary-container\">movie</span> genres",
+      "show_title": "Top <span class=\"text-primary-container\">show</span> genres",
+      "rank_label": "#1 Genre",
+      "movie_stat": "Movies",
+      "episode_stat": "Episodes",
+      "movie_compact": "movies",
+      "episode_compact": "episodes"
+    },
+    "server_rank": {
+      "title": "Your place on the server",
+      "rank_label": "Rank",
+      "more_active": "You're more active than <strong>{percent}%</strong> of users"
+    },
+    "server_vs": {
+      "headline_same": "You're <span class=\"text-primary\">perfectly in sync</span> with the server.",
+      "headline_different": "You have a <span class=\"text-primary\">{accent}</span> taste.",
+      "server_badge": "Server #1",
+      "user_badge": "Your #1"
+    },
+    "telegram": {
+      "eyebrow": "Community requests",
+      "title": "Telegram bot",
+      "movies": "Movies",
+      "shows": "Shows",
+      "requests": "requests",
+      "logins": "logins",
+      "watched": "watched",
+      "completed": "completed",
+      "completion_80": "You're keeping up with your queue!",
+      "completion_50": "More than half of your requests have been watched.",
+      "completion_low": "There's still plenty on your list.",
+      "completion_none": "Time to work through your requests."
+    },
+    "persona": {
+      "label": "Your persona",
+      "title": "Your crown:<br><span class=\"persona-title__name\">{name}</span>"
+    },
+    "summary": {
+      "eyebrow": "Your year in review",
+      "title": "{year} Summary",
+      "watch_time": "Watch time",
+      "total_started": "Total started",
+      "top_show": "Top show",
+      "top_movie": "Top movie",
+      "most_watched_show": "Most watched show",
+      "most_watched_movie": "Most watched movie",
+      "busiest_month": "Busiest month",
+      "telegram_requests": "Telegram requests",
+      "favorite_genre": "Favorite genre",
+      "persona": "Your persona",
+      "share": "Share your year",
+      "download": "Save as image",
+      "busy": "Working…",
+      "capture_failed": "Could not create the image. Please try again."
+    },
+    "rank_hours": "{hours} h",
+    "genre_rank_plays": "{plays} PLAYS"
+  },
+  "persona": {
+    "curator": {
+      "name": "The Curator",
+      "tagline": "You request more new content than you watch — not enough time?"
+    },
+    "series_devourer": {
+      "name": "Series Devourer",
+      "tagline": "Episodes are your comfort food."
+    },
+    "film_buff": {
+      "name": "Film Buff",
+      "tagline": "Movies are your main event."
+    },
+    "marathon_runner": {
+      "name": "Marathon Runner",
+      "tagline": "300+ hours watched this year — you watch at marathon level."
+    },
+    "binge_royalty": {
+      "name": "Binge Royalty",
+      "tagline": "Streaks are your superpower."
+    },
+    "night_owl": {
+      "name": "Night Owl",
+      "tagline": "The server glows after 11 PM."
+    },
+    "early_bird": {
+      "name": "Early Bird",
+      "tagline": "First light, first play."
+    },
+    "completionist": {
+      "name": "Series Explorer",
+      "tagline": "More than 20 shows tried — you sample everything."
+    },
+    "genre_explorer": {
+      "name": "Genre Explorer",
+      "tagline": "You don't stick to one path."
+    },
+    "weekend_warrior": {
+      "name": "Weekend Warrior",
+      "tagline": "Saturday and Sunday are showtime."
+    },
+    "loyal_rewatcher": {
+      "name": "Loyal Rewatcher",
+      "tagline": "Favorites deserve another round."
+    },
+    "dedicated_viewer": {
+      "name": "Dedicated Viewer",
+      "tagline": "Steady and loyal."
+    }
+  },
+  "rank": {
+    "you": "You",
+    "leader": "Leader",
+    "one_higher": "One spot higher",
+    "one_lower": "One spot lower",
+    "higher": "{count} spots higher",
+    "lower": "{count} spots lower"
+  },
+  "comparison": {
+    "accents": ["distinctive", "refined", "unique", "bold"],
+    "caption": {
+      "same": "Everyone on the server watched {server_title} — you included. Great minds think alike.",
+      "first_played": "While the server was all over {server_title}, you started the year with {user_title}.",
+      "different": "While the server watched {server_title}, {user_title} was your number one."
+    }
+  }
+}

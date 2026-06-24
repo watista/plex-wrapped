@@ -17,7 +17,7 @@ def test_persona_series_devourer():
     p = _base_payload(tv_plays=100, movie_plays=10)
     r = compute_persona(p)
     assert r.persona_id == "series_devourer"
-    assert r.persona == "Serieverslinder"
+    assert r.persona == "Series Devourer"
 
 
 def test_persona_curator():
@@ -36,7 +36,12 @@ def test_persona_dedicated_fallback():
 
 
 def test_persona_weekend_warrior():
-    p = _base_payload(peak_day="zaterdag", total_plays=50, movie_plays=25, tv_plays=25)
+    p = _base_payload(
+        plays_by_weekday=[1, 2, 3, 4, 5, 20, 1],
+        total_plays=50,
+        movie_plays=25,
+        tv_plays=25,
+    )
     r = compute_persona(p)
     assert r.persona_id == "weekend_warrior"
 

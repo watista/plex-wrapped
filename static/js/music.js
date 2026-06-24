@@ -1,7 +1,7 @@
 (function (global) {
   const FADE_MS = 900;
   const FADE_STEPS = 24;
-  const PLAYBACK_VOLUME = 0.5;
+  const PLAYBACK_VOLUME = 0.75;
 
   function slideIdFromElement(slideEl) {
     if (!slideEl?.classList) return null;
@@ -35,8 +35,12 @@
     function updateMuteButton() {
       if (!btnMusic) return;
       const icon = btnMusic.querySelector(".material-symbols-outlined");
+      const i18n = global.I18n || { t: (key) => key };
       btnMusic.setAttribute("aria-pressed", muted ? "true" : "false");
-      btnMusic.setAttribute("aria-label", muted ? "Muziek aanzetten" : "Muziek dempen");
+      btnMusic.setAttribute(
+        "aria-label",
+        muted ? i18n.t("wrapped.music_unmute") : i18n.t("wrapped.music_mute")
+      );
       if (icon) {
         icon.textContent = muted ? "music_off" : "music_note";
       }

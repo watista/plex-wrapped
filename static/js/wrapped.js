@@ -7,6 +7,19 @@
   let carousel = null;
   let musicPlayer = null;
 
+  const i18n = window.I18n || {
+    t: (key) => key,
+    list: () => [],
+    dateLocale: () => "en-US",
+    formatNumber: (value) => String(value),
+  };
+  const t = (key, vars) => i18n.t(key, vars);
+  const fmtNum = (value) => i18n.formatNumber(value);
+  const WEEKDAY_ORDER = i18n.list("locale.weekdays");
+  const WEEKDAY_SHORT = i18n.list("locale.weekdays_short");
+  const LOCALE_MONTHS = i18n.list("locale.months");
+  const LOCALE_MONTHS_SHORT = i18n.list("locale.months_short");
+
   const TOP_MOVIES_BG = [
     "/static/designs/top_movies_bg_1.png",
     "/static/designs/top_movies_bg_2.png",
@@ -99,7 +112,7 @@
     if (!isoDate) return "—";
     const parsed = new Date(`${isoDate}T12:00:00`);
     if (Number.isNaN(parsed.getTime())) return isoDate;
-    return parsed.toLocaleDateString("nl-NL", {
+    return parsed.toLocaleDateString(i18n.dateLocale(), {
       day: "numeric",
       month: "long",
       year: "numeric",
@@ -903,12 +916,12 @@
           <span class="material-symbols-outlined nav-icon-fill">${heroIcon}</span>
         </div>
         <div class="genre-card__copy">
-          <p class="genre-rank-label">#1 Genre</p>
+          <p class="genre-rank-label">${escapeHtml(t("wrapped.genres.rank_label"))}</p>
           <h3 class="genre-name">${escapeHtml(hero.name)}</h3>
         </div>
       </div>
       <div class="genre-card__stat">
-        <span class="genre-count">${hero.plays.toLocaleString("nl-NL")}</span>
+        <span class="genre-count">${fmtNum(hero.plays)}</span>
         <span class="genre-count-label">${escapeHtml(statLabel)}</span>
       </div>
     </div>`;
@@ -925,7 +938,7 @@
           <h3 class="genre-name">${escapeHtml(g.name)}</h3>
         </div>
         <div class="genre-card__stat">
-          <span class="genre-count">${g.plays.toLocaleString("nl-NL")}</span>
+          <span class="genre-count">${fmtNum(g.plays)}</span>
           <span class="genre-count-label">${escapeHtml(statLabel)}</span>
         </div>
       </div>`;
@@ -942,7 +955,7 @@
             <span class="material-symbols-outlined">${icon}</span>
           </div>
           <h4 class="genre-name-compact">${escapeHtml(g.name)}</h4>
-          <p class="genre-meta-compact">${g.plays.toLocaleString("nl-NL")} ${escapeHtml(compactLabel)}</p>
+          <p class="genre-meta-compact">${fmtNum(g.plays)} ${escapeHtml(compactLabel)}</p>
         </div>`;
       }
       html += "</div>";
@@ -953,26 +966,32 @@
   }
 
   function formatRankHours(hours) {
-    return `${Number(hours).toLocaleString("nl-NL")} u`;
+    return t("wrapped.rank_hours", { hours: fmtNum(hours) });
   }
 
   function buildComparisonCaption(d, serverTitle, userTitle, same) {
     if (d.comparison_caption) return d.comparison_caption;
     if (same) {
-      return `Iedereen op de server draaide ${serverTitle} — jij inclusief. Great minds think alike.`;
+      return t("comparison.caption.same", { server_title: serverTitle });
     }
     if (d.user_comparison_reason === "first_played") {
-      return `Terwijl de server massaal naar ${serverTitle} keek, startte jij het jaar met ${userTitle}.`;
+      return t("comparison.caption.first_played", {
+        server_title: serverTitle,
+        user_title: userTitle,
+      });
     }
-    return `Terwijl de server naar ${serverTitle} keek, was ${userTitle} jouw nummer één.`;
+    return t("comparison.caption.different", {
+      server_title: serverTitle,
+      user_title: userTitle,
+    });
   }
 
   function buildComparisonHeadline(d, same) {
     if (same) {
-      return 'Je bent <span class="text-primary">perfect in sync</span> met de server.';
+      return t("wrapped.server_vs.headline_same");
     }
-    const accent = d.comparison_headline_accent || "eigenzinnige";
-    return `Je hebt een <span class="text-primary">${escapeHtml(accent)}</span> smaak.`;
+    const accent = d.comparison_headline_accent || t("comparison.accents.0");
+    return t("wrapped.server_vs.headline_different", { accent: escapeHtml(accent) });
   }
 
   function buildVsPosterCard(side, title, thumb, badge) {
@@ -993,10 +1012,10 @@
   }
 
   function buildTelegramCompletionNote(percent) {
-    if (percent >= 80) return "Je houdt je wachtrij goed bij!";
-    if (percent >= 50) return "Meer dan de helft van je aanvragen heb je al bekeken.";
-    if (percent > 0) return "Er staat nog genoeg op je lijst.";
-    return "Tijd om je aanvragen af te werken.";
+    if (percent >= 80) return t("wrapped.telegram.completion_80");
+    if (percent >= 50) return t("wrapped.telegram.completion_50");
+    if (percent > 0) return t("wrapped.telegram.completion_low");
+    return t("wrapped.telegram.completion_none");
   }
 
   function buildTelegramSlide(tg) {
@@ -1011,7 +1030,7 @@
         ? `<div class="tg-completion glass-card">
                 <div class="tg-completion__head">
                   <span class="tg-completion__pct">${percent}%</span>
-                  <span class="tg-completion__label">voltooid</span>
+                  <span class="tg-completion__label">${escapeHtml(t("wrapped.telegram.completed"))}</span>
                 </div>
                 <div class="tg-completion__track">
                   <div class="tg-completion__fill" data-target="${percent}"></div>
@@ -1023,33 +1042,33 @@
     return `<div class="tg-deco" aria-hidden="true"></div>
             <div class="tg-layout">
               <div class="tg-header stack-sm">
-                <span class="label-md label-md--wide tg-header__label">Community vragen</span>
-                <h2 class="tg-title">Telegram bot</h2>
+                <span class="label-md label-md--wide tg-header__label">${escapeHtml(t("wrapped.telegram.eyebrow"))}</span>
+                <h2 class="tg-title">${escapeHtml(t("wrapped.telegram.title"))}</h2>
               </div>
               <div class="tg-row tg-row--types">
                 <div class="tg-stat-card glass-card">
                   <span class="material-symbols-outlined tg-stat-card__icon tg-stat-card__icon--primary">movie</span>
-                  <h3 class="tg-stat-card__type">Films</h3>
-                  <p class="tg-stat-card__num">${films.toLocaleString("nl-NL")}</p>
-                  <p class="tg-stat-card__meta">aanvragen</p>
+                  <h3 class="tg-stat-card__type">${escapeHtml(t("wrapped.telegram.movies"))}</h3>
+                  <p class="tg-stat-card__num">${fmtNum(films)}</p>
+                  <p class="tg-stat-card__meta">${escapeHtml(t("wrapped.telegram.requests"))}</p>
                 </div>
                 <div class="tg-stat-card glass-card">
                   <span class="material-symbols-outlined tg-stat-card__icon tg-stat-card__icon--tertiary">tv</span>
-                  <h3 class="tg-stat-card__type">Series</h3>
-                  <p class="tg-stat-card__num">${series.toLocaleString("nl-NL")}</p>
-                  <p class="tg-stat-card__meta">aanvragen</p>
+                  <h3 class="tg-stat-card__type">${escapeHtml(t("wrapped.telegram.shows"))}</h3>
+                  <p class="tg-stat-card__num">${fmtNum(series)}</p>
+                  <p class="tg-stat-card__meta">${escapeHtml(t("wrapped.telegram.requests"))}</p>
                 </div>
               </div>
               <div class="tg-row tg-row--conv">
                 <div class="tg-conv-card glass-card">
                   <span class="material-symbols-outlined tg-conv-card__icon tg-conv-card__icon--tertiary">send_and_archive</span>
-                  <p class="tg-conv-card__num">${logins.toLocaleString("nl-NL")}</p>
-                  <p class="tg-conv-card__meta">logins</p>
+                  <p class="tg-conv-card__num">${fmtNum(logins)}</p>
+                  <p class="tg-conv-card__meta">${escapeHtml(t("wrapped.telegram.logins"))}</p>
                 </div>
                 <div class="tg-conv-card glass-card">
                   <span class="material-symbols-outlined tg-conv-card__icon tg-conv-card__icon--primary">visibility</span>
-                  <p class="tg-conv-card__num">${watched.toLocaleString("nl-NL")}</p>
-                  <p class="tg-conv-card__meta">bekeken</p>
+                  <p class="tg-conv-card__num">${fmtNum(watched)}</p>
+                  <p class="tg-conv-card__meta">${escapeHtml(t("wrapped.telegram.watched"))}</p>
                 </div>
               </div>
               ${completionBlock}
@@ -1120,23 +1139,22 @@
         </svg>
         <div class="chart-center">
           <span class="chart-ratio">${ratio}</span>
-          <span class="chart-ratio-label">Statistieken</span>
+          <span class="chart-ratio-label">${escapeHtml(t("wrapped.movies_vs_tv.stats_label"))}</span>
         </div>
       </div>`;
   }
 
-  const WEEKDAY_ORDER = [
-    "maandag",
-    "dinsdag",
-    "woensdag",
-    "donderdag",
-    "vrijdag",
-    "zaterdag",
-    "zondag",
-  ];
-
   function daysInMonth(year, monthIndex) {
     return new Date(year, monthIndex, 0).getDate();
+  }
+
+  function resolveBusiestMonthIndex(monthName, monthIndex) {
+    if (Number.isFinite(Number(monthIndex))) {
+      return Number(monthIndex);
+    }
+    if (!monthName) return null;
+    const idx = LOCALE_MONTHS.findIndex((month) => month.toLowerCase() === monthName.toLowerCase());
+    return idx >= 0 ? idx + 1 : null;
   }
 
   function normalizeDailyPlays(raw) {
@@ -1179,36 +1197,11 @@
 
     plays.forEach((count) => {
       const level = playCountToLevel(count, maxPlays);
-      const title = count > 0 ? ` title="${count} keer"` : "";
+      const title = count > 0 ? ` title="${t("wrapped.when_you_watch.heatmap_title", { count })}"` : "";
       cells.push(`<div class="heat-dot heat-dot--${level}"${title}></div>`);
     });
 
     return cells.join("");
-  }
-
-  const WEEKDAY_SHORT = ["ma", "di", "wo", "do", "vr", "za", "zo"];
-
-  const DUTCH_MONTH_TO_INDEX = {
-    januari: 1,
-    februari: 2,
-    maart: 3,
-    april: 4,
-    mei: 5,
-    juni: 6,
-    juli: 7,
-    augustus: 8,
-    september: 9,
-    oktober: 10,
-    november: 11,
-    december: 12,
-  };
-
-  function resolveBusiestMonthIndex(monthName, monthIndex) {
-    if (Number.isFinite(Number(monthIndex))) {
-      return Number(monthIndex);
-    }
-    if (!monthName) return null;
-    return DUTCH_MONTH_TO_INDEX[monthName.toLowerCase()] || null;
   }
 
   function normalizeWeekdayCounts(playsByWeekday) {
@@ -1256,7 +1249,7 @@
       .map((point) => {
         const isPeak = point.index === peakIdx;
         const r = isPeak ? 4.5 : 3;
-        const label = point.count.toLocaleString("nl-NL");
+        const label = fmtNum(point.count);
         return `<g class="${isPeak ? "weekday-line-chart__point--peak" : ""}">
           <circle class="weekday-line-chart__dot" cx="${point.x.toFixed(1)}" cy="${bottomY.toFixed(1)}" data-target-y="${point.y.toFixed(1)}" r="${r}"></circle>
           <text class="weekday-line-chart__value" x="${point.x.toFixed(1)}" y="${(bottomY - 8).toFixed(1)}" data-target-y="${(point.y - 8).toFixed(1)}" text-anchor="middle" opacity="0">${label}</text>
@@ -1426,60 +1419,62 @@
     const LOW_THRESHOLD = 5;
 
     if (tvPlays === 0 && moviePlays > 0) {
-      return "Pure filmmodus: geen series, alleen films.";
+      return t("wrapped.movies_vs_tv.film_only");
     }
     if (moviePlays === 0 && tvPlays > 0) {
-      return "Pure seriesmodus: geen films, alleen afleveringen.";
+      return t("wrapped.movies_vs_tv.show_only");
     }
     if (moviePlays > tvPlays) {
       if (tvPlays > 0 && tvPlays < LOW_THRESHOLD) {
-        return "Pure filmmodus: (bijna) geen series, alleen films.";
+        return t("wrapped.movies_vs_tv.film_almost");
       }
       const ratio = Math.round(moviePlays / tvPlays);
-      return `Films stonden centraal — ${ratio} films voor elke aflevering.`;
+      return t("wrapped.movies_vs_tv.film_ratio", { ratio });
     }
     if (tvPlays > moviePlays) {
       if (moviePlays > 0 && moviePlays < LOW_THRESHOLD) {
-        return "Pure seriesmodus: (bijna) geen films, alleen afleveringen.";
+        return t("wrapped.movies_vs_tv.show_almost");
       }
       const ratio = Math.round(tvPlays / moviePlays);
-      return `Je bent een echte serie-bingewatcher. Voor elke film keek je maar liefst ${ratio} afleveringen.`;
+      return t("wrapped.movies_vs_tv.show_ratio", { ratio });
     }
-    return "Een gebalanceerde mix van films en series.";
+    return t("wrapped.movies_vs_tv.balanced");
   }
 
   function playsTagline(totalPlays) {
     const plays = Math.max(0, Number(totalPlays) || 0);
-    if (plays >= 500) return "Meer dan duizend keer op play — jij houdt de server warm.";
-    if (plays >= 250) return "Een echte bingewatcher; de play-knop gloeit na bij jou.";
-    if (plays >= 100) return "Jij weet de play-knop wel te vinden.";
-    if (plays >= 50) return "Een trouwe kijker met een gezonde dosis play-knop.";
-    if (plays > 0) return "Mondjesmaat, maar wel met smaak.";
-    return "Klaar voor een nieuw kijkjaar.";
+    if (plays >= 500) return t("wrapped.total_plays.tagline_500");
+    if (plays >= 250) return t("wrapped.total_plays.tagline_250");
+    if (plays >= 100) return t("wrapped.total_plays.tagline_100");
+    if (plays >= 50) return t("wrapped.total_plays.tagline_50");
+    if (plays > 0) return t("wrapped.total_plays.tagline_low");
+    return t("wrapped.total_plays.tagline_none");
   }
 
   function seriesDepthDefault(d) {
     const series = Number(d.unique_series) || 0;
     const episodes = Number(d.unique_episodes) || 0;
-    const eps = episodes.toLocaleString("nl-NL");
-    if (episodes >= 500) return `${eps} afleveringen?! Jij schakelde dit jaar bijna non-stop door.`;
-    if (episodes >= 200) return `${eps} afleveringen over ${series} series — jij weet van geen ophouden.`;
-    if (series >= 10) return `${series} series aangesneden; jij durft aan een nieuw verhaal te beginnen.`;
-    if (episodes > 0) return `${eps} afleveringen verder — elke serie kreeg jouw volle aandacht.`;
-    return "Je dook dit jaar lekker diep in series.";
+    const eps = fmtNum(episodes);
+    if (episodes >= 500) return t("wrapped.series_depth.tagline_500", { episodes: eps });
+    if (episodes >= 200) {
+      return t("wrapped.series_depth.tagline_200", { episodes: eps, series });
+    }
+    if (series >= 10) return t("wrapped.series_depth.tagline_series", { series });
+    if (episodes > 0) return t("wrapped.series_depth.tagline_default", { episodes: eps });
+    return t("wrapped.series_depth.tagline_fallback");
   }
 
   function actorTitlesLabel(count) {
     const n = Math.max(0, Number(count) || 0);
-    return n === 1 ? "1 titel" : `${n.toLocaleString("nl-NL")} titels`;
+    return n === 1 ? t("wrapped.favorite_actor.title_one") : t("wrapped.favorite_actor.title_many", { count: fmtNum(n) });
   }
 
   function actorTagline(actor) {
     const titles = Math.max(0, Number(actor?.title_count) || 0);
-    if (titles >= 10) return "Een vast gezicht in jouw kijkjaar.";
-    if (titles >= 5) return "Deze ster bleef maar terugkomen op je scherm.";
-    if (titles >= 2) return "Jij zocht deze ster meermaals op.";
-    return "Jouw uitschieter van het jaar.";
+    if (titles >= 10) return t("wrapped.favorite_actor.tagline_10");
+    if (titles >= 5) return t("wrapped.favorite_actor.tagline_5");
+    if (titles >= 2) return t("wrapped.favorite_actor.tagline_2");
+    return t("wrapped.favorite_actor.tagline_default");
   }
 
   function actorHeroHtml(actor) {
@@ -1504,7 +1499,7 @@
     const runners = actors.slice(1, 3);
     const runnersHtml = runners.length
       ? `<div class="actor-runners">
-           <p class="actor-runners__label">Ook vaak in beeld</p>
+           <p class="actor-runners__label">${escapeHtml(t("wrapped.favorite_actor.runners_label"))}</p>
            <div class="actor-runners__list">
              ${runners
                .map(
@@ -1526,14 +1521,14 @@
            ${actorHeroHtml(hero)}
          </div>
          <div class="actor-copy stack-sm">
-           <p class="label-md label-md--wide">Jouw favoriete ster</p>
-           <h2 class="device-title">Het gezicht van jouw jaar:<br><span class="text-primary">${escapeHtml(hero.name)}</span></h2>
+           <p class="label-md label-md--wide">${escapeHtml(t("wrapped.favorite_actor.eyebrow"))}</p>
+           <h2 class="device-title">${t("wrapped.favorite_actor.title", { name: escapeHtml(hero.name) })}</h2>
            <p class="actor-tagline">${escapeHtml(actorTagline(hero))}</p>
          </div>
        </div>
        <div class="glass-card actor-badge">
          <span class="material-symbols-outlined nav-icon-fill">movie</span>
-         <p>Te zien in <span class="text-primary">${escapeHtml(actorTitlesLabel(hero.title_count))}</span> die jij keek</p>
+         <p>${t("wrapped.favorite_actor.badge", { titles: escapeHtml(actorTitlesLabel(hero.title_count)) })}</p>
        </div>
        ${runnersHtml}`,
       "favorite-actor"
@@ -1557,9 +1552,9 @@
             }
           </div>
           <div class="stack-sm welcome-copy">
-            <h2 class="headline-lg welcome-greeting">Hoi ${escapeHtml(d.display_name)}!</h2>
-            <p class="display-lg welcome-title">Jouw ${year}<br>Plex Wrapped</p>
-            <p class="body-md">Laten we kijken naar jouw jaar in films en series.</p>
+            <h2 class="headline-lg welcome-greeting">${escapeHtml(t("wrapped.welcome.greeting", { name: d.display_name }))}</h2>
+            <p class="display-lg welcome-title">${t("wrapped.welcome.title", { year })}</p>
+            <p class="body-md">${escapeHtml(t("wrapped.welcome.subtitle"))}</p>
           </div>
         `) +
           `<div class="nav-hint" aria-hidden="true">
@@ -1567,13 +1562,13 @@
                <span class="nav-hint__chip">
                  <span class="material-symbols-outlined">chevron_left</span>
                </span>
-               <span class="nav-hint__label">Terug</span>
+               <span class="nav-hint__label">${escapeHtml(t("wrapped.welcome.back"))}</span>
              </div>
              <div class="nav-hint__zone nav-hint__zone--right">
                <span class="nav-hint__chip nav-hint__chip--primary">
                  <span class="material-symbols-outlined">chevron_right</span>
                </span>
-               <span class="nav-hint__label">Tap of swipe</span>
+               <span class="nav-hint__label">${escapeHtml(t("wrapped.welcome.next_hint"))}</span>
              </div>
            </div>`,
         "welcome"
@@ -1584,8 +1579,8 @@
       slides.push(
         createSlide(
           slideMain(
-            `<h2 class="headline-lg">Geen activiteit in ${year}</h2>
-             <p class="body-md" style="margin-top:1rem">Begin met kijken om volgend jaar statistieken te zien.</p>`
+            `<h2 class="headline-lg">${escapeHtml(t("wrapped.welcome.no_activity_title", { year }))}</h2>
+             <p class="body-md" style="margin-top:1rem">${escapeHtml(t("wrapped.welcome.no_activity_subtitle"))}</p>`
           ),
           "welcome"
         )
@@ -1604,16 +1599,16 @@
            </div>` +
             slideMain(
               `<div class="hero-pop watch-hero">
-                 <span class="watch-label">Totale Kijktijd</span>
-                 <h2 class="watch-hours">${hours.toLocaleString("nl-NL")} uur</h2>
+                 <span class="watch-label">${escapeHtml(t("wrapped.watch_time.label"))}</span>
+                 <h2 class="watch-hours">${escapeHtml(t("wrapped.watch_time.hours", { hours: fmtNum(hours) }))}</h2>
                  <div class="glass-card glass-card--days watch-days-card">
-                   <p class="watch-days-text">Dat is <span class="text-primary">${days} dagen</span> kijkplezier</p>
+                   <p class="watch-days-text">${t("wrapped.watch_time.days", { days })}</p>
                  </div>
                </div>`,
               "bottom-note",
               `<div class="slide-footnote watch-footnote">
                  <div class="footnote-divider"></div>
-                 <p class="watch-footnote-label">gestreamd in ${year}</p>
+                 <p class="watch-footnote-label">${escapeHtml(t("wrapped.watch_time.footnote", { year }))}</p>
                </div>`
             ),
           "watch-time"
@@ -1626,8 +1621,8 @@
             slideMain(
               `<div class="plays-hero-card glass-card">
                  <span class="material-symbols-outlined nav-icon-fill plays-icon">play_circle</span>
-                 <h2 class="plays-count">${d.total_plays.toLocaleString("nl-NL")}</h2>
-                 <p class="plays-subtitle">keer op de play-knop gedrukt</p>
+                 <h2 class="plays-count">${fmtNum(d.total_plays)}</h2>
+                 <p class="plays-subtitle">${escapeHtml(t("wrapped.total_plays.subtitle"))}</p>
                  <div class="plays-divider"></div>
                </div>
                <p class="plays-tagline">${escapeHtml(playsTagline(d.total_plays))}</p>`
@@ -1643,20 +1638,20 @@
            </div>` +
             slideMain(
               `<div class="mvt-header">
-                 <span class="mvt-label">De grote balans</span>
-                 <h2 class="mvt-title">Films vs series</h2>
+                 <span class="mvt-label">${escapeHtml(t("wrapped.movies_vs_tv.label"))}</span>
+                 <h2 class="mvt-title">${escapeHtml(t("wrapped.movies_vs_tv.title"))}</h2>
                </div>
                ${buildDonutChart(d.movie_plays, d.tv_plays)}
                <div class="split-grid mvt-stats">
                  <div class="glass-card">
                    <span class="material-symbols-outlined nav-icon-fill mvt-stat-icon mvt-stat-icon--movie">movie</span>
-                   <span class="stat-num stat-num--tertiary">${d.movie_plays.toLocaleString("nl-NL")}</span>
-                   <span class="mvt-stat-label">Films</span>
+                   <span class="stat-num stat-num--tertiary">${fmtNum(d.movie_plays)}</span>
+                   <span class="mvt-stat-label">${escapeHtml(t("wrapped.movies_vs_tv.movies"))}</span>
                  </div>
                  <div class="glass-card">
                    <span class="material-symbols-outlined nav-icon-fill mvt-stat-icon mvt-stat-icon--tv">live_tv</span>
-                   <span class="stat-num">${d.tv_plays.toLocaleString("nl-NL")}</span>
-                   <span class="mvt-stat-label">Afleveringen</span>
+                   <span class="stat-num">${fmtNum(d.tv_plays)}</span>
+                   <span class="mvt-stat-label">${escapeHtml(t("wrapped.movies_vs_tv.episodes"))}</span>
                  </div>
                </div>
                <p class="mvt-narrative">${escapeHtml(bingeNarrative(d.movie_plays, d.tv_plays))}</p>`,
@@ -1671,8 +1666,8 @@
           createSlide(
             buildTopMoviesPosterBg() +
               slideMain(
-                `<h2 class="slide-title">Jouw <span class="text-primary">top ${Math.min(5, d.top_movies.length)}</span> films</h2>
-                 ${buildRankList(d.top_movies, "keer bekeken", true)}`,
+                `<h2 class="slide-title">${t("wrapped.top_movies.title", { count: Math.min(5, d.top_movies.length) })}</h2>
+                 ${buildRankList(d.top_movies, t("wrapped.top_movies.plays_label"), true)}`,
                 "top-movies"
               ),
             "top-movies"
@@ -1686,8 +1681,8 @@
             buildTopShowsPosterBg() +
               `<div class="top-shows-glow" aria-hidden="true"></div>` +
               slideMain(
-                `<h2 class="slide-title">Jouw <span class="text-primary">top ${Math.min(5, d.top_shows.length)}</span> series</h2>
-                 ${buildRankList(d.top_shows, "afleveringen", true)}`,
+                `<h2 class="slide-title">${t("wrapped.top_shows.title", { count: Math.min(5, d.top_shows.length) })}</h2>
+                 ${buildRankList(d.top_shows, t("wrapped.top_shows.plays_label"), true)}`,
                 "top-shows"
               ),
             "top-shows"
@@ -1701,21 +1696,21 @@
             slideMain(
               `<div class="series-depth-content">
                  <div class="series-depth-header stack-sm">
-                   <span class="label-md label-md--wide">Diepe duik</span>
-                   <h2 class="headline-lg">Serie diepte</h2>
+                   <span class="label-md label-md--wide">${escapeHtml(t("wrapped.series_depth.eyebrow"))}</span>
+                   <h2 class="headline-lg">${escapeHtml(t("wrapped.series_depth.title"))}</h2>
                  </div>
                  <div class="staircase">
                    <div class="stair-step glass-card">
-                     <span class="headline-lg">${d.unique_series.toLocaleString("nl-NL")}</span>
-                     <span class="stair-label">series</span>
+                     <span class="headline-lg">${fmtNum(d.unique_series)}</span>
+                     <span class="stair-label">${escapeHtml(t("wrapped.series_depth.series"))}</span>
                    </div>
                    <div class="stair-step glass-card">
-                     <span class="display-lg">${d.unique_seasons.toLocaleString("nl-NL")}</span>
-                     <span class="stair-label">seizoenen</span>
+                     <span class="display-lg">${fmtNum(d.unique_seasons)}</span>
+                     <span class="stair-label">${escapeHtml(t("wrapped.series_depth.seasons"))}</span>
                    </div>
                    <div class="stair-step glass-card">
-                     <span class="display-xl">${d.unique_episodes.toLocaleString("nl-NL")}</span>
-                     <span class="stair-label">afleveringen</span>
+                     <span class="display-xl">${fmtNum(d.unique_episodes)}</span>
+                     <span class="stair-label">${escapeHtml(t("wrapped.series_depth.episodes"))}</span>
                    </div>
                  </div>
                  <p class="stair-quote">"${escapeHtml(d.ai_copy?.series_depth || seriesDepthDefault(d))}"</p>
@@ -1736,12 +1731,12 @@
             slideMain(
               `<div class="when-content">
                  <div class="when-header stack-sm">
-                   <span class="label-md label-md--wide">Jouw ritme</span>
-                   <h2 class="headline-lg">Wanneer kijk je</h2>
+                   <span class="label-md label-md--wide">${escapeHtml(t("wrapped.when_you_watch.eyebrow"))}</span>
+                   <h2 class="headline-lg">${escapeHtml(t("wrapped.when_you_watch.title"))}</h2>
                  </div>
                  <div class="when-stack">
                    <div class="glass-card when-card when-card--month-heatmap">
-                     <p class="label-md when-label">Drukste maand</p>
+                     <p class="label-md when-label">${escapeHtml(t("wrapped.when_you_watch.busiest_month"))}</p>
                      <div class="when-card__row when-card__row--title">
                        <p class="headline-md when-value">${escapeHtml(d.busiest_month || "—")}</p>
                        <div class="when-icon-circle">
@@ -1759,14 +1754,14 @@
                      )}</div>
                    </div>
                    <div class="glass-card when-card when-card--weekday">
-                     <p class="label-md when-label">Drukste dag</p>
+                     <p class="label-md when-label">${escapeHtml(t("wrapped.when_you_watch.busiest_day"))}</p>
                      <p class="headline-md when-day-value">${escapeHtml(d.peak_day || "—")}</p>
                      ${buildWeekdayChart(d.plays_by_weekday, d.peak_day)}
                    </div>
                    <div class="glass-card when-card when-card--hour">
                      <div class="when-card__row when-card__row--hour">
                        <div class="when-hour-text">
-                         <p class="label-md when-label">Drukste uur</p>
+                         <p class="label-md when-label">${escapeHtml(t("wrapped.when_you_watch.busiest_hour"))}</p>
                          <p class="headline-md when-hour-value">${hour}</p>
                        </div>
                        ${buildPeakClock(d.peak_hour, true)}
@@ -1797,8 +1792,8 @@
             : null;
         const deviceBadgeText =
           devicePercent !== null
-            ? `${devicePercent}% van je kijktijd`
-            : "—% van je kijktijd";
+            ? t("wrapped.favorite_device.percent", { percent: devicePercent })
+            : t("wrapped.favorite_device.percent_unknown");
         slides.push(
           createSlide(
             deviceSilhouetteHtml(deviceVisual.silhouette) +
@@ -1808,8 +1803,8 @@
                      <span class="material-symbols-outlined nav-icon-fill">${escapeHtml(deviceIcon)}</span>
                    </div>
                    <div class="device-copy stack-sm">
-                     <p class="label-md label-md--wide">Je favoriete venster</p>
-                     <h2 class="device-title">Jouw scherm:<br><span class="text-primary">${escapeHtml(d.favorite_device)}</span></h2>
+                     <p class="label-md label-md--wide">${escapeHtml(t("wrapped.favorite_device.eyebrow"))}</p>
+                     <h2 class="device-title">${t("wrapped.favorite_device.title", { device: escapeHtml(d.favorite_device) })}</h2>
                    </div>
                  </div>
                  <div class="glass-card device-badge">
@@ -1835,15 +1830,15 @@
                    <span class="material-symbols-outlined nav-icon-fill">calendar_today</span>
                    <span class="display-xl">${d.longest_streak_days}</span>
                  </div>
-                 <h2 class="device-title">Langste streak<br><span class="text-primary">${d.longest_streak_days} dagen op rij</span></h2>
+                 <h2 class="device-title">${t("wrapped.longest_streak.title", { days: d.longest_streak_days })}</h2>
                </div>
                <div class="streak-dates">
                  <div class="glass-card streak-date-card">
-                   <p class="label-md streak-date-label">Start</p>
+                   <p class="label-md streak-date-label">${escapeHtml(t("wrapped.longest_streak.start"))}</p>
                    <p class="headline-md streak-date-value">${escapeHtml(streakStart)}</p>
                  </div>
                  <div class="glass-card streak-date-card">
-                   <p class="label-md streak-date-label">Einde</p>
+                   <p class="label-md streak-date-label">${escapeHtml(t("wrapped.longest_streak.end"))}</p>
                    <p class="headline-md streak-date-value">${escapeHtml(streakEnd)}</p>
                  </div>
                </div>`,
@@ -1865,10 +1860,10 @@
             `<div class="genre-icon-explosion" aria-hidden="true"></div>` +
               slideMain(
                 `<div class="genre-header stack-sm">
-                   <span class="label-md label-md--wide">Jouw vibe</span>
-                   <h2 class="genre-title">Top <span class="text-primary-container">film</span> genres</h2>
+                   <span class="label-md label-md--wide">${escapeHtml(t("wrapped.genres.eyebrow"))}</span>
+                   <h2 class="genre-title">${t("wrapped.genres.movie_title")}</h2>
                  </div>
-                 ${buildGenreLayout(d.top_movie_genres, "Films", "films")}`,
+                 ${buildGenreLayout(d.top_movie_genres, t("wrapped.genres.movie_stat"), t("wrapped.genres.movie_compact"))}`,
                 "movie-genres"
               ),
             "movie-genres"
@@ -1882,10 +1877,10 @@
             `<div class="genre-icon-explosion" aria-hidden="true"></div>` +
               slideMain(
                 `<div class="genre-header stack-sm">
-                   <span class="label-md label-md--wide">Jouw vibe</span>
-                   <h2 class="genre-title">Top <span class="text-primary-container">series</span> genres</span></h2>
+                   <span class="label-md label-md--wide">${escapeHtml(t("wrapped.genres.eyebrow"))}</span>
+                   <h2 class="genre-title">${t("wrapped.genres.show_title")}</h2>
                  </div>
-                 ${buildGenreLayout(d.top_show_genres, "Episodes", "episodes")}`,
+                 ${buildGenreLayout(d.top_show_genres, t("wrapped.genres.episode_stat"), t("wrapped.genres.episode_compact"))}`,
                 "show-genres"
               ),
             "show-genres"
@@ -1899,7 +1894,7 @@
           activePct != null
             ? `<div class="rank-activity-badge glass-card">
                  <p class="rank-activity-badge__text">
-                   Je bent actiever dan <strong>${activePct}%</strong> van de gebruikers
+                   ${t("wrapped.server_rank.more_active", { percent: activePct })}
                  </p>
                </div>`
             : "";
@@ -1918,10 +1913,10 @@
                           </div>`
                        : ""
                    }
-                   <h2 class="headline-lg">Jouw plek op de server</h2>
+                   <h2 class="headline-lg">${escapeHtml(t("wrapped.server_rank.title"))}</h2>
                  </div>
                  <div class="rank-circle glass-card">
-                   <span class="rank-circle__label">Rank</span>
+                   <span class="rank-circle__label">${escapeHtml(t("wrapped.server_rank.rank_label"))}</span>
                    <span class="rank-circle__num">#${d.server.rank}</span>
                  </div>
                  ${activityBadge}
@@ -1954,9 +1949,9 @@
               `<div class="server-vs-layout">
                  <h2 class="server-vs-headline">${buildComparisonHeadline(d, same)}</h2>
                  <div class="server-vs-posters">
-                   ${buildVsPosterCard("server", serverTopShow, serverThumb, "Server #1")}
+                   ${buildVsPosterCard("server", serverTopShow, serverThumb, t("wrapped.server_vs.server_badge"))}
                    <div class="server-vs-badge" aria-hidden="true">VS</div>
-                   ${buildVsPosterCard("user", userTopShow, userThumb, "Jouw #1")}
+                   ${buildVsPosterCard("user", userTopShow, userThumb, t("wrapped.server_vs.user_badge"))}
                  </div>
                  <div class="server-vs-caption glass-card">
                    <p class="server-vs-caption__text">"${escapeHtml(caption)}"</p>
@@ -2000,8 +1995,8 @@
                  </div>
                </div>
                <div class="persona-copy">
-                 <span class="persona-label">Jouw persona</span>
-                 <h2 class="persona-title">Jouw kroon:<br><span class="persona-title__name">${escapeHtml(d.persona)}</span></h2>
+                 <span class="persona-label">${escapeHtml(t("wrapped.persona.label"))}</span>
+                 <h2 class="persona-title">${t("wrapped.persona.title", { name: escapeHtml(d.persona) })}</h2>
                  <p class="persona-tagline">${escapeHtml(d.persona_tagline || "")}</p>
                </div>
              </div>`,
@@ -2016,16 +2011,16 @@
         d.tv_plays > 0 && d.top_shows && d.top_shows[0]
           ? {
               title: d.top_shows[0].title,
-              label: "Topserie",
-              mostWatched: "Meest bekeken serie",
+              label: t("wrapped.summary.top_show"),
+              mostWatched: t("wrapped.summary.most_watched_show"),
               thumb: d.top_shows[0].thumb,
               icon: "tv",
             }
           : d.top_movies && d.top_movies[0]
             ? {
                 title: d.top_movies[0].title,
-                label: "Topfilm",
-                mostWatched: "Meest bekeken film",
+                label: t("wrapped.summary.top_movie"),
+                mostWatched: t("wrapped.summary.most_watched_movie"),
                 thumb: d.top_movies[0].thumb,
                 icon: "movie",
               }
@@ -2038,20 +2033,20 @@
       let bento = `<div class="summary-export">
         ${PLEX_WRAPPED_BRAND}
         <div class="summary-header">
-          <p class="summary-eyebrow">Jouw jaar in review</p>
-          <h2 class="summary-title">${year} Samenvatting</h2>
+          <p class="summary-eyebrow">${escapeHtml(t("wrapped.summary.eyebrow"))}</p>
+          <h2 class="summary-title">${escapeHtml(t("wrapped.summary.title", { year }))}</h2>
         </div>
         <div class="bento-grid">`;
 
       if (d.has_watch_history) {
         bento += `<div class="glass-card bento-card">
           <span class="material-symbols-outlined bento-card__icon">schedule</span>
-          <p class="bento-card__label">Kijktijd</p>
+          <p class="bento-card__label">${escapeHtml(t("wrapped.summary.watch_time"))}</p>
           <p class="bento-card__value">${hours}u</p>
         </div>`;
         bento += `<div class="glass-card bento-card">
           <span class="material-symbols-outlined bento-card__icon">play_circle</span>
-          <p class="bento-card__label">Totaal gestart</p>
+          <p class="bento-card__label">${escapeHtml(t("wrapped.summary.total_started"))}</p>
           <p class="bento-card__value">${d.total_plays}</p>
         </div>`;
       }
@@ -2076,7 +2071,7 @@
       if (d.busiest_month) {
         bento += `<div class="glass-card bento-card">
           <span class="material-symbols-outlined bento-card__icon">calendar_month</span>
-          <p class="bento-card__label">Drukste maand</p>
+          <p class="bento-card__label">${escapeHtml(t("wrapped.summary.busiest_month"))}</p>
           <p class="bento-card__value">${escapeHtml(d.busiest_month)}</p>
         </div>`;
       }
@@ -2084,7 +2079,7 @@
       if (totalReq > 0) {
         bento += `<div class="glass-card bento-card">
           <span class="material-symbols-outlined bento-card__icon">send</span>
-          <p class="bento-card__label">Telegram-aanvragen</p>
+          <p class="bento-card__label">${escapeHtml(t("wrapped.summary.telegram_requests"))}</p>
           <p class="bento-card__value">${totalReq}</p>
         </div>`;
       } else {
@@ -2093,7 +2088,7 @@
           const icon = genreIcon(topGenre.name);
           bento += `<div class="glass-card bento-card">
             <span class="material-symbols-outlined bento-card__icon nav-icon-fill">${icon}</span>
-            <p class="bento-card__label">Favoriete genre</p>
+            <p class="bento-card__label">${escapeHtml(t("wrapped.summary.favorite_genre"))}</p>
             <p class="bento-card__value">${escapeHtml(topGenre.name)}</p>
           </div>`;
         }
@@ -2101,7 +2096,7 @@
 
       bento += `<div class="glass-card bento-span-2 bento-persona">
         <div class="bento-persona__copy">
-          <p class="bento-card__label">Jouw Persona</p>
+          <p class="bento-card__label">${escapeHtml(t("wrapped.summary.persona"))}</p>
           <p class="bento-card__value">${escapeHtml(d.persona)}</p>
         </div>
         <span class="material-symbols-outlined bento-persona__icon">workspace_premium</span>
@@ -2113,9 +2108,9 @@
       const shareActions = `<div class="share-actions">
           <button type="button" class="share-btn" id="btnShareSummary">
             <span class="material-symbols-outlined" style="font-size:20px">share</span>
-            <span class="share-btn__label">Deel je jaar</span>
+            <span class="share-btn__label">${escapeHtml(t("wrapped.summary.share"))}</span>
           </button>
-          <button type="button" class="share-icon-btn" id="btnDownloadSummary" aria-label="Opslaan als afbeelding">
+          <button type="button" class="share-icon-btn" id="btnDownloadSummary" aria-label="${escapeHtml(t("wrapped.summary.download"))}">
             <span class="material-symbols-outlined">download</span>
           </button>
         </div>`;
@@ -2478,14 +2473,14 @@
     const prevLabel = label?.textContent;
     button.disabled = true;
     button.classList.add("is-busy");
-    if (label) label.textContent = "Bezig…";
+    if (label) label.textContent = t("wrapped.summary.busy");
 
     try {
       const blob = await captureSummaryImage();
       await action(blob);
     } catch (err) {
       console.error(err);
-      alert("Kon de afbeelding niet maken. Probeer het opnieuw.");
+      alert(t("wrapped.summary.capture_failed"));
     } finally {
       button.disabled = false;
       button.classList.remove("is-busy");
@@ -2574,8 +2569,7 @@
         if (res.status === 503) {
           const err = await res.json().catch(() => ({}));
           const msg =
-            err.detail?.message ||
-            "Wrapped is nog niet gegenereerd. Vraag de beheerder om compute_wrapped.py te draaien.";
+            err.detail?.message || t("api.wrapped_not_generated");
           loading.querySelector("p").textContent = msg;
           return;
         }
