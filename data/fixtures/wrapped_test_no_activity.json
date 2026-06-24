@@ -34,16 +34,22 @@
   "top_movie_genres": [],
   "top_show_genres": [],
 
+  "top_actors": [],
+
   "server": {
     "rank": null,
     "server_name": null,
     "server_top_show": null,
     "server_top_show_thumb": null,
+    "server_top_movie": null,
+    "server_top_movie_thumb": null,
     "more_active_than_percent": null,
     "rank_context": []
   },
   "user_comparison_show": null,
   "user_comparison_show_thumb": null,
+  "user_comparison_movie": null,
+  "user_comparison_movie_thumb": null,
   "user_comparison_reason": null,
   "comparison_same_show": null,
   "comparison_headline_accent": null,

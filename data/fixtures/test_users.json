@@ -7,8 +7,8 @@
       "description": "Full profile — films + series, telegram, server rank"
     },
     {
-      "plex_user_id": 14983182,
-      "display_name": "Wouter",
+      "plex_user_id": 2,
+      "display_name": "Sam (test)",
       "fixture": "wrapped_test_user2.json",
       "description": "Film-heavy mixed viewer with posters"
     },

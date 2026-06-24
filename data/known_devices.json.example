@@ -1,0 +1,87 @@
+{
+  "count": 10,
+  "names": [
+    "iPhone",
+    "LG OLED55C16LA",
+    "Chromecast",
+    "Apple TV",
+    "Woonkamer",
+    "PlayStation 4",
+    "Safari",
+    "Chrome",
+    "Galaxy Tab S7+",
+    "Sam's TV"
+  ],
+  "devices": [
+    {
+      "name": "iPhone",
+      "platform": "iOS",
+      "platform_name": "iPhone",
+      "total_plays": 420,
+      "users": ["Joe"]
+    },
+    {
+      "name": "LG OLED55C16LA",
+      "platform": "webOS",
+      "platform_name": "LG TV",
+      "total_plays": 310,
+      "users": ["Joe", "Sam"]
+    },
+    {
+      "name": "Chromecast",
+      "platform": "Chromecast",
+      "platform_name": "Chromecast",
+      "total_plays": 180,
+      "users": ["Sam"]
+    },
+    {
+      "name": "Apple TV",
+      "platform": "tvOS",
+      "platform_name": "Apple TV",
+      "total_plays": 265,
+      "users": ["Joe"]
+    },
+    {
+      "name": "Woonkamer",
+      "platform": "tvOS",
+      "platform_name": "Apple TV",
+      "total_plays": 140,
+      "users": ["Joe"]
+    },
+    {
+      "name": "PlayStation 4",
+      "platform": "PlayStation 4",
+      "platform_name": "PlayStation 4",
+      "total_plays": 95,
+      "users": ["Sam"]
+    },
+    {
+      "name": "Safari",
+      "platform": "Safari",
+      "platform_name": "Safari",
+      "total_plays": 72,
+      "users": ["Joe"]
+    },
+    {
+      "name": "Chrome",
+      "platform": "Chrome",
+      "platform_name": "Chrome",
+      "total_plays": 88,
+      "users": ["Sam"]
+    },
+    {
+      "name": "Galaxy Tab S7+",
+      "platform": "Android",
+      "platform_name": "Galaxy Tab S7+",
+      "total_plays": 54,
+      "users": ["Sam"]
+    },
+    {
+      "name": "Sam's TV",
+      "platform": "Roku",
+      "platform_name": "Roku",
+      "total_plays": 41,
+      "users": ["Sam"]
+    }
+  ]
+}

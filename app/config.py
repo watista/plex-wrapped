@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_channel_id: str = ""
 
-    google_analytics_id: str = "G-XZ4KKB4KXF"
+    google_analytics_id: str = ""
 
     plex_server_url: str = ""
     plex_server_token: str = ""
@@ -53,9 +53,6 @@ class Settings(BaseSettings):
     music_enabled: bool = True
     music_download_enabled: bool = True
     audio_cache_path: str = "data/audio/cache"
-    audio_genre_path: str = "static/audio/genres"
-    audio_year_path: str = "static/audio/year"
-    youtube_api_key: str = ""
     # Optional path to ffmpeg binary or its directory (for yt-dlp mp3 conversion).
     music_overrides_path: str = "config/music_overrides.json"
     ffmpeg_location: str = ""

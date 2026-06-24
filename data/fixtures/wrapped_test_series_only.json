@@ -51,8 +51,8 @@
   ],
 
   "top_actors": [
-    {"name": "Dominic West", "plays": 88, "title_count": 5, "thumb": "https://image.tmdb.org/t/p/h632/5CqOHPxCzM4PLN0ZQLz5r3PWI0F"},
-    {"name": "Idris Elba", "plays": 64, "title_count": 3, "thumb": "https://image.tmdb.org/t/p/h632/be1bHHp4PjCL0EFdb4ZZsJ1T8ZZ"}
+    {"name": "Dominic West", "plays": 88, "title_count": 5, "thumb": "https://image.tmdb.org/t/p/h632/5CqOHPxCzM4PLN0ZQLz5r3PWI0F", "top_title": "The Wire", "top_title_kind": "show"},
+    {"name": "Idris Elba", "plays": 64, "title_count": 3, "thumb": "https://image.tmdb.org/t/p/h632/be1bHHp4PjCL0EFdb4ZZsJ1T8ZZ", "top_title": "The Wire", "top_title_kind": "show"}
   ],
 
   "server": {
@@ -60,6 +60,8 @@
     "server_name": "Thuis-Server",
     "server_top_show": "The Wire",
     "server_top_show_thumb": null,
+    "server_top_movie": "The Dark Knight",
+    "server_top_movie_thumb": null,
     "more_active_than_percent": 96,
     "rank_context": [
       {"rank": 1, "watch_hours": 720, "is_you": true, "position_label": "Jij"},
@@ -68,6 +70,8 @@
   },
   "user_comparison_show": "The Wire",
   "user_comparison_show_thumb": null,
+  "user_comparison_movie": null,
+  "user_comparison_movie_thumb": null,
   "user_comparison_reason": "most_played",
   "comparison_same_show": true,
   "comparison_headline_accent": null,
@@ -85,7 +89,7 @@
   },
 
   "persona": "Serieverslinder",
-  "persona_tagline": "Afleveringen zijn jouw comfort food.",
+  "persona_tagline": "Afleveringen zijn jouw comfortfood.",
   "persona_id": "series_devourer",
   "has_watch_history": true,
   "has_telegram_activity": false

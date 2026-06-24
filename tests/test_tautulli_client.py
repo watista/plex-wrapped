@@ -18,7 +18,7 @@ def test_get_history_uses_after_before_not_start_date():
     client._request = fake_request  # type: ignore[method-assign]
 
     result = client.get_history(
-        user_id=14983182,
+        user_id=42,
         after="2025-01-01",
         before="2025-12-31",
         start=0,

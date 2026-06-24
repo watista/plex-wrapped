@@ -102,6 +102,57 @@ python scripts/compute_wrapped.py [--year YYYY] [--force] [--user-id N] [-v] [--
 
 ---
 
+## Device icon mappings (optional)
+
+The *Jouw scherm* slide resolves Plex player names to Material icons via `static/js/device-icons.js`. That file is generated — do not edit it by hand.
+
+When viewers use new devices (phones, TVs, browsers) that are not recognized yet, refresh the mapping:
+
+### 1. Create `data/known_devices.json`
+
+On first deploy, copy the template:
+
+```bash
+cp data/known_devices.json.example data/known_devices.json
+```
+
+For production, replace the contents with your real players. Either save the JSON from the admin API:
+
+```bash
+curl -sS https://wrapped.example.com/admin/devices \
+  -H "X-Admin-Secret: your-admin-secret" \
+  > data/known_devices.json
+```
+
+Or paste the `devices` array from that response into `data/known_devices.json` (keep the `count` and `names` fields in sync with `devices`).
+
+`data/known_devices.json` is gitignored — it is server-specific.
+
+### 2. Regenerate `static/js/device-icons.js`
+
+```bash
+cd /opt/plex-wrapped   # or your project root
+source .venv/bin/activate
+python scripts/generate_device_icons.py
+```
+
+**Docker:**
+
+```bash
+docker compose exec plex-wrapped python scripts/generate_device_icons.py
+```
+
+The script reads `data/known_devices.json` and overwrites `static/js/device-icons.js`. No app restart is required; browsers may cache the old JS until a hard refresh.
+
+### 3. When to re-run
+
+- After new Plex player names appear in Tautulli (check with `GET /admin/devices`).
+- After pulling app updates that change `scripts/generate_device_icons.py` classification rules.
+
+Unmapped names still get a generic icon via heuristics in `device-icons.js`; explicit mappings improve accuracy for odd player labels.
+
+---
+
 ## Option A — Bare metal / VM (systemd + Nginx)
 
 ### 1. Install the application
@@ -122,6 +173,8 @@ sudo apt install -y ffmpeg   # or brew install ffmpeg on macOS
 
 cp .env.example .env
 cp config/user_mapping.json.example config/user_mapping.json
+cp config/music_overrides.json.example config/music_overrides.json
+cp data/known_devices.json.example data/known_devices.json
 # Edit .env — see deploy/env.production.example
 ```
 
@@ -212,14 +265,16 @@ docker compose up -d --build
 
 - `./data` → persistent SQLite cache **and** `data/audio/cache/` theme files
 - `./config/user_mapping.json` → Telegram ↔ Plex mapping
+- `./config/music_overrides.json` → per-title YouTube theme overrides
 
-Also mount your Telegram export and music overrides if they live outside the image:
+Also mount your Telegram export if it lives outside the image:
 
 ```yaml
 volumes:
   - ./data/telegram_requests.json:/app/data/telegram_requests.json:ro
-  - ./config/music_overrides.json:/app/config/music_overrides.json:ro
 ```
+
+`data/known_devices.json` is covered by the `./data` mount. After exporting devices (see [Device icon mappings](#device-icon-mappings-optional)), run `generate_device_icons.py` inside the container.
 
 ### 3. Pre-compute inside the container
 
@@ -276,10 +331,12 @@ Set `PUBLIC_URL=https://wrapped.example.com`. Caddy sets `X-Forwarded-Proto` aut
 # App health (Tautulli must be reachable)
 curl -sS https://wrapped.example.com/health
 
-# Admin device list (replace secret)
+# Admin device list (replace secret) — also used to refresh device icon mappings
 curl -sS https://wrapped.example.com/admin/devices \
   -H "X-Admin-Secret: your-admin-secret"
 ```
+
+See [Device icon mappings](#device-icon-mappings-optional) to turn this output into updated slide icons.
 
 Open `https://wrapped.example.com` in a browser and complete Plex login. If OAuth fails:
 
@@ -317,6 +374,7 @@ Back up regularly:
 
 - `data/wrapped.db` — all pre-computed wrapped payloads and share-link metadata
 - `data/audio/cache/` — downloaded slide theme audio (if music is enabled)
+- `data/known_devices.json` — Plex player list for device icon generation (if customized)
 - `config/user_mapping.json`
 - `config/music_overrides.json` (if used)
 - `data/telegram_requests.json`
@@ -338,6 +396,7 @@ The `data/` directory must be writable by the process user (`plexwrapped` or the
 | Favorite-actor slide empty | Set `TMDB_API_KEY`; re-run compute with `--force` |
 | Slide music silent / missing | Install ffmpeg; check `yt-dlp` on PATH; verify `data/audio/cache/`; see compute logs with `-v` |
 | AI punchlines missing | Run `--check-ai`; confirm `CURSOR_AI_ENABLED` and cursor-agent runtime on compute host |
+| Wrong device icon on *Jouw scherm* | Export `GET /admin/devices`, save to `data/known_devices.json`, run `python scripts/generate_device_icons.py` |
 | Login works but wrong user stats | `user_mapping.json` Telegram ID ↔ `plex_user_id` incorrect |
 
 ---

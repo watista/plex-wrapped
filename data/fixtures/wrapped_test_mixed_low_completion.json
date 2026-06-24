@@ -53,11 +53,19 @@
     {"name": "Family", "plays": 18}
   ],
 
+  "top_actors": [
+    {"name": "Jenna Ortega", "plays": 18, "title_count": 1, "thumb": "https://image.tmdb.org/t/p/h632/7COYae31cIMg9AZly9peahwP1", "top_title": "Wednesday", "top_title_kind": "show"},
+    {"name": "Margot Robbie", "plays": 3, "title_count": 1, "thumb": "https://image.tmdb.org/t/p/h632/euDPyqLnuwaWMHazcVAgk2Dri", "top_title": "Barbie", "top_title_kind": "movie"},
+    {"name": "Pedro Pascal", "plays": 12, "title_count": 1, "thumb": "https://image.tmdb.org/t/p/h632/9NsK6772N4x1u0B8xF9YLTbZMkJ", "top_title": "The Mandalorian", "top_title_kind": "show"}
+  ],
+
   "server": {
     "rank": 6,
     "server_name": "Thuis-Server",
     "server_top_show": "Wednesday",
     "server_top_show_thumb": null,
+    "server_top_movie": "Barbie",
+    "server_top_movie_thumb": null,
     "more_active_than_percent": 51,
     "rank_context": [
       {"rank": 5, "watch_hours": 198, "is_you": false, "position_label": "Eén plek hoger"},
@@ -67,6 +75,8 @@
   },
   "user_comparison_show": "Wednesday",
   "user_comparison_show_thumb": null,
+  "user_comparison_movie": "Barbie",
+  "user_comparison_movie_thumb": null,
   "user_comparison_reason": "most_played",
   "comparison_same_show": true,
   "comparison_headline_accent": null,
@@ -83,9 +93,9 @@
     "login_count": 18
   },
 
-  "persona": "De Voltooier",
-  "persona_tagline": "Je wilt alles af — maar de lijst groeit sneller.",
-  "persona_id": "completionist",
+  "persona": "Weekendstrijder",
+  "persona_tagline": "Zaterdag en zondag is showtijd.",
+  "persona_id": "weekend_warrior",
   "has_watch_history": true,
   "has_telegram_activity": true
 }

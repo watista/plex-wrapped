@@ -136,6 +136,7 @@ data/*
 !data/fixtures/
 !data/fixtures/**
 !data/telegram_requests.json.example
+!data/known_devices.json.example
 data/audio/
 !data/audio/.gitkeep
 config/user_mapping.json

@@ -63,9 +63,9 @@
   ],
 
   "top_actors": [
-    {"name": "Bryan Cranston", "plays": 71, "title_count": 6, "thumb": "https://image.tmdb.org/t/p/h632/f4dwrxddLg2YOK9W66P4hArbSxL"},
-    {"name": "Aaron Paul", "plays": 58, "title_count": 4, "thumb": "https://image.tmdb.org/t/p/h632/YS1l7iR4pX3VDT3tQ3Lk3UVc1cV"},
-    {"name": "Pedro Pascal", "plays": 22, "title_count": 5, "thumb": "https://image.tmdb.org/t/p/h632/9d2qQ8b8XqJ8Q8Q8Q8Q8Q8Q8Q8Q"}
+    {"name": "Bryan Cranston", "plays": 71, "title_count": 6, "thumb": "https://image.tmdb.org/t/p/h632/f4dwrxddLg2YOK9W66P4hArbSxL", "top_title": "Breaking Bad", "top_title_kind": "show"},
+    {"name": "Aaron Paul", "plays": 58, "title_count": 4, "thumb": "https://image.tmdb.org/t/p/h632/qdP8VJjx8Xvb3afCYwkXtCrtM9", "top_title": "Breaking Bad", "top_title_kind": "show"},
+    {"name": "Jeremy Allen White", "plays": 28, "title_count": 2, "thumb": "https://image.tmdb.org/t/p/h632/mSNJBP70CrwUWcQwHHNsHZBxyFB", "top_title": "The Bear", "top_title_kind": "show"}
   ],
 
   "server": {
@@ -73,6 +73,8 @@
     "server_name": "Thuis-Server",
     "server_top_show": "The Office",
     "server_top_show_thumb": null,
+    "server_top_movie": "Inception",
+    "server_top_movie_thumb": null,
     "more_active_than_percent": 75,
     "rank_context": [
       {"rank": 2, "watch_hours": 984, "is_you": false, "position_label": "Eén plek hoger"},
@@ -82,6 +84,8 @@
   },
   "user_comparison_show": "Breaking Bad",
   "user_comparison_show_thumb": null,
+  "user_comparison_movie": "Dune: Part Two",
+  "user_comparison_movie_thumb": null,
   "user_comparison_reason": "most_played",
   "comparison_same_show": false,
   "comparison_headline_accent": "eigenzinnige",
@@ -99,7 +103,7 @@
   },
 
   "persona": "Nachtuil",
-  "persona_tagline": "De server gloeit na 22:00.",
+  "persona_tagline": "De server gloeit na 23:00.",
   "persona_id": "night_owl",
   "has_watch_history": true,
   "has_telegram_activity": true

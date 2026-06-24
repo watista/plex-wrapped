@@ -1,10 +1,88 @@
 # Plex Wrapped
 
-A mobile-first, Spotify Wrapped–style year-in-review for your Plex server. Swipe through cinematic slides with watch time, top films and series, genres, streaks, favorite devices, server rankings, Telegram request stats, and a shareable summary card — all personalized per viewer.
+A mobile-first, Spotify Wrapped–style year-in-review for your Plex server. Sign in with Plex, then swipe through cinematic slides — each one a personalized stat card built from your watch history.
 
 Built for self-hosted Plex setups that already use **Tautulli** for watch history and optionally a **Telegram bot** for film/series requests.
 
-**Full project plan:** [docs/PLAN.md](docs/PLAN.md)  
+## Features
+
+### Wrapped experience
+
+Swipe through a story-style recap (tap or swipe, with optional background music):
+
+- **Personalized welcome** — Greeting with your Plex avatar and the year’s recap title.
+- **Watch time & activity** — Total hours streamed, play count, and films vs. series breakdown.
+- **Top content** — Ranked top films and series with poster art from your library.
+- **Series depth** — How many series, seasons, and episodes you explored.
+- **Viewing rhythm** — Busiest month (heatmap), day of the week (chart), and peak hour.
+- **Longest streak** — Your longest consecutive days of watching.
+- **Favorite device** — Where you watch most (TV, phone, browser, etc.).
+- **Server ranking** — Your place on the server leaderboard and how you compare to other users.
+- **Genres** — Top movie and TV genres with share-of-total visuals.
+- **Telegram integration** — Request counts, completion rate, and bot usage (when configured).
+- **Viewing persona** — A fun archetype (e.g. *Serieverslinder*, *Nachtuil*) based on your habits.
+- **Shareable summary** — One-screen recap card; export as a PNG or share via the native share sheet.
+
+### Year & pre-computed cache
+
+Stats are built in a batch job and stored in SQLite — the web app only serves cached data:
+
+- **Pick any calendar year** — Set `WRAPPED_YEAR` in `.env` or pass `--year YYYY` to `compute_wrapped.py`.
+- **Per-user rebuilds** — Recompute everyone, or a single Tautulli user with `--user-id`.
+- **Force refresh** — `--force` overwrites an existing cache entry for that user/year.
+- **Test fixtures** — Load sample profiles into a separate test database for UI development without Tautulli.
+
+### AI-generated copy (Cursor, optional)
+
+During compute, **Cursor AI** can write short Dutch punchlines in Spotify Wrapped style:
+
+- **Batched generation** — One request produces copy for slides such as *serie diepte* and *server vs. jij*.
+- **Safe fallback** — If AI is disabled or a request fails, the UI uses built-in rule-based text.
+- **Verify before compute** — `python scripts/compute_wrapped.py --check-ai` tests connectivity.
+
+See [Cursor AI (optional)](#cursor-ai-optional) for setup (`CURSOR_API_KEY`, local `cursor-agent` runtime).
+
+### Soundtrack themes (Spotify + YouTube)
+
+Slide music is resolved at **compute time**, not in the browser:
+
+- **Top movies & series** — Looks up a fitting soundtrack; **Spotify** (optional) refines the search query, then **yt-dlp** downloads the clip from **YouTube** and **ffmpeg** converts it to MP3.
+- **Genre slides** — Cached genre theme tracks for film and TV genre breakdowns.
+- **Manual overrides** — `config/music_overrides.json` maps a title to a YouTube URL or video id when auto-search picks the wrong track.
+- **Fixed slide beds** — Non-title slides get their own background tracks; everything is cached under `data/audio/cache/`.
+
+Toggle with `MUSIC_ENABLED` / `MUSIC_DOWNLOAD_ENABLED`. Details in [Background music](#background-music).
+
+### Sharing & access
+
+- **In-app export** — On the summary slide, *Deel je jaar* opens the device share sheet; the download button saves a PNG of your recap.
+- **Admin share links** — Create signed URLs (`POST /admin/links`) so someone can open a wrapped **without Plex login** — useful for family or social posts.
+- **Link options** — Optional `year` and `max_views` in the request body; links expire after `SHARE_LINK_EXPIRY_DAYS` (HMAC-signed with `SHARE_LINK_SECRET`).
+- **Plex OAuth** — Normal login uses your Plex account; `PUBLIC_URL` must match the URL users open in the browser.
+
+See [Admin endpoints → Share links](#share-links).
+
+### Integrations & extras
+
+- **Tautulli** — Source of truth for watch history, server rankings, and user list.
+- **TMDB** (optional) — Favorite-actor slide and poster fallbacks when Plex thumbs 404.
+- **Poster proxy** (optional) — `PLEX_SERVER_URL` + token for library artwork in the UI.
+- **Telegram bot export** — Link request-bot JSON to Plex users via `config/user_mapping.json`.
+- **Google Analytics** (optional) — Slide and button tracking when `GOOGLE_ANALYTICS_ID` is set.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/welcome.png" alt="Welcome slide — personalized greeting" width="220">
+  <img src="docs/screenshots/when-you-watch.png" alt="When you watch — busiest month, day, and hour" width="220">
+  <img src="docs/screenshots/server-rank.png" alt="Server ranking — your place on the leaderboard" width="220">
+  <img src="docs/screenshots/summary.png" alt="Year summary — shareable recap card" width="220">
+</p>
+
+<p align="center">
+  <em>Welcome · Viewing rhythm · Server rank · Year summary</em>
+</p>
+
 **Production deployment:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 ---
@@ -42,6 +120,7 @@ cp .env.example .env
 cp config/user_mapping.json.example config/user_mapping.json
 cp config/music_overrides.json.example config/music_overrides.json
 cp data/telegram_requests.json.example data/telegram_requests.json
+cp data/known_devices.json.example data/known_devices.json
 ```
 
 2. **Edit `.env`**
@@ -255,7 +334,7 @@ Example response:
 
 Player names match the `favorite_device` value shown in each user's wrapped recap.
 
-Device icons for the *Jouw scherm* slide are resolved in `static/js/device-icons.js` from `data/known_devices.json`. Regenerate after adding new players:
+Device icons for the *Jouw scherm* slide are resolved in `static/js/device-icons.js` from `data/known_devices.json` (copy `data/known_devices.json.example` or save `GET /admin/devices` output). Regenerate after adding new players:
 
 ```bash
 python scripts/generate_device_icons.py
@@ -279,7 +358,7 @@ Returns `200` when Tautulli is reachable, or `503` with an error message when it
 |--------|---------|
 | `scripts/compute_wrapped.py` | Pre-compute production cache (+ slide music, optional AI). See flags above. |
 | `scripts/load_test_wrapped.py` | Load fixture JSON into `data/wrapped_test.db`. See flags above. |
-| `scripts/generate_device_icons.py` | Regenerate `static/js/device-icons.js` from `data/known_devices.json` |
+| `scripts/generate_device_icons.py` | Regenerate `static/js/device-icons.js` from `data/known_devices.json` (see `data/known_devices.json.example`) |
 | `scripts/setup_audio_placeholders.py` | Legacy — create silent genre/year MP3 placeholders (optional) |
 
 ---
@@ -290,10 +369,11 @@ Returns `200` when Tautulli is reachable, or `503` with an error message when it
 
 ```json
 {
-  "8229502993": {
+  "1234567890": {
     "plex_user_id": 1,
-    "plex_username": "Joe",
-    "plex_email": "joe@example.com"
+    "plex_username": "joe_plex",
+    "plex_email": "joe@example.com",
+    "display_name": "Joe"
   }
 }
 ```
@@ -304,7 +384,7 @@ The top-level key is the **Telegram user ID**. `plex_user_id` must match Tautull
 
 ```json
 {
-  "8229502993": {
+  "1234567890": {
     "logins": { "23-01-2025 15:35:49": "Joe" },
     "film_requests": { "19-05-2025 14:43:25": "Movie Title" },
     "serie_requests": { "23-01-2025 15:36:21": "Show Title" }
@@ -360,7 +440,7 @@ docker compose up -d --build
 docker compose exec plex-wrapped python scripts/compute_wrapped.py --year 2025
 ```
 
-Mount `.env`, `data/`, and `config/user_mapping.json` as in `docker-compose.yml`. The default image does **not** include the `ffmpeg` system binary — extend the Dockerfile or run compute on the host if you need MP3 theme downloads. Put a reverse proxy in front for HTTPS — details in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+Mount `.env`, `data/`, `config/user_mapping.json`, and `config/music_overrides.json` as in `docker-compose.yml`. The default image does **not** include the `ffmpeg` system binary — extend the Dockerfile or run compute on the host if you need MP3 theme downloads. Put a reverse proxy in front for HTTPS — details in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 
@@ -394,7 +474,6 @@ Mount `.env`, `data/`, and `config/user_mapping.json` as in `docker-compose.yml`
 | `MUSIC_DOWNLOAD_ENABLED` | Download themes during compute (vs cache-only) |
 | `AUDIO_CACHE_PATH` | Directory for downloaded theme audio |
 | `MUSIC_OVERRIDES_PATH` | JSON map of title → YouTube URL/id overrides |
-| `AUDIO_GENRE_PATH` / `AUDIO_YEAR_PATH` | Legacy static audio paths (optional placeholders) |
 | `FFMPEG_LOCATION` | Path to `ffmpeg` binary or directory (compute host) |
 | `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` | Optional soundtrack search refinement |
 | `CURSOR_AI_ENABLED` | Enable AI punchlines during compute |

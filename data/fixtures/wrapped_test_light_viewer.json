@@ -49,11 +49,18 @@
     {"name": "Reality", "plays": 4}
   ],
 
+  "top_actors": [
+    {"name": "Ben Whishaw", "plays": 4, "title_count": 2, "thumb": "https://image.tmdb.org/t/p/h632/8fPvewenRHhGh9dAFakjlWbXch", "top_title": "Paddington 2", "top_title_kind": "movie"},
+    {"name": "Greg Davies", "plays": 6, "title_count": 1, "thumb": null, "top_title": "Taskmaster", "top_title_kind": "show"}
+  ],
+
   "server": {
     "rank": 12,
     "server_name": "Thuis-Server",
     "server_top_show": "Taskmaster",
     "server_top_show_thumb": null,
+    "server_top_movie": "Paddington 2",
+    "server_top_movie_thumb": null,
     "more_active_than_percent": 18,
     "rank_context": [
       {"rank": 11, "watch_hours": 28, "is_you": false, "position_label": "Eén plek hoger"},
@@ -62,6 +69,8 @@
   },
   "user_comparison_show": "Taskmaster",
   "user_comparison_show_thumb": null,
+  "user_comparison_movie": "Paddington 2",
+  "user_comparison_movie_thumb": null,
   "user_comparison_reason": "most_played",
   "comparison_same_show": true,
   "comparison_headline_accent": null,

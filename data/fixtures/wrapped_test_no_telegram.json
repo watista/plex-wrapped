@@ -62,11 +62,19 @@
     {"name": "Documentary", "plays": 12}
   ],
 
+  "top_actors": [
+    {"name": "Amy Poehler", "plays": 52, "title_count": 2, "thumb": "https://image.tmdb.org/t/p/h632/ujYSOFePbPgfiDO1UdWwRdadO3", "top_title": "Parks and Recreation", "top_title_kind": "show"},
+    {"name": "Nick Offerman", "plays": 48, "title_count": 1, "thumb": "https://image.tmdb.org/t/p/h632/mwJiTRiSF7v79bjrXwJ2Sm7j5MY", "top_title": "Parks and Recreation", "top_title_kind": "show"},
+    {"name": "Song Kang-ho", "plays": 4, "title_count": 1, "thumb": "https://image.tmdb.org/t/p/h632/6HMzck6p9fbE4MgrblxSg6icmH", "top_title": "Parasite", "top_title_kind": "movie"}
+  ],
+
   "server": {
     "rank": 4,
     "server_name": "Thuis-Server",
     "server_top_show": "Parks and Recreation",
     "server_top_show_thumb": null,
+    "server_top_movie": "Parasite",
+    "server_top_movie_thumb": null,
     "more_active_than_percent": 68,
     "rank_context": [
       {"rank": 3, "watch_hours": 512, "is_you": false, "position_label": "Eén plek hoger"},
@@ -76,6 +84,8 @@
   },
   "user_comparison_show": "Parks and Recreation",
   "user_comparison_show_thumb": null,
+  "user_comparison_movie": "Parasite",
+  "user_comparison_movie_thumb": null,
   "user_comparison_reason": "most_played",
   "comparison_same_show": true,
   "comparison_headline_accent": null,
@@ -93,7 +103,7 @@
   },
 
   "persona": "Weekendstrijder",
-  "persona_tagline": "Vooral in het weekend ben je te vinden op de bank.",
+  "persona_tagline": "Zaterdag en zondag is showtijd.",
   "persona_id": "weekend_warrior",
   "has_watch_history": true,
   "has_telegram_activity": false

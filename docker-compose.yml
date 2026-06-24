@@ -8,4 +8,5 @@ services:
     volumes:
       - ./data:/app/data
       - ./config/user_mapping.json:/app/config/user_mapping.json:ro
+      - ./config/music_overrides.json:/app/config/music_overrides.json:ro
     restart: unless-stopped

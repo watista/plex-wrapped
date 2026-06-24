@@ -51,8 +51,8 @@
   "top_show_genres": [],
 
   "top_actors": [
-    {"name": "Timothée Chalamet", "plays": 9, "title_count": 4, "thumb": "https://image.tmdb.org/t/p/h632/BE2Imv10vOR4Q0WH3SW0U5t5sil"},
-    {"name": "Zendaya", "plays": 6, "title_count": 3, "thumb": "https://image.tmdb.org/t/p/h632/jt2HyfR4b4Q8Fy6S0iF8z0x0x0x0"}
+    {"name": "Matthew McConaughey", "plays": 12, "title_count": 2, "thumb": "https://image.tmdb.org/t/p/h632/pB8BM7pdSp6B6Ih7QZdDrO3AyJ", "top_title": "Interstellar", "top_title_kind": "movie"},
+    {"name": "Timothée Chalamet", "plays": 9, "title_count": 4, "thumb": "https://image.tmdb.org/t/p/h632/BE2Imv10vOR4Q0WH3SW0U5t5sil", "top_title": "Dune: Part Two", "top_title_kind": "movie"}
   ],
 
   "server": {
@@ -60,6 +60,8 @@
     "server_name": "Thuis-Server",
     "server_top_show": "The Office",
     "server_top_show_thumb": null,
+    "server_top_movie": "Interstellar",
+    "server_top_movie_thumb": null,
     "more_active_than_percent": 42,
     "rank_context": [
       {"rank": 7, "watch_hours": 312, "is_you": false, "position_label": "Eén plek hoger"},
@@ -69,6 +71,8 @@
   },
   "user_comparison_show": "Interstellar",
   "user_comparison_show_thumb": null,
+  "user_comparison_movie": "Interstellar",
+  "user_comparison_movie_thumb": null,
   "user_comparison_reason": "most_played",
   "comparison_same_show": false,
   "comparison_headline_accent": "eigenzinnige",

@@ -5,14 +5,14 @@ from pathlib import Path
 
 from scripts.generate_device_icons import build_mapping
 
-KNOWN_DEVICES = Path(__file__).resolve().parents[1] / "data" / "known_devices.json"
+KNOWN_DEVICES_EXAMPLE = Path(__file__).resolve().parents[1] / "data" / "known_devices.json.example"
 
 
 def test_all_known_devices_have_icon_mapping():
-    payload = json.loads(KNOWN_DEVICES.read_text(encoding="utf-8"))
+    payload = json.loads(KNOWN_DEVICES_EXAMPLE.read_text(encoding="utf-8"))
     mapping = build_mapping(payload["devices"])
 
-    assert len(mapping) == payload["count"]
+    assert len(payload["devices"]) == payload["count"]
     for device in payload["devices"]:
         name = device["name"]
         assert name in mapping, f"missing mapping for {name!r}"
@@ -22,7 +22,7 @@ def test_all_known_devices_have_icon_mapping():
 
 
 def test_device_icon_examples():
-    mapping = build_mapping(json.loads(KNOWN_DEVICES.read_text(encoding="utf-8"))["devices"])
+    mapping = build_mapping(json.loads(KNOWN_DEVICES_EXAMPLE.read_text(encoding="utf-8"))["devices"])
 
     assert mapping["iPhone"]["icon"] == "phone_iphone"
     assert mapping["LG OLED55C16LA"]["icon"] == "tv"
@@ -33,4 +33,4 @@ def test_device_icon_examples():
     assert mapping["Safari"]["icon"] == "public"
     assert mapping["Chrome"]["icon"] == "language"
     assert mapping["Galaxy Tab S7+"]["icon"] == "tablet_android"
-    assert mapping["Sarah's TV"]["icon"] == "live_tv"
+    assert mapping["Sam's TV"]["icon"] == "live_tv"

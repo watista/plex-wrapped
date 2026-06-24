@@ -26,7 +26,7 @@ def test_load_test_user_entries():
     entries = load_test_user_entries()
     ids = {e.plex_user_id for e in entries}
     assert 1 in ids
-    assert 14983182 in ids
+    assert 2 in ids
     assert 3 in ids
     assert 6 in ids
     assert 9 in ids

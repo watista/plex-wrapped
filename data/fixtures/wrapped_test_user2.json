@@ -1,7 +1,7 @@
 {
   "year": 2025,
-  "user_id": 14983182,
-  "display_name": "Wouter",
+  "user_id": 2,
+  "display_name": "Sam (test)",
   "username": "sam_test",
   "avatar_url": null,
 
@@ -60,11 +60,19 @@
     {"name": "War", "plays": 3}
   ],
 
+  "top_actors": [
+    {"name": "Emma Stone", "plays": 14, "title_count": 3, "thumb": "https://image.tmdb.org/t/p/h632/BE2Imv10vOR4Q0WH3SW0U5t5sil", "top_title": "Poor Things", "top_title_kind": "movie"},
+    {"name": "Brian Cox", "plays": 22, "title_count": 1, "thumb": "https://image.tmdb.org/t/p/h632/9qPVK9kwwMdRSPaQTEG6UXtBGG", "top_title": "Succession", "top_title_kind": "show"},
+    {"name": "Kieran Culkin", "plays": 20, "title_count": 1, "thumb": "https://image.tmdb.org/t/p/h632/ALJQ2i7WwrcsoDzGJHULVM0GJx", "top_title": "Succession", "top_title_kind": "show"}
+  ],
+
   "server": {
     "rank": 5,
     "server_name": "Thuis-Server",
     "server_top_show": "Succession",
     "server_top_show_thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg",
+    "server_top_movie": "Poor Things",
+    "server_top_movie_thumb": null,
     "more_active_than_percent": 58,
     "rank_context": [
       {"rank": 4, "watch_hours": 312, "is_you": false, "position_label": "Eén plek hoger"},
@@ -74,6 +82,8 @@
   },
   "user_comparison_show": "Succession",
   "user_comparison_show_thumb": "https://artworks.thetvdb.com/banners/v4/series/392256/posters/6362e8b41ca10.jpg",
+  "user_comparison_movie": "Poor Things",
+  "user_comparison_movie_thumb": null,
   "user_comparison_reason": "most_played",
   "comparison_same_show": true,
   "comparison_headline_accent": null,

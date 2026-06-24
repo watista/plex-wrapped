@@ -18,17 +18,17 @@ def test_resolve_login_test_mode_by_plex_id(tmp_path):
     )
     cache = WrappedCache(settings, database_path=settings.test_database_path)
     cache.set(
-        14983182,
+        2,
         2025,
         {
             "year": 2025,
-            "user_id": 14983182,
-            "display_name": "Wouter",
-            "username": "wouter",
+            "user_id": 2,
+            "display_name": "Sam (test)",
+            "username": "sam_test",
         },
     )
     oauth = PlexOAuth(settings)
-    plex_user = {"id": 14983182, "username": "Watista", "email": "test@example.com"}
+    plex_user = {"id": 2, "username": "plex_joe", "email": "test@example.com"}
 
     user_id = resolve_login_user_id(settings, cache, oauth, plex_user, _FakeTautulli())
-    assert user_id == 14983182
+    assert user_id == 2
