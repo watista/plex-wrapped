@@ -122,10 +122,11 @@ Persona **before** summary. Empty state: *Geen activiteit in {year}*.
 
 ## Cache-only runtime
 
-- **Batch:** `python scripts/compute_wrapped.py --year YYYY [--force]` materializes all stats into SQLite `wrapped_cache`.
+- **Batch:** `python scripts/compute_wrapped.py [--year YYYY] [--force] [--user-id N] [-v] [--check-ai]` materializes all stats into SQLite `wrapped_cache`. Slide theme audio is downloaded into `data/audio/cache/` when `MUSIC_DOWNLOAD_ENABLED=true` (requires **yt-dlp** + **ffmpeg** on the compute host).
 - **Runtime:** `GET /api/wrapped` reads cache only. On miss → `503` with `{ "ready": false, "message": "..." }` — **no** live Tautulli calls.
-- Genre metadata and server top movie are fetched during batch only (`get_metadata`, `get_home_stats`).
-- Posters still use `/api/poster` (Plex token).
+- Genre metadata, server top movie, TMDB cast (favorite actor), and optional Cursor AI punchlines are fetched during batch only.
+- Posters still use `/api/poster` (Plex token) and `/api/image` (TMDB proxy).
+- Theme audio is served from `/api/audio/{filename}` (cached files from compute).
 
 ---
 
@@ -313,7 +314,10 @@ plex-wrapped/
 ├── static/
 ├── templates/
 ├── scripts/
-│   └── compute_wrapped.py
+│   ├── compute_wrapped.py
+│   ├── load_test_wrapped.py
+│   ├── generate_device_icons.py
+│   └── setup_audio_placeholders.py
 ├── docs/
 │   └── PLAN.md          ← this file
 ├── requirements.txt
@@ -333,6 +337,9 @@ plex-wrapped/
 | 4 Mobile UI  | Done   | Story slides, progress bar, poster proxy                              |
 | 5 Deploy     | Done   | `compute_wrapped.py`, Docker, README                                  |
 | 6 V2 slides  | Done   | 19-slide deck, Dutch UI, cache-only API, genres, streak, server movie |
+| 7 Music      | Done   | Per-slide YouTube themes, genre audio, `music_overrides.json`, `/api/audio` |
+| 8 Actors     | Done   | Favorite-actor slide via TMDB cast aggregation                       |
+| 9 AI copy    | Done   | Optional Cursor AI Dutch punchlines during compute (`--check-ai`)    |
 
 
 ---
@@ -348,6 +355,10 @@ plex-wrapped/
 | `telegram_requests.json` | Request/login history        |
 | `ADMIN_SECRET`           | Protect `/admin/links`       |
 | `PUBLIC_URL`             | OAuth redirect + share links |
+| `ffmpeg` + `yt-dlp`      | Slide theme downloads at compute time |
+| `TMDB_API_KEY`           | Favorite-actor slide (optional) |
+| `music_overrides.json`   | Manual YouTube overrides per title (optional) |
+| `CURSOR_API_KEY`         | AI punchlines at compute (optional) |
 
 
 ---
@@ -361,6 +372,10 @@ plex-wrapped/
 | Plex user ↔ Tautulli mismatch       | Map by email + username; manual override in mapping JSON |
 | Telegram date format `DD-MM-YYYY`   | Strict parser; tests in `tests/test_telegram.py`         |
 | Poster URLs need Plex token         | Backend image proxy (`PLEX_SERVER_URL` + token)          |
+| TMDB thumbs when Plex 404           | `TMDB_API_KEY` + `/api/image` allowlist                  |
+| Wrong YouTube theme for a title     | `config/music_overrides.json` per movie/show             |
+| Compute host lacks ffmpeg           | M4A-only themes or set `FFMPEG_LOCATION`                 |
+| Cursor AI unavailable               | Compute degrades; rule-based Dutch copy in UI            |
 | Users with no data in year          | Empty state; still show Telegram stats if any            |
 
 

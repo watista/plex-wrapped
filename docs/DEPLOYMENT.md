@@ -39,6 +39,8 @@ The app is a standard ASGI application. In production you typically:
 | `TAUTULLI_URL` | Reachable from the app host (see [Tautulli connectivity](#tautulli-connectivity)) |
 | HTTPS | Required for secure session cookies when `PUBLIC_URL` uses `https://` |
 | Cache | Run `compute_wrapped.py` after deploy and on a schedule |
+| `ffmpeg` + `yt-dlp` | On the **compute** host (see [Compute host requirements](#compute-host-requirements)) |
+| `data/audio/cache/` | Writable; back up with `wrapped.db` if you use slide music |
 | Firewall | Expose 443 (proxy only); keep port 8000 on localhost |
 
 Generate secrets (Linux/macOS/WSL):
@@ -46,6 +48,57 @@ Generate secrets (Linux/macOS/WSL):
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
+
+---
+
+## Compute host requirements
+
+Wrapped stats and slide music are built by `scripts/compute_wrapped.py`. This job needs outbound HTTP to Tautulli, YouTube (via yt-dlp), and optionally TMDB, Spotify, and Cursor. The Uvicorn web process does **not** need ffmpeg or Cursor — only the compute step does.
+
+| Tool | Required? | Notes |
+|------|-----------|--------|
+| **ffmpeg** | Recommended | MP3 theme conversion; without it, themes may be served as M4A only |
+| **yt-dlp** | When `MUSIC_DOWNLOAD_ENABLED=true` | Installed via `pip install -r requirements.txt`; must be on `PATH` |
+| **Cursor agent runtime** | When `CURSOR_AI_ENABLED=true` | Local runtime for `cursor-sdk` on the compute machine |
+| **TMDB API key** | Optional | Favorite-actor slide and poster fallbacks |
+| **Spotify API** | Optional | Better YouTube search for soundtracks |
+
+### Install ffmpeg
+
+```bash
+# Debian/Ubuntu
+sudo apt update && sudo apt install -y ffmpeg
+
+# macOS
+brew install ffmpeg
+```
+
+Verify: `ffmpeg -version`. If not on `PATH`, set `FFMPEG_LOCATION` in `.env`.
+
+### Cursor AI (optional)
+
+Only needed when `CURSOR_AI_ENABLED=true`:
+
+1. Set `CURSOR_API_KEY` from [cursor.com/dashboard](https://cursor.com/dashboard).
+2. Ensure `cursor-sdk` is installed (`pip install -r requirements.txt`).
+3. Install the **cursor-agent** local runtime on the compute host (the SDK uses local mode).
+4. Smoke-test: `python scripts/compute_wrapped.py --check-ai`
+
+AI runs during compute only. If Cursor is down, compute continues with rule-based copy.
+
+### `compute_wrapped.py` options
+
+```bash
+python scripts/compute_wrapped.py [--year YYYY] [--force] [--user-id N] [-v] [--check-ai]
+```
+
+| Flag | Description |
+|------|-------------|
+| `--year` | Calendar year (default: `WRAPPED_YEAR` in `.env`) |
+| `--force` | Recompute even when cached |
+| `--user-id` | Single user only |
+| `-v` / `--verbose` | DEBUG logging |
+| `--check-ai` | Test Cursor AI and exit |
 
 ---
 
@@ -63,6 +116,9 @@ cd /opt/plex-wrapped
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+# Recommended for slide music (MP3 conversion)
+sudo apt install -y ffmpeg   # or brew install ffmpeg on macOS
 
 cp .env.example .env
 cp config/user_mapping.json.example config/user_mapping.json
@@ -82,7 +138,11 @@ sudo chown plexwrapped:plexwrapped /opt/plex-wrapped/.env
 cd /opt/plex-wrapped
 source .venv/bin/activate
 python scripts/compute_wrapped.py --year 2025
+# Optional: single user or force refresh
+# python scripts/compute_wrapped.py --year 2025 --user-id 3 --force -v
 ```
+
+First run with `MUSIC_DOWNLOAD_ENABLED=true` may take longer while themes download into `data/audio/cache/`.
 
 ### 3. Systemd service
 
@@ -150,14 +210,15 @@ docker compose up -d --build
 
 `docker-compose.yml` mounts:
 
-- `./data` → persistent SQLite cache
+- `./data` → persistent SQLite cache **and** `data/audio/cache/` theme files
 - `./config/user_mapping.json` → Telegram ↔ Plex mapping
 
-Also mount your Telegram export if it lives outside the image:
+Also mount your Telegram export and music overrides if they live outside the image:
 
 ```yaml
 volumes:
   - ./data/telegram_requests.json:/app/data/telegram_requests.json:ro
+  - ./config/music_overrides.json:/app/config/music_overrides.json:ro
 ```
 
 ### 3. Pre-compute inside the container
@@ -165,6 +226,14 @@ volumes:
 ```bash
 docker compose exec plex-wrapped python scripts/compute_wrapped.py --year 2025
 ```
+
+**ffmpeg in Docker:** the default `python:3.12-slim` image does not include ffmpeg. Either:
+
+- Add to your Dockerfile: `RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*`
+- Run `compute_wrapped.py` on the host (with `.env` and `data/` paths aligned)
+- Set `MUSIC_DOWNLOAD_ENABLED=false` and pre-seed `data/audio/cache/` from another machine
+
+Mount `data/audio/cache` via the existing `./data` volume so downloaded themes persist across rebuilds.
 
 ### 4. Reverse proxy
 
@@ -247,7 +316,9 @@ docker compose exec plex-wrapped python scripts/compute_wrapped.py --year 2025 -
 Back up regularly:
 
 - `data/wrapped.db` — all pre-computed wrapped payloads and share-link metadata
+- `data/audio/cache/` — downloaded slide theme audio (if music is enabled)
 - `config/user_mapping.json`
+- `config/music_overrides.json` (if used)
 - `data/telegram_requests.json`
 - `.env` (store securely; not in git)
 
@@ -263,7 +334,10 @@ The `data/` directory must be writable by the process user (`plexwrapped` or the
 | `/health` returns 503 | Tautulli down or wrong `TAUTULLI_URL` / API key |
 | “Not generated yet” on `/wrapped` | Cache empty — run `compute_wrapped.py` |
 | Share links use `http://localhost` | `PUBLIC_URL` not updated for production |
-| Posters missing | Set `PLEX_SERVER_URL` and `PLEX_SERVER_TOKEN` |
+| Posters missing | Set `PLEX_SERVER_URL` and `PLEX_SERVER_TOKEN`; add `TMDB_API_KEY` for fallbacks |
+| Favorite-actor slide empty | Set `TMDB_API_KEY`; re-run compute with `--force` |
+| Slide music silent / missing | Install ffmpeg; check `yt-dlp` on PATH; verify `data/audio/cache/`; see compute logs with `-v` |
+| AI punchlines missing | Run `--check-ai`; confirm `CURSOR_AI_ENABLED` and cursor-agent runtime on compute host |
 | Login works but wrong user stats | `user_mapping.json` Telegram ID ↔ `plex_user_id` incorrect |
 
 ---
