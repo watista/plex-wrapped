@@ -34,6 +34,21 @@ def is_valid_video_id(video_id: str) -> bool:
     return bool(_VIDEO_ID_RE.match(video_id))
 
 
+_YT_URL_ID_RE = re.compile(
+    r"(?:youtube\.com/watch\?(?:[^&\s]+&)*v=|youtu\.be/)([A-Za-z0-9_-]{6,32})"
+)
+
+
+def parse_youtube_video_id(value: str) -> str | None:
+    raw = (value or "").strip()
+    if is_valid_video_id(raw):
+        return raw
+    match = _YT_URL_ID_RE.search(raw)
+    if match and is_valid_video_id(match.group(1)):
+        return match.group(1)
+    return None
+
+
 def yt_dlp_available() -> bool:
     return shutil.which("yt-dlp") is not None
 
@@ -292,6 +307,33 @@ def _try_plan_queries(
     return None
 
 
+def resolve_video_id_audio(
+    video_id: str,
+    cache_dir: Path,
+    *,
+    cache_file_stem: str,
+    download: bool = True,
+    ffmpeg_location: str | None = None,
+) -> str | None:
+    if not is_valid_video_id(video_id):
+        return None
+    if not download:
+        cached = find_cached_by_key(cache_dir, cache_file_stem)
+        return api_audio_url(cached) if cached else None
+
+    cached = find_cached_by_key(cache_dir, cache_file_stem)
+    if cached:
+        return api_audio_url(cached)
+
+    path = download_audio(
+        video_id,
+        cache_dir,
+        cache_file_stem=cache_file_stem,
+        ffmpeg_location=ffmpeg_location,
+    )
+    return api_audio_url(path) if path else None
+
+
 def resolve_media_theme_audio(
     title: str,
     cache_dir: Path,
@@ -302,6 +344,30 @@ def resolve_media_theme_audio(
     ffmpeg_location: str | None = None,
     settings: Settings | None = None,
 ) -> str | None:
+    if settings:
+        from app.wrapped.music_overrides import match_music_override, override_cache_key
+
+        matched = match_music_override(settings, title, media_kind)
+        if matched:
+            override_id, canonical_key = matched
+            override_key = override_cache_key(canonical_key, media_kind)
+            url = resolve_video_id_audio(
+                override_id,
+                cache_dir,
+                cache_file_stem=override_key,
+                download=download,
+                ffmpeg_location=ffmpeg_location,
+            )
+            if url:
+                return url
+            logger.warning(
+                "Music override configured for %r (%s) video_id=%s but audio unavailable",
+                title,
+                media_kind,
+                override_id,
+            )
+            return None
+
     key = cache_key(title, year=year, media_kind=media_kind)
     if not download:
         cached = find_cached_by_key(cache_dir, key)
@@ -400,27 +466,27 @@ def resolve_theme_audio(
     return api_audio_url(path) if path else None
 
 
-def resolve_default_pool_audio(
+def resolve_fixed_slide_audio(
     cache_dir: Path,
     *,
     download: bool = True,
     ffmpeg_location: str | None = None,
-) -> list[str]:
-    """Download the fixed default rotation tracks by YouTube video id."""
-    from app.wrapped.theme_lookup import DEFAULT_POOL_VIDEO_IDS, default_pool_cache_key
+) -> dict[str, str]:
+    """Download fixed background tracks per slide id."""
+    from app.wrapped.theme_lookup import FIXED_SLIDE_VIDEO_IDS, fixed_slide_cache_key
 
-    pool: list[str] = []
-    for index, video_id in enumerate(DEFAULT_POOL_VIDEO_IDS, start=1):
-        key = default_pool_cache_key(index, video_id)
+    slides: dict[str, str] = {}
+    for slide_id, video_id in FIXED_SLIDE_VIDEO_IDS.items():
+        key = fixed_slide_cache_key(slide_id)
         if not download:
             cached = find_cached_by_key(cache_dir, key)
             if cached:
-                pool.append(api_audio_url(cached))
+                slides[slide_id] = api_audio_url(cached)
             continue
 
         cached = find_cached_by_key(cache_dir, key)
         if cached:
-            pool.append(api_audio_url(cached))
+            slides[slide_id] = api_audio_url(cached)
             continue
 
         path = download_audio(
@@ -430,9 +496,9 @@ def resolve_default_pool_audio(
             ffmpeg_location=ffmpeg_location,
         )
         if path:
-            logger.info("Default pool track #%s id=%s -> %s", index, video_id, path.name)
-            pool.append(api_audio_url(path))
+            logger.info("Fixed slide track slide=%s id=%s -> %s", slide_id, video_id, path.name)
+            slides[slide_id] = api_audio_url(path)
         else:
-            logger.warning("Default pool track #%s id=%s download failed", index, video_id)
+            logger.warning("Fixed slide track slide=%s id=%s download failed", slide_id, video_id)
 
-    return pool
+    return slides

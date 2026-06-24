@@ -8,7 +8,7 @@ from app.config import Settings
 from app.models.schemas import WrappedMusic, WrappedPayload
 from app.wrapped.youtube_audio import (
     ffmpeg_available,
-    resolve_default_pool_audio,
+    resolve_fixed_slide_audio,
     resolve_genre_theme_audio,
     resolve_media_theme_audio,
     yt_dlp_available,
@@ -106,15 +106,6 @@ def _resolve_theme_url(
     return url
 
 
-def _build_default_pool(settings: Settings, *, download: bool) -> list[str]:
-    cache_dir = settings.resolve_path(settings.audio_cache_path)
-    return resolve_default_pool_audio(
-        cache_dir,
-        download=download,
-        ffmpeg_location=_ffmpeg_loc(settings),
-    )
-
-
 def _pick_summary_title(payload: WrappedPayload) -> tuple[str | None, MediaKind | None]:
     if payload.tv_plays > 0 and payload.top_shows:
         return payload.top_shows[0].title, "show"
@@ -148,13 +139,12 @@ def build_wrapped_music(payload: WrappedPayload, settings: Settings) -> WrappedM
             "Install ffmpeg for mp3 conversion, or set FFMPEG_LOCATION in .env"
         )
 
-    default_pool = _build_default_pool(settings, download=download)
-    if not default_pool:
-        cinematic = _resolve_genre_url(settings, "cinematic", download=download)
-        if cinematic:
-            default_pool = [cinematic]
-
-    slides: dict[str, str] = {}
+    cache_dir = settings.resolve_path(settings.audio_cache_path)
+    slides = resolve_fixed_slide_audio(
+        cache_dir,
+        download=download,
+        ffmpeg_location=_ffmpeg_loc(settings),
+    )
 
     def assign(slide_id: str, url: str | None) -> None:
         if url:
@@ -236,7 +226,7 @@ def build_wrapped_music(payload: WrappedPayload, settings: Settings) -> WrappedM
             ),
         )
 
-    return WrappedMusic(default_pool=default_pool, slides=slides)
+    return WrappedMusic(default_pool=[], slides=slides)
 
 
 def _purge_invalid_cache_files(cache_dir: Path) -> None:

@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     audio_year_path: str = "static/audio/year"
     youtube_api_key: str = ""
     # Optional path to ffmpeg binary or its directory (for yt-dlp mp3 conversion).
+    music_overrides_path: str = "config/music_overrides.json"
     ffmpeg_location: str = ""
 
     spotify_client_id: str = ""

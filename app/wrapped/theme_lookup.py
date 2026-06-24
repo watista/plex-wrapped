@@ -90,20 +90,20 @@ _MIN_SCORE_STRICT = 55.0
 _MIN_SCORE_RELAXED = 30.0
 _MIN_SCORE_FALLBACK = 22.0
 
-# Fixed default rotation pool (non-special slides). Order matters.
-DEFAULT_POOL_VIDEO_IDS: tuple[str, ...] = (
-    "dW9xbFLaatU",
-    "U9FzgsF2T-s",
-    "AJgE_dLWsuQ",
-    "AdQ3JDLlmPI",
-    "uyIVAm9PVrI",
-    "s2TyVQGoCYo",
-    "ilfYnhXD-bE",
-    "-RcPZdihrp4",
-    "9UaJAnnipkY",
-    "zNPXnAVyAUA",
-    "KPhqU--Mq1A",
-)
+# Fixed background track per slide (non-theme slides). Slide id -> YouTube video id.
+FIXED_SLIDE_VIDEO_IDS: dict[str, str] = {
+    "welcome": "dW9xbFLaatU",
+    "watch-time": "U9FzgsF2T-s",
+    "total-plays": "AJgE_dLWsuQ",
+    "movies-vs-tv": "AdQ3JDLlmPI",
+    "series-depth": "uyIVAm9PVrI",
+    "when-you-watch": "s2TyVQGoCYo",
+    "favorite-device": "ilfYnhXD-bE",
+    "longest-streak": "-RcPZdihrp4",
+    "server-rank": "9UaJAnnipkY",
+    "telegram-requests": "zNPXnAVyAUA",
+    "persona": "KPhqU--Mq1A",
+}
 
 _INSTRUMENTAL_QUERY_SUFFIX = " instrumental only"
 
@@ -219,6 +219,11 @@ def cache_key(title: str, *, year: int | None, media_kind: MediaKind) -> str:
 def genre_cache_key(slug: str) -> str:
     clean = re.sub(r"[^a-z0-9]+", "_", slug.strip().lower()).strip("_")[:48]
     return f"v{_LOOKUP_VERSION}_genre_{clean}"
+
+
+def fixed_slide_cache_key(slide_id: str) -> str:
+    safe = re.sub(r"[^a-z0-9_-]+", "_", slide_id.strip().lower()).strip("_")[:48]
+    return f"v3_slide_{safe}"
 
 
 def default_pool_cache_key(index: int, video_id: str) -> str:

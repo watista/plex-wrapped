@@ -419,6 +419,29 @@ def _is_image_response(resp: httpx.Response) -> bool:
     return resp.status_code == 200 and content_type.startswith("image/")
 
 
+_ALLOWED_EXTERNAL_IMAGE_HOSTS = frozenset({"image.tmdb.org"})
+
+
+@app.get("/api/image")
+def external_image_proxy(url: str):
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise HTTPException(400, "Invalid URL")
+    if parsed.hostname not in _ALLOWED_EXTERNAL_IMAGE_HOSTS:
+        raise HTTPException(403, "Image host not allowed")
+
+    with httpx.Client(timeout=15.0, follow_redirects=True) as client:
+        resp = client.get(url)
+    if not _is_image_response(resp):
+        status = resp.status_code if resp is not None else 502
+        raise HTTPException(status, "Image unavailable")
+    return Response(
+        content=resp.content,
+        media_type=resp.headers.get("content-type", "image/jpeg"),
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
 @app.get("/api/poster")
 def poster_proxy(
     path: str,

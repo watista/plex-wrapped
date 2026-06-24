@@ -48,11 +48,12 @@ def test_slide_needs_special_music():
     assert not slide_needs_special_music("welcome")
 
 
-def test_default_pool_video_ids():
-    from app.wrapped.theme_lookup import DEFAULT_POOL_VIDEO_IDS
+def test_fixed_slide_video_ids():
+    from app.wrapped.theme_lookup import FIXED_SLIDE_VIDEO_IDS
 
-    assert len(DEFAULT_POOL_VIDEO_IDS) == 11
-    assert DEFAULT_POOL_VIDEO_IDS[0] == "dW9xbFLaatU"
+    assert len(FIXED_SLIDE_VIDEO_IDS) == 11
+    assert FIXED_SLIDE_VIDEO_IDS["welcome"] == "dW9xbFLaatU"
+    assert FIXED_SLIDE_VIDEO_IDS["watch-time"] == "U9FzgsF2T-s"
     from app.wrapped.theme_lookup import genre_youtube_queries
 
     queries = genre_youtube_queries("drama")
@@ -60,17 +61,21 @@ def test_default_pool_video_ids():
     assert all("instrumental only" in q for q in queries)
 
 
-@patch("app.wrapped.music.resolve_default_pool_audio", return_value=["/api/audio/pool1.mp3"])
+@patch(
+    "app.wrapped.music.resolve_fixed_slide_audio",
+    return_value={"welcome": "/api/audio/welcome.mp3", "watch-time": "/api/audio/hours.mp3"},
+)
 @patch("app.wrapped.music._resolve_genre_url")
 @patch("app.wrapped.music._resolve_theme_url")
-def test_build_wrapped_music_assigns_slides(mock_theme, mock_genre, _mock_pool):
+def test_build_wrapped_music_assigns_slides(mock_theme, mock_genre, _mock_fixed):
     mock_theme.side_effect = lambda settings, title, **kwargs: f"/api/audio/{title.replace(' ', '_')}.mp3"
     mock_genre.side_effect = lambda settings, name, **kwargs: f"/api/audio/genre_{genre_slug(name)}.mp3"
 
     payload = _sample_payload()
     music = build_wrapped_music(payload, Settings(music_download_enabled=False))
 
-    assert music.default_pool == ["/api/audio/pool1.mp3"]
+    assert music.default_pool == []
+    assert music.slides["welcome"] == "/api/audio/welcome.mp3"
     assert music.slides["top-movies"] == "/api/audio/Dune:_Part_Two.mp3"
     assert music.slides["movie-genres"] == "/api/audio/genre_sci_fi.mp3"
     assert music.slides["show-genres"] == "/api/audio/genre_drama.mp3"

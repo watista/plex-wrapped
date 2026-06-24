@@ -163,7 +163,17 @@
 
   function posterUrl(thumb) {
     if (!thumb) return null;
-    if (thumb.startsWith("http")) return thumb;
+    if (thumb.startsWith("http")) {
+      try {
+        const { hostname } = new URL(thumb);
+        if (hostname === "image.tmdb.org") {
+          return `/api/image?url=${encodeURIComponent(thumb)}`;
+        }
+      } catch (_) {
+        /* keep original URL */
+      }
+      return thumb;
+    }
     return `/api/poster?path=${encodeURIComponent(thumb)}`;
   }
 
@@ -2413,7 +2423,7 @@
     }
   }
 
-  const SUMMARY_CAPTURE_VERSION = 4;
+  const SUMMARY_CAPTURE_VERSION = 5;
   let summaryBlob = null;
   let summaryBlobPromise = null;
   let summaryBlobVersion = 0;

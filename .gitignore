@@ -139,6 +139,7 @@ data/*
 data/audio/
 !data/audio/.gitkeep
 config/user_mapping.json
+config/music_overrides.json
 
 # Environments
 .env

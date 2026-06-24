@@ -1,6 +1,7 @@
 (function (global) {
   const FADE_MS = 900;
   const FADE_STEPS = 24;
+  const PLAYBACK_VOLUME = 0.5;
 
   function slideIdFromElement(slideEl) {
     if (!slideEl?.classList) return null;
@@ -18,7 +19,6 @@
     const reducedMotion = global.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let muted = reducedMotion;
-    let poolCursor = 0;
     let currentUrl = null;
     let fadeTimer = null;
 
@@ -60,14 +60,10 @@
     }
 
     function resolveUrl(slideId) {
-      const pool = music.default_pool || [];
       if (slideId && music.slides && music.slides[slideId]) {
         return music.slides[slideId];
       }
-      if (!pool.length) return null;
-      const url = pool[poolCursor % pool.length];
-      poolCursor += 1;
-      return url;
+      return null;
     }
 
     function playActive() {
@@ -94,7 +90,7 @@
 
       if (!active.src || active.paused) {
         active.src = url;
-        setVolume(active, 1);
+        setVolume(active, PLAYBACK_VOLUME);
         playActive();
         pauseInactive();
         return;
@@ -113,8 +109,8 @@
           fadeTimer = setInterval(() => {
             step += 1;
             const t = step / FADE_STEPS;
-            setVolume(active, 1 - t);
-            setVolume(standby, t);
+            setVolume(active, PLAYBACK_VOLUME * (1 - t));
+            setVolume(standby, PLAYBACK_VOLUME * t);
             if (step >= FADE_STEPS) {
               stopFade();
               const previous = active;
@@ -122,7 +118,7 @@
               setVolume(previous, 0);
               active = standby;
               standby = previous;
-              setVolume(active, 1);
+              setVolume(active, PLAYBACK_VOLUME);
             }
           }, FADE_MS / FADE_STEPS);
         })
@@ -161,7 +157,7 @@
       }
       if (currentUrl) {
         active.src = currentUrl;
-        setVolume(active, 1);
+        setVolume(active, PLAYBACK_VOLUME);
         playActive();
       }
     }
