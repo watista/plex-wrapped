@@ -255,5 +255,27 @@
       "first_played": "Terwijl de server massaal naar {server_title} keek, startte jij het jaar met {user_title}.",
       "different": "Terwijl de server naar {server_title} keek, was {user_title} jouw nummer één."
     }
+  },
+  "ai": {
+    "system": "Je schrijft korte, pakkende 'wrapped' punchlines in de stijl van Spotify Wrapped: informeel, speels en persoonlijk (jij/je-vorm). Elke punchline is precies één zin, maximaal ~160 tekens, zonder aanhalingstekens en zonder emoji.",
+    "unknown_title": "onbekend",
+    "kind_movie": "de film",
+    "kind_show": "de serie",
+    "kind_generic": "titel",
+    "relation_same": "De gebruiker en de rest van de server hadden dezelfde nummer één.",
+    "relation_first_played": "Hiermee begon de gebruiker het jaar, terwijl de server iets anders draaide.",
+    "relation_different": "De smaak van de gebruiker week af van wat de server het meest keek.",
+    "prompt_intro": "Genereer punchlines voor een Plex Wrapped op basis van deze data.",
+    "prompt_data_heading": "DATA:",
+    "prompt_unique_series": "- Aantal verschillende series: {count}",
+    "prompt_seasons": "- Aantal seizoenen: {count}",
+    "prompt_episodes": "- Aantal afleveringen: {count}",
+    "prompt_server_top": "- Populairste op de server: {title} ({kind})",
+    "prompt_user_top": "- Favoriet van de gebruiker: {title} ({kind})",
+    "prompt_relation": "- Relatie: {relation}",
+    "prompt_task_heading": "OPDRACHT:",
+    "prompt_series_depth_task": "1. 'series_depth': een punchline over hoe diep de gebruiker in series dook, gebaseerd op het aantal series/seizoenen/afleveringen.",
+    "prompt_server_vs_task": "2. 'server_vs_you': een gevatte punchline die de smaak van de server ('{server}') vergelijkt met die van de gebruiker ('{user}'). Baseer de grap op WAAR deze titels inhoudelijk over gaan — hun thema's, sfeer, setting of genre — en speel met het contrast of de overeenkomst daartussen. Plak GEEN labels als '(serie)' of '(film)' achter de titels en som geen kale cijfers op.",
+    "prompt_output": "Antwoord UITSLUITEND met een geldig JSON-object met exact deze twee sleutels, zonder markdown, zonder codeblok en zonder uitleg:\n{{\"series_depth\": \"...\", \"server_vs_you\": \"...\"}}"
   }
 }

@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 from app.ai import CursorAIClient, build_facts, generate_ai_copy
 from app.config import Settings, get_settings
+from app.i18n import Translator, comparison_caption, get_translator, position_label
 from app.models.cache import WrappedCache
 from app.models.schemas import GenreStat, MediaItem, ServerRankEntry, ServerStats, TelegramStats, WrappedPayload
 from app.tautulli.client import TautulliClient
@@ -19,7 +20,6 @@ from app.telegram.loader import (
     load_telegram_data,
 )
 from app.wrapped.avatar import resolve_avatar_url
-from app.i18n import Translator, comparison_caption, get_translator, position_label
 from app.wrapped.locale import (
     month_number_to_localized,
     to_localized_day,
@@ -940,6 +940,7 @@ class WrappedAggregator:
                 user_top_plays=user_top_plays,
                 comparison_reason=user_comparison_reason,
             ),
+            language=translator.language,
         )
 
         payload = WrappedPayload(
@@ -987,6 +988,7 @@ class WrappedAggregator:
             ai_copy=ai_copy,
             has_watch_history=total_plays > 0,
             has_telegram_activity=has_telegram,
+            content_language=translator.language,
         )
         apply_persona(payload, translator)
         attach_wrapped_music(payload, self.settings)

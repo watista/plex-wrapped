@@ -5,6 +5,7 @@ from app.ai.punchlines import (
     generate_ai_copy,
     parse_ai_copy,
 )
+from app.i18n import get_translator, localize_wrapped_payload
 from app.models.schemas import AICopy
 
 
@@ -46,18 +47,23 @@ def test_build_facts_marks_shows_as_serie():
 
 
 def test_build_prompt_includes_titles_and_counts():
-    prompt = build_prompt(_facts())
+    prompt = build_prompt(_facts(), get_translator("english"))
     assert "The Office" in prompt
     assert "Breaking Bad" in prompt
     assert "240" in prompt
     assert "series_depth" in prompt and "server_vs_you" in prompt
 
 
-def test_build_prompt_instructs_content_based_and_forbids_labels():
-    prompt = build_prompt(_facts())
-    # Base the joke on what the titles are about, not on type labels/numbers.
+def test_build_prompt_dutch_instructs_content_based_and_forbids_labels():
+    prompt = build_prompt(_facts(), get_translator("dutch"))
     assert "thema" in prompt.lower()
     assert "(serie)" in prompt and "GEEN labels" in prompt
+
+
+def test_build_prompt_english_instructs_content_based():
+    prompt = build_prompt(_facts(), get_translator("english"))
+    assert "theme" in prompt.lower()
+    assert "(show)" in prompt and "Do NOT append labels" in prompt
 
 
 def test_build_prompt_first_played_reason_phrasing():
@@ -72,7 +78,10 @@ def test_build_prompt_first_played_reason_phrasing():
         comparison_same_show=False,
         comparison_reason="first_played",
     )
-    assert "begon de gebruiker het jaar" in build_prompt(facts)
+    dutch = build_prompt(facts, get_translator("dutch"))
+    english = build_prompt(facts, get_translator("english"))
+    assert "begon de gebruiker het jaar" in dutch
+    assert "started the year" in english
 
 
 def test_parse_plain_json():
@@ -135,12 +144,40 @@ class _StubAI:
 
 def test_generate_ai_copy_single_batched_call():
     ai = _StubAI('{"series_depth": "a", "server_vs_you": "b"}')
-    copy = generate_ai_copy(ai, _facts())
+    copy = generate_ai_copy(ai, _facts(), language="english")
     assert ai.calls == 1
     assert copy.series_depth == "a"
     assert copy.server_vs_you == "b"
+    assert "theme" in ai.last_prompt.lower()
+    assert "you" in ai.last_system.lower()
+
+
+def test_generate_ai_copy_uses_dutch_prompts():
+    ai = _StubAI('{"series_depth": "a", "server_vs_you": "b"}')
+    generate_ai_copy(ai, _facts(), language="dutch")
+    assert "thema" in ai.last_prompt.lower()
+    assert "jij" in ai.last_system.lower()
 
 
 def test_generate_ai_copy_handles_none_reply():
     ai = _StubAI(None)
     assert generate_ai_copy(ai, _facts()) == AICopy()
+
+
+def test_localize_wrapped_payload_strips_mismatched_ai_copy():
+    tr = get_translator("english")
+    data = {
+        "content_language": "dutch",
+        "persona_id": "film_buff",
+        "ai_copy": {
+            "series_depth": "Nederlandse punchline",
+            "server_vs_you": "Ook Nederlands",
+        },
+        "user_comparison_show": "Show A",
+        "server": {"server_top_show": "Show B"},
+        "comparison_same_show": False,
+    }
+    localize_wrapped_payload(data, tr)
+    assert data["ai_copy"]["series_depth"] is None
+    assert data["ai_copy"]["server_vs_you"] is None
+    assert "While the server watched" in data["comparison_caption"]

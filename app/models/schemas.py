@@ -126,6 +126,7 @@ class WrappedPayload(BaseModel):
     persona_id: str = "dedicated_viewer"
     has_watch_history: bool = True
     has_telegram_activity: bool = False
+    content_language: str | None = None
     music: WrappedMusic = Field(default_factory=WrappedMusic)
 
     def model_dump(self, *args: Any, **kwargs: Any) -> dict[str, Any]:

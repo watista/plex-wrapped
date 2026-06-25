@@ -14,18 +14,12 @@ import re
 from dataclasses import dataclass
 
 from app.ai.client import CursorAIClient
+from app.i18n import Translator, get_translator
 from app.models.schemas import AICopy
 
 logger = logging.getLogger(__name__)
 
 _MAX_LEN = 200
-
-_SYSTEM = (
-    "Je schrijft korte, pakkende Nederlandse 'wrapped' punchlines in de stijl "
-    "van Spotify Wrapped: informeel, speels en persoonlijk (jij/je-vorm). "
-    "Elke punchline is precies één zin, maximaal ~160 tekens, zonder "
-    "aanhalingstekens en zonder emoji."
-)
 
 
 @dataclass(frozen=True)
@@ -71,45 +65,53 @@ def build_facts(
     )
 
 
-def _kind_word(kind: str | None) -> str:
+def _kind_word(kind: str | None, translator: Translator) -> str:
     if kind == "film":
-        return "de film"
+        return translator.t("ai.kind_movie")
     if kind == "serie":
-        return "de serie"
-    return "titel"
+        return translator.t("ai.kind_show")
+    return translator.t("ai.kind_generic")
 
 
-def build_prompt(facts: PunchlineFacts) -> str:
-    server = facts.server_top_title or "onbekend"
-    user = facts.user_top_title or "onbekend"
+def _comparison_relation(facts: PunchlineFacts, translator: Translator) -> str:
     if facts.comparison_same_show:
-        relation = "De gebruiker en de rest van de server hadden dezelfde nummer één."
-    elif facts.comparison_reason == "first_played":
-        relation = "Hiermee begon de gebruiker het jaar, terwijl de server iets anders draaide."
-    else:
-        relation = "De smaak van de gebruiker week af van wat de server het meest keek."
-    return (
-        "Genereer punchlines voor een Plex Wrapped op basis van deze data.\n\n"
-        "DATA:\n"
-        f"- Aantal verschillende series: {facts.unique_series}\n"
-        f"- Aantal seizoenen: {facts.unique_seasons}\n"
-        f"- Aantal afleveringen: {facts.unique_episodes}\n"
-        f"- Populairste op de server: {server} ({_kind_word(facts.server_top_kind)})\n"
-        f"- Favoriet van de gebruiker: {user} ({_kind_word(facts.user_top_kind)})\n"
-        f"- Relatie: {relation}\n\n"
-        "OPDRACHT:\n"
-        "1. 'series_depth': een punchline over hoe diep de gebruiker in series "
-        "dook, gebaseerd op het aantal series/seizoenen/afleveringen.\n"
-        "2. 'server_vs_you': een gevatte punchline die de smaak van de server "
-        f"('{server}') vergelijkt met die van de gebruiker ('{user}'). "
-        "Baseer de grap op WAAR deze titels inhoudelijk over gaan — hun thema's, "
-        "sfeer, setting of genre — en speel met het contrast of de overeenkomst "
-        "daartussen. Plak GEEN labels als '(serie)' of '(film)' achter de titels "
-        "en som geen kale cijfers op.\n\n"
-        "Antwoord UITSLUITEND met een geldig JSON-object met exact deze twee "
-        "sleutels, zonder markdown, zonder codeblok en zonder uitleg:\n"
-        '{"series_depth": "...", "server_vs_you": "..."}'
-    )
+        return translator.t("ai.relation_same")
+    if facts.comparison_reason == "first_played":
+        return translator.t("ai.relation_first_played")
+    return translator.t("ai.relation_different")
+
+
+def build_prompt(facts: PunchlineFacts, translator: Translator | None = None) -> str:
+    tr = translator or get_translator()
+    server = facts.server_top_title or tr.t("ai.unknown_title")
+    user = facts.user_top_title or tr.t("ai.unknown_title")
+    relation = _comparison_relation(facts, tr)
+    lines = [
+        tr.t("ai.prompt_intro"),
+        "",
+        tr.t("ai.prompt_data_heading"),
+        tr.t("ai.prompt_unique_series", count=facts.unique_series),
+        tr.t("ai.prompt_seasons", count=facts.unique_seasons),
+        tr.t("ai.prompt_episodes", count=facts.unique_episodes),
+        tr.t(
+            "ai.prompt_server_top",
+            title=server,
+            kind=_kind_word(facts.server_top_kind, tr),
+        ),
+        tr.t(
+            "ai.prompt_user_top",
+            title=user,
+            kind=_kind_word(facts.user_top_kind, tr),
+        ),
+        tr.t("ai.prompt_relation", relation=relation),
+        "",
+        tr.t("ai.prompt_task_heading"),
+        tr.t("ai.prompt_series_depth_task"),
+        tr.t("ai.prompt_server_vs_task", server=server, user=user),
+        "",
+        tr.t("ai.prompt_output"),
+    ]
+    return "\n".join(lines)
 
 
 def _clean(value: object) -> str | None:
@@ -153,14 +155,24 @@ def parse_ai_copy(text: str | None) -> AICopy:
     )
 
 
-def generate_ai_copy(ai: CursorAIClient, facts: PunchlineFacts) -> AICopy:
+def generate_ai_copy(
+    ai: CursorAIClient,
+    facts: PunchlineFacts,
+    *,
+    language: str = "english",
+) -> AICopy:
     """Run the batched punchline request. Returns empty AICopy when disabled."""
     if not ai.enabled:
         return AICopy()
-    reply = ai.generate_text(build_prompt(facts), system=_SYSTEM)
+    translator = get_translator(language)
+    reply = ai.generate_text(
+        build_prompt(facts, translator),
+        system=translator.t("ai.system"),
+    )
     copy = parse_ai_copy(reply)
     logger.info(
-        "Cursor AI punchlines generated series_depth=%s server_vs_you=%s",
+        "Cursor AI punchlines generated language=%s series_depth=%s server_vs_you=%s",
+        translator.language,
         bool(copy.series_depth),
         bool(copy.server_vs_you),
     )

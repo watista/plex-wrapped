@@ -255,5 +255,27 @@
       "first_played": "While the server was all over {server_title}, you started the year with {user_title}.",
       "different": "While the server watched {server_title}, {user_title} was your number one."
     }
+  },
+  "ai": {
+    "system": "You write short, catchy 'wrapped' punchlines in the style of Spotify Wrapped: informal, playful, and personal (use 'you'). Each punchline is exactly one sentence, at most ~160 characters, without quotation marks and without emoji.",
+    "unknown_title": "unknown",
+    "kind_movie": "the movie",
+    "kind_show": "the show",
+    "kind_generic": "title",
+    "relation_same": "The viewer and the rest of the server had the same number one.",
+    "relation_first_played": "The viewer started the year with this, while the server was on something else.",
+    "relation_different": "The viewer's taste differed from what the server watched most.",
+    "prompt_intro": "Generate punchlines for a Plex Wrapped based on this data.",
+    "prompt_data_heading": "DATA:",
+    "prompt_unique_series": "- Unique shows: {count}",
+    "prompt_seasons": "- Seasons: {count}",
+    "prompt_episodes": "- Episodes: {count}",
+    "prompt_server_top": "- Most popular on the server: {title} ({kind})",
+    "prompt_user_top": "- Viewer favorite: {title} ({kind})",
+    "prompt_relation": "- Relationship: {relation}",
+    "prompt_task_heading": "TASK:",
+    "prompt_series_depth_task": "1. 'series_depth': a punchline about how deep the viewer went into shows, based on the number of shows/seasons/episodes.",
+    "prompt_server_vs_task": "2. 'server_vs_you': a witty punchline comparing the server's taste ('{server}') with the viewer's ('{user}'). Base the joke on what these titles are about — their themes, tone, setting, or genre — and play with the contrast or overlap. Do NOT append labels like '(show)' or '(movie)' to the titles and do not list bare numbers.",
+    "prompt_output": "Reply ONLY with a valid JSON object with exactly these two keys, without markdown, without a code block, and without explanation:\n{{\"series_depth\": \"...\", \"server_vs_you\": \"...\"}}"
   }
 }

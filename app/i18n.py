@@ -198,8 +198,26 @@ def localize_persona(data: dict[str, Any], translator: Translator) -> None:
     data["persona_tagline"] = translator.t(f"persona.{persona_id}.tagline")
 
 
+def localize_ai_copy(data: dict[str, Any], translator: Translator) -> None:
+    """Drop cached AI punchlines when they were generated in another language."""
+    stored = data.get("content_language")
+    if not stored:
+        return
+    if normalize_language(stored) == translator.language:
+        return
+    ai_copy = data.get("ai_copy")
+    if not isinstance(ai_copy, dict):
+        return
+    data["ai_copy"] = {
+        **ai_copy,
+        "series_depth": None,
+        "server_vs_you": None,
+    }
+
+
 def localize_wrapped_payload(data: dict[str, Any], translator: Translator) -> dict[str, Any]:
     localize_persona(data, translator)
+    localize_ai_copy(data, translator)
 
     month_index = data.get("busiest_month_index")
     if month_index:

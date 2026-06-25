@@ -61,8 +61,11 @@ def test_localize_wrapped_payload_persona():
         "persona_tagline": "oud",
         "busiest_month_index": 10,
         "plays_by_weekday": [1, 2, 3, 4, 5, 20, 1],
+        "content_language": "english",
+        "ai_copy": {"series_depth": "Deep dive.", "server_vs_you": "Your pick."},
     }
     localize_wrapped_payload(data, tr)
     assert data["persona"] == "Film Buff"
     assert data["busiest_month"] == "October"
     assert data["peak_day"] == "Saturday"
+    assert data["ai_copy"]["series_depth"] == "Deep dive."
