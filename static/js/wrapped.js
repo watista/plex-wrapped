@@ -1690,7 +1690,7 @@
         );
       }
 
-      if (d.unique_series > 0 || d.unique_seasons > 0 || d.unique_episodes > 0) {
+      if (d.unique_series > 1 || d.unique_seasons > 1 || d.unique_episodes > 10) {
         slides.push(
           createSlide(
             slideMain(
@@ -2007,24 +2007,26 @@
       );
 
       const hours = d.watch_hours ?? Math.floor((d.total_watch_seconds || 0) / 3600);
-      const topMedia =
-        d.tv_plays > 0 && d.top_shows && d.top_shows[0]
-          ? {
-              title: d.top_shows[0].title,
-              label: t("wrapped.summary.top_show"),
-              mostWatched: t("wrapped.summary.most_watched_show"),
-              thumb: d.top_shows[0].thumb,
-              icon: "tv",
-            }
-          : d.top_movies && d.top_movies[0]
-            ? {
-                title: d.top_movies[0].title,
-                label: t("wrapped.summary.top_movie"),
-                mostWatched: t("wrapped.summary.most_watched_movie"),
-                thumb: d.top_movies[0].thumb,
-                icon: "movie",
-              }
-            : null;
+      const topShowItem =
+        d.tv_plays > 0 && d.top_shows && d.top_shows[0] ? d.top_shows[0] : null;
+      const topMovieItem = d.top_movies && d.top_movies[0] ? d.top_movies[0] : null;
+      // The movie takes the hero spot when it was actually rewatched (more than
+      // 2 plays), or when the top show barely got going (fewer than 10 episodes).
+      const preferMovie =
+        !!topMovieItem &&
+        (!topShowItem || topMovieItem.plays > 2 || topShowItem.plays < 10);
+      const heroItem = preferMovie ? topMovieItem : topShowItem;
+      const topMedia = heroItem
+        ? {
+            title: heroItem.title,
+            label: preferMovie ? t("wrapped.summary.top_movie") : t("wrapped.summary.top_show"),
+            mostWatched: preferMovie
+              ? t("wrapped.summary.most_watched_movie")
+              : t("wrapped.summary.most_watched_show"),
+            thumb: heroItem.thumb,
+            icon: preferMovie ? "movie" : "tv",
+          }
+        : null;
       const tg = d.telegram;
       const totalReq = tg
         ? tg.total_requests ?? (tg.film_requests || 0) + (tg.serie_requests || 0)

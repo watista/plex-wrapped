@@ -18,6 +18,10 @@ Built for self-hosted Plex setups that already use **Tautulli** for watch histor
   <em>Welcome · Viewing rhythm · Server rank · Year summary</em>
 </p>
 
+<p align="center">
+  <strong><a href="docs/screenshots/">See all 18 slides →</a></strong>
+</p>
+
 **Production deployment:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 
 ## Features
