@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from pathlib import Path
 from typing import Literal
 
@@ -247,9 +248,27 @@ def _purge_invalid_cache_files(cache_dir: Path) -> None:
                 pass
 
 
+_purged_dirs: set[Path] = set()
+_purge_lock = threading.Lock()
+
+
+def _purge_once(cache_dir: Path) -> None:
+    """Purge leftovers once per directory per process.
+
+    The purge deletes ``.part``/``.ytdl`` files, which belong to downloads that
+    are still running when users are computed in parallel — so it must not run
+    again while other workers are mid-download.
+    """
+    with _purge_lock:
+        if cache_dir in _purged_dirs:
+            return
+        _purged_dirs.add(cache_dir)
+        _purge_invalid_cache_files(cache_dir)
+
+
 def attach_wrapped_music(payload: WrappedPayload, settings: Settings) -> None:
     cache_dir = settings.resolve_path(settings.audio_cache_path)
-    _purge_invalid_cache_files(cache_dir)
+    _purge_once(cache_dir)
     payload.music = build_wrapped_music(payload, settings)
 
 

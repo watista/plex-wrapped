@@ -183,7 +183,15 @@ The app serves **cached** stats only. Opening `/wrapped` without a cache entry s
 | `--force` | Recompute even when a cache entry already exists |
 | `--user-id N` | Compute a single Tautulli user id only |
 | `-v` / `--verbose` | Enable DEBUG logging |
+| `--workers N` | Users computed at the same time (default: `4`, `1` = sequential) |
+| `--io-workers N` | Parallel Tautulli/TMDB lookups within one user (default: `4`) |
 | `--check-ai` | Verify Claude AI connectivity and exit (no compute) |
+
+Compute is network-bound — nearly all of the time is spent waiting on Tautulli
+and TMDB. `--workers` and `--io-workers` multiply: peak outbound requests is
+roughly `workers × io-workers`, so lower them if Tautulli starts to struggle.
+Concurrent `claude` CLI runs are capped separately by `CLAUDE_MAX_CONCURRENCY`
+(default `2`).
 
 8. Open `http://localhost:8000` (or your `PUBLIC_URL`) and sign in with Plex.
 
@@ -286,6 +294,7 @@ npm install -g @anthropic-ai/claude-code
 CLAUDE_AI_ENABLED=true
 CLAUDE_MODEL=claude-opus-5
 CLAUDE_TIMEOUT_SECONDS=120
+CLAUDE_MAX_CONCURRENCY=2      # parallel `claude` runs during compute
 # CLAUDE_AGENT_CWD=          # optional; empty = project root
 ```
 
@@ -497,6 +506,7 @@ Mount `.env`, `data/`, `config/user_mapping.json`, and `config/music_overrides.j
 | `CLAUDE_AI_ENABLED` | Enable AI punchlines during compute |
 | `CLAUDE_MODEL` | Model id or CLI alias (default: `claude-opus-5`; empty = CLI default) |
 | `CLAUDE_TIMEOUT_SECONDS` | Max seconds per AI request |
+| `CLAUDE_MAX_CONCURRENCY` | Max `claude` CLI runs at once during a parallel compute (default: `2`) |
 | `CLAUDE_AGENT_CWD` | Working directory for the local Claude agent |
 | `WRAPPED_TEST_FIXTURE_PATH` | Default fixture for `load_test_wrapped.py` |
 | `WRAPPED_TEST_USERS_PATH` | Registry of test users for `--all-test-users` |

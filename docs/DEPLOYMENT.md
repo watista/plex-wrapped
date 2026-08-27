@@ -93,7 +93,8 @@ AI runs during compute only. If Claude is unreachable or the subscription's usag
 ### `compute_wrapped.py` options
 
 ```bash
-python scripts/compute_wrapped.py [--year YYYY] [--force] [--user-id N] [-v] [--check-ai]
+python scripts/compute_wrapped.py [--year YYYY] [--force] [--user-id N] [-v]
+                                  [--workers N] [--io-workers N] [--check-ai]
 ```
 
 | Flag | Description |
@@ -102,7 +103,17 @@ python scripts/compute_wrapped.py [--year YYYY] [--force] [--user-id N] [-v] [--
 | `--force` | Recompute even when cached |
 | `--user-id` | Single user only |
 | `-v` / `--verbose` | DEBUG logging |
+| `--workers` | Users computed at the same time (default: `4`, `1` = sequential) |
+| `--io-workers` | Parallel Tautulli/TMDB lookups within one user (default: `4`) |
 | `--check-ai` | Test Claude AI and exit |
+
+Compute waits on the network far more than it computes, so both flags exist to
+trade concurrency against how much load Tautulli can take: peak outbound
+requests is roughly `workers × io-workers`. Server-wide data (history ranking,
+home stats, server name) is fetched once per run and shared; per-title metadata
+is fetched once per run even when several users watched the same title. Parallel
+`claude` CLI runs are capped by `CLAUDE_MAX_CONCURRENCY` (default `2`) so a wide
+`--workers` does not spawn one agent per worker.
 
 ---
 

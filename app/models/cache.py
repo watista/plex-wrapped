@@ -25,12 +25,17 @@ class WrappedCache:
         self._init_db()
 
     def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.path)
+        # timeout: several workers may write payloads at the same time (see
+        # scripts/compute_wrapped.py --workers); wait for the lock instead of
+        # failing with "database is locked".
+        conn = sqlite3.connect(self.path, timeout=30.0)
         conn.row_factory = sqlite3.Row
         return conn
 
     def _init_db(self) -> None:
         with self._connect() as conn:
+            # WAL lets readers continue while a writer commits.
+            conn.execute("PRAGMA journal_mode=WAL")
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS wrapped_cache (

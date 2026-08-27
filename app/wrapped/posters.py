@@ -4,9 +4,8 @@ import logging
 import re
 from typing import Any, Callable, Literal
 
-import httpx
-
 from app.config import Settings
+from app.wrapped.http import tmdb_client
 
 logger = logging.getLogger(__name__)
 
@@ -71,13 +70,12 @@ def _tmdb_guids_from_metadata(meta: dict[str, Any], *, media_kind: MediaKind) ->
 def _tmdb_poster_by_id(tmdb_id: int, *, api_key: str, media_kind: MediaKind) -> str | None:
     endpoint = "movie" if media_kind == "movie" else "tv"
     try:
-        with httpx.Client(timeout=10.0) as client:
-            response = client.get(
-                f"https://api.themoviedb.org/3/{endpoint}/{tmdb_id}",
-                params={"api_key": api_key},
-            )
-            response.raise_for_status()
-            poster_path = response.json().get("poster_path")
+        response = tmdb_client().get(
+            f"https://api.themoviedb.org/3/{endpoint}/{tmdb_id}",
+            params={"api_key": api_key},
+        )
+        response.raise_for_status()
+        poster_path = response.json().get("poster_path")
     except Exception:
         logger.debug("TMDB details lookup failed id=%s", tmdb_id, exc_info=True)
         return None
@@ -97,13 +95,12 @@ def _tmdb_poster_from_metadata(meta: dict[str, Any], *, api_key: str, media_kind
 def _tmdb_poster_by_title(title: str, *, api_key: str, media_kind: MediaKind) -> str | None:
     search_type = "movie" if media_kind == "movie" else "tv"
     try:
-        with httpx.Client(timeout=10.0) as client:
-            response = client.get(
-                f"https://api.themoviedb.org/3/search/{search_type}",
-                params={"api_key": api_key, "query": title},
-            )
-            response.raise_for_status()
-            results = response.json().get("results") or []
+        response = tmdb_client().get(
+            f"https://api.themoviedb.org/3/search/{search_type}",
+            params={"api_key": api_key, "query": title},
+        )
+        response.raise_for_status()
+        results = response.json().get("results") or []
     except Exception:
         logger.debug("TMDB search failed for %r", title, exc_info=True)
         return None

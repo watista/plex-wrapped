@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -40,6 +42,21 @@ def main() -> None:
     parser.add_argument("--force", action="store_true", help="Recompute even if cached")
     parser.add_argument("--user-id", type=int, default=None, help="Single user id only")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable DEBUG logging")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=8,
+        help="Users computed at the same time (default: 8, 1 = sequential)",
+    )
+    parser.add_argument(
+        "--io-workers",
+        type=int,
+        default=8,
+        help=(
+            "Parallel Tautulli/TMDB lookups within one user (default: 8). "
+            "Peak outbound requests is roughly --workers x --io-workers"
+        ),
+    )
     parser.add_argument(
         "--check-ai",
         action="store_true",
@@ -78,42 +95,79 @@ def main() -> None:
                 user_ids.add(int(uid))
         print(f"Falling back to all Tautulli users: {len(user_ids)}")
 
-    aggregator = WrappedAggregator(tautulli, settings, telegram, cache, year=year, ai=ai)
+    workers = max(1, min(args.workers, len(user_ids)))
+    aggregator = WrappedAggregator(
+        tautulli,
+        settings,
+        telegram,
+        cache,
+        year=year,
+        ai=ai,
+        io_workers=args.io_workers,
+    )
 
     logger.info(
-        "Starting compute year=%s users=%s force=%s tautulli=%s db=%s",
+        "Starting compute year=%s users=%s force=%s workers=%s io_workers=%s tautulli=%s db=%s",
         year,
         len(user_ids),
         args.force,
+        workers,
+        args.io_workers,
         settings.tautulli_url,
         cache.path,
     )
 
-    for uid in sorted(user_ids):
-        print(f"Computing wrapped for user_id={uid} year={year}...")
-        try:
-            from_cache = not args.force and aggregator.get_cached(uid) is not None
-            payload = aggregator.get_or_compute(uid, force=args.force)
-            source = "cache" if from_cache else "computed"
-            print(
-                f"  OK: {payload.display_name} — {payload.total_plays} plays, "
-                f"{payload.watch_hours}h ({source})"
-            )
-            logger.info(
-                "Done user_id=%s name=%s plays=%s movies=%s tv=%s watch_hours=%s",
-                uid,
-                payload.display_name,
-                payload.total_plays,
-                payload.movie_plays,
-                payload.tv_plays,
-                payload.watch_hours,
-            )
-        except Exception as exc:
-            print(f"  ERROR: {exc}")
-            logger.exception("Failed user_id=%s year=%s", uid, year)
+    def compute_one(uid: int) -> str:
+        from_cache = not args.force and aggregator.get_cached(uid) is not None
+        payload = aggregator.get_or_compute(uid, force=args.force)
+        source = "cache" if from_cache else "computed"
+        logger.info(
+            "Done user_id=%s name=%s plays=%s movies=%s tv=%s watch_hours=%s",
+            uid,
+            payload.display_name,
+            payload.total_plays,
+            payload.movie_plays,
+            payload.tv_plays,
+            payload.watch_hours,
+        )
+        return (
+            f"  user_id={uid} OK: {payload.display_name} — {payload.total_plays} plays, "
+            f"{payload.watch_hours}h ({source})"
+        )
+
+    started = time.monotonic()
+    ordered = sorted(user_ids)
+    print(f"Computing {len(ordered)} user(s) for year={year} with {workers} worker(s)...")
+
+    if workers == 1:
+        for uid in ordered:
+            print(f"Computing wrapped for user_id={uid} year={year}...")
+            try:
+                print(compute_one(uid))
+            except Exception as exc:
+                print(f"  user_id={uid} ERROR: {exc}")
+                logger.exception("Failed user_id=%s year=%s", uid, year)
+    else:
+        # Server-wide lookups (history ranking, home stats, server name) are the
+        # same for everyone, so fetch them once here instead of letting every
+        # worker race for them. Skip it when every user is already cached and
+        # nothing will be recomputed.
+        if args.force or any(aggregator.get_cached(uid) is None for uid in ordered):
+            aggregator.prewarm()
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="wrapped") as pool:
+            futures = {pool.submit(compute_one, uid): uid for uid in ordered}
+            for future in as_completed(futures):
+                uid = futures[future]
+                try:
+                    print(future.result())
+                except Exception as exc:
+                    print(f"  user_id={uid} ERROR: {exc}")
+                    logger.exception("Failed user_id=%s year=%s", uid, year)
 
     tautulli.close()
-    print("Done.")
+    elapsed = time.monotonic() - started
+    print(f"Done in {elapsed:.1f}s.")
+    logger.info("Compute finished users=%s workers=%s elapsed=%.1fs", len(ordered), workers, elapsed)
 
 
 if __name__ == "__main__":

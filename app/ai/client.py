@@ -17,12 +17,29 @@ import asyncio
 import concurrent.futures
 import logging
 import os
+import threading
 from pathlib import Path
 from typing import Any
 
 from app.config import PROJECT_ROOT, Settings, get_settings
 
 logger = logging.getLogger(__name__)
+
+_gate_guard = threading.Lock()
+_gate: threading.Semaphore | None = None
+
+
+def _concurrency_gate(limit: int) -> threading.Semaphore:
+    """Process-wide cap on simultaneous `claude` CLI runs.
+
+    Each generation spawns a CLI subprocess, so a parallel compute run would
+    otherwise start one per worker and hammer the subscription's rate limits.
+    """
+    global _gate
+    with _gate_guard:
+        if _gate is None:
+            _gate = threading.Semaphore(max(1, limit))
+        return _gate
 
 
 class ClaudeAIError(Exception):
@@ -175,7 +192,8 @@ class ClaudeAIClient:
         # The SDK is async-only; run it on a worker thread so callers stay sync.
         # The inner asyncio timeout does the real work; this one is a backstop
         # for a subprocess that never yields.
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        gate = _concurrency_gate(self.settings.claude_max_concurrency)
+        with gate, concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
             future = pool.submit(self._run_prompt, prompt.strip(), system)
             try:
                 return future.result(timeout=self._timeout + 30)

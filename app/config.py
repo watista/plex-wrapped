@@ -71,6 +71,9 @@ class Settings(BaseSettings):
     claude_ai_enabled: bool = False
     claude_model: str = "claude-opus-5"
     claude_timeout_seconds: int = 120
+    # Cap on `claude` CLI runs happening at once. Computing users in parallel
+    # would otherwise start one subprocess per worker.
+    claude_max_concurrency: int = 2
     # Working directory the local agent runs against. Empty -> project root.
     claude_agent_cwd: str = ""
 

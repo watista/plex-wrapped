@@ -67,10 +67,10 @@ def test_resolve_poster_prefers_tmdb_over_plex_path(monkeypatch):
             request=request,
         )
 
-    monkeypatch.setattr("app.wrapped.posters.httpx.Client", lambda **_: MagicMock(
-        __enter__=lambda s: MagicMock(get=fake_get),
-        __exit__=lambda *a: None,
-    ))
+    monkeypatch.setattr(
+        "app.wrapped.posters.tmdb_client",
+        lambda: MagicMock(get=fake_get),
+    )
 
     url = resolve_poster(
         settings=settings,
@@ -94,10 +94,10 @@ def test_resolve_poster_tmdb_fallback(monkeypatch):
             request=request,
         )
 
-    monkeypatch.setattr("app.wrapped.posters.httpx.Client", lambda **_: MagicMock(
-        __enter__=lambda s: MagicMock(get=fake_get),
-        __exit__=lambda *a: None,
-    ))
+    monkeypatch.setattr(
+        "app.wrapped.posters.tmdb_client",
+        lambda: MagicMock(get=fake_get),
+    )
 
     url = resolve_poster(
         settings=settings,

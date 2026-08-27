@@ -4,6 +4,7 @@ import logging
 import re
 import shutil
 import subprocess
+import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -184,6 +185,24 @@ def search_best_video_id(
     return None
 
 
+_stem_locks_guard = threading.Lock()
+_stem_locks: dict[str, threading.Lock] = {}
+
+
+def _stem_lock(cache_file_stem: str) -> threading.Lock:
+    """One lock per cache file, so parallel workers never fight over a download.
+
+    Two users can share a top title; without this they would run yt-dlp against
+    the same output path at the same time and clobber each other's temp files.
+    """
+    with _stem_locks_guard:
+        lock = _stem_locks.get(cache_file_stem)
+        if lock is None:
+            lock = threading.Lock()
+            _stem_locks[cache_file_stem] = lock
+        return lock
+
+
 def _cleanup_bad_files(cache_dir: Path, stem: str) -> None:
     for path in cache_dir.glob(f"{stem}.*"):
         try:
@@ -213,6 +232,28 @@ def download_audio(
     if existing:
         return existing
 
+    with _stem_lock(cache_file_stem):
+        # Another worker may have downloaded this exact file while we waited.
+        existing = find_cached_by_key(cache_dir, cache_file_stem)
+        if existing:
+            return existing
+        return _download_audio_locked(
+            video_id,
+            cache_dir,
+            cache_file_stem=cache_file_stem,
+            timeout=timeout,
+            ffmpeg_location=ffmpeg_location,
+        )
+
+
+def _download_audio_locked(
+    video_id: str,
+    cache_dir: Path,
+    *,
+    cache_file_stem: str,
+    timeout: float,
+    ffmpeg_location: str | None,
+) -> Path | None:
     _cleanup_bad_files(cache_dir, cache_file_stem)
 
     url = f"https://www.youtube.com/watch?v={video_id}"

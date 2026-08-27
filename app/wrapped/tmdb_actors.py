@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Literal
 
-import httpx
-
 from app.models.schemas import ActorStat
+from app.wrapped.http import tmdb_client
 from app.wrapped.posters import _tmdb_guids_from_metadata
 
 logger = logging.getLogger(__name__)
@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 MediaKind = Literal["movie", "show"]
 _TMDB_PROFILE_BASE = "https://image.tmdb.org/t/p/h632"
 _CAST_BILLING_LIMIT = 15
+# TMDB allows generous concurrency; this is mostly bounded by our own latency.
+_DEFAULT_WORKERS = 8
 
 
 def profile_url(profile_path: str | None) -> str | None:
@@ -27,15 +29,14 @@ def profile_url(profile_path: str | None) -> str | None:
 def _search_tmdb_id(title: str, media_kind: MediaKind, *, api_key: str) -> int | None:
     search_type = "movie" if media_kind == "movie" else "tv"
     try:
-        with httpx.Client(timeout=10.0) as client:
-            response = client.get(
-                f"https://api.themoviedb.org/3/search/{search_type}",
-                params={"api_key": api_key, "query": title},
-            )
-            response.raise_for_status()
-            results = response.json().get("results") or []
-            if results and results[0].get("id") is not None:
-                return int(results[0]["id"])
+        response = tmdb_client().get(
+            f"https://api.themoviedb.org/3/search/{search_type}",
+            params={"api_key": api_key, "query": title},
+        )
+        response.raise_for_status()
+        results = response.json().get("results") or []
+        if results and results[0].get("id") is not None:
+            return int(results[0]["id"])
     except Exception:
         logger.debug("TMDB search failed for %r", title, exc_info=True)
     return None
@@ -77,27 +78,26 @@ def fetch_cast(
     endpoint = "movie" if media_kind == "movie" else "tv"
     cast: list[dict[str, Any]] = []
     try:
-        with httpx.Client(timeout=15.0) as client:
-            response = client.get(
-                f"https://api.themoviedb.org/3/{endpoint}/{tmdb_id}/credits",
-                params={"api_key": api_key},
+        response = tmdb_client().get(
+            f"https://api.themoviedb.org/3/{endpoint}/{tmdb_id}/credits",
+            params={"api_key": api_key},
+        )
+        response.raise_for_status()
+        raw = response.json().get("cast") or []
+        for member in raw[:_CAST_BILLING_LIMIT]:
+            if not isinstance(member, dict):
+                continue
+            person_id = member.get("id")
+            name = (member.get("name") or "").strip()
+            if person_id is None or not name:
+                continue
+            cast.append(
+                {
+                    "id": int(person_id),
+                    "name": name,
+                    "profile_path": member.get("profile_path"),
+                }
             )
-            response.raise_for_status()
-            raw = response.json().get("cast") or []
-            for member in raw[:_CAST_BILLING_LIMIT]:
-                if not isinstance(member, dict):
-                    continue
-                person_id = member.get("id")
-                name = (member.get("name") or "").strip()
-                if person_id is None or not name:
-                    continue
-                cast.append(
-                    {
-                        "id": int(person_id),
-                        "name": name,
-                        "profile_path": member.get("profile_path"),
-                    }
-                )
     except Exception:
         logger.debug(
             "TMDB credits lookup failed kind=%s id=%s",
@@ -112,8 +112,7 @@ def fetch_cast(
     return cast
 
 
-def _accumulate_title_cast(
-    actor_stats: dict[int, dict[str, Any]],
+def _title_cast(
     *,
     title: str,
     plays: int,
@@ -123,9 +122,10 @@ def _accumulate_title_cast(
     api_key: str,
     credits_cache: dict[tuple[str, int], list[dict[str, Any]]] | None,
     search_cache: dict[tuple[str, str], int | None] | None,
-) -> None:
+) -> list[dict[str, Any]]:
+    """Look one title up on TMDB and return its billed cast (network work)."""
     if not plays or not rating_key:
-        return
+        return []
 
     meta = get_metadata(rating_key)
     tmdb_id = _resolve_tmdb_id(
@@ -136,12 +136,19 @@ def _accumulate_title_cast(
         search_cache=search_cache,
     )
     if tmdb_id is None:
-        return
+        return []
 
-    cast = fetch_cast(tmdb_id, media_kind, api_key=api_key, cache=credits_cache)
-    if not cast:
-        return
+    return fetch_cast(tmdb_id, media_kind, api_key=api_key, cache=credits_cache)
 
+
+def _accumulate_cast(
+    actor_stats: dict[int, dict[str, Any]],
+    *,
+    title: str,
+    plays: int,
+    cast: list[dict[str, Any]],
+) -> None:
+    """Fold one title's cast into the running actor totals (pure bookkeeping)."""
     for member in cast:
         pid = member["id"]
         if pid not in actor_stats:
@@ -169,39 +176,51 @@ def compute_top_actors(
     credits_cache: dict[tuple[str, int], list[dict[str, Any]]] | None = None,
     search_cache: dict[tuple[str, str], int | None] | None = None,
     limit: int = 3,
+    max_workers: int = _DEFAULT_WORKERS,
 ) -> list[ActorStat]:
     """Rank actors by total plays across watched titles using TMDB cast credits."""
     key = (api_key or "").strip()
     if not key:
         return []
 
+    titles: list[tuple[str, int, str | int | None, MediaKind]] = [
+        (title, int(data.get("plays") or 0), data.get("rating_key"), "movie")
+        for title, data in movie_stats.items()
+    ]
+    titles += [
+        (title, int(data.get("plays") or 0), data.get("rating_key"), "show")
+        for title, data in show_stats.items()
+    ]
+    if not titles:
+        return []
+
+    def lookup(entry: tuple[str, int, str | int | None, MediaKind]) -> list[dict[str, Any]]:
+        title, plays, rating_key, media_kind = entry
+        return _title_cast(
+            title=title,
+            plays=plays,
+            rating_key=rating_key,
+            media_kind=media_kind,
+            get_metadata=get_metadata,
+            api_key=key,
+            credits_cache=credits_cache,
+            search_cache=search_cache,
+        )
+
+    # Every title needs 1-3 independent HTTP round-trips (Tautulli metadata,
+    # TMDB search, TMDB credits), so fan them out. Results come back in input
+    # order, and folding them in serially below keeps the ranking deterministic.
+    workers = max(1, min(max_workers, len(titles)))
+    if workers == 1:
+        casts = [lookup(entry) for entry in titles]
+    else:
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="tmdb") as pool:
+            casts = list(pool.map(lookup, titles))
+
     actor_stats: dict[int, dict[str, Any]] = {}
-
-    for title, data in movie_stats.items():
-        _accumulate_title_cast(
-            actor_stats,
-            title=title,
-            plays=int(data.get("plays") or 0),
-            rating_key=data.get("rating_key"),
-            media_kind="movie",
-            get_metadata=get_metadata,
-            api_key=key,
-            credits_cache=credits_cache,
-            search_cache=search_cache,
-        )
-
-    for title, data in show_stats.items():
-        _accumulate_title_cast(
-            actor_stats,
-            title=title,
-            plays=int(data.get("plays") or 0),
-            rating_key=data.get("rating_key"),
-            media_kind="show",
-            get_metadata=get_metadata,
-            api_key=key,
-            credits_cache=credits_cache,
-            search_cache=search_cache,
-        )
+    for (title, plays, _rating_key, _kind), cast in zip(titles, casts):
+        if cast:
+            _accumulate_cast(actor_stats, title=title, plays=plays, cast=cast)
 
     entries: list[ActorStat] = []
     for data in actor_stats.values():

@@ -18,7 +18,13 @@ class TautulliClient:
     def __init__(self, settings: Settings):
         self.base_url = settings.tautulli_url.rstrip("/")
         self.api_key = settings.tautulli_api_key
-        self._client = httpx.Client(timeout=60.0)
+        # httpx clients are thread-safe; the pool is sized for the parallel
+        # compute run (scripts/compute_wrapped.py) so keep-alive connections get
+        # reused instead of reconnecting per request.
+        self._client = httpx.Client(
+            timeout=60.0,
+            limits=httpx.Limits(max_connections=32, max_keepalive_connections=32),
+        )
 
     def close(self) -> None:
         self._client.close()

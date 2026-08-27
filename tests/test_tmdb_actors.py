@@ -25,11 +25,8 @@ def test_fetch_cast_movie(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "app.wrapped.tmdb_actors.httpx.Client",
-        lambda **_: MagicMock(
-            __enter__=lambda s: MagicMock(get=fake_get),
-            __exit__=lambda *a: None,
-        ),
+        "app.wrapped.tmdb_actors.tmdb_client",
+        lambda: MagicMock(get=fake_get),
     )
 
     cast = fetch_cast(27205, "movie", api_key="test-key")
@@ -57,11 +54,8 @@ def test_compute_top_actors_weights_show_plays(monkeypatch):
         )
 
     monkeypatch.setattr(
-        "app.wrapped.tmdb_actors.httpx.Client",
-        lambda **_: MagicMock(
-            __enter__=lambda s: MagicMock(get=fake_get),
-            __exit__=lambda *a: None,
-        ),
+        "app.wrapped.tmdb_actors.tmdb_client",
+        lambda: MagicMock(get=fake_get),
     )
 
     show_stats = {

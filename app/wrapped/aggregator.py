@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
+import threading
 from calendar import monthrange
 from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone
-from typing import Any, Literal
+from typing import Any, Iterable, Literal
 
 logger = logging.getLogger(__name__)
 
@@ -140,26 +142,31 @@ def _fetch_year_ranked_users(
     cache: "WrappedAggregator | None" = None,
 ) -> list[dict[str, Any]]:
     """User watch durations for the wrapped calendar period (not all-time)."""
-    if cache is not None and cache._year_ranked_users is not None:
+    def fetch() -> list[dict[str, Any]]:
+        ranked: list[dict[str, Any]] = []
+        try:
+            server_history = tautulli.fetch_server_history(after=after, before=before)
+            ranked = _ranked_users_from_server_history(server_history)
+            if ranked:
+                logger.info(
+                    "Server rank source=server_history users=%s after=%s before=%s",
+                    len(ranked),
+                    after,
+                    before,
+                )
+        except Exception:
+            logger.warning("Server history ranking failed", exc_info=True)
+        return ranked
+
+    if cache is None:
+        return fetch()
+
+    # Server-wide and identical for every user, so fetch it once per run — the
+    # lock keeps parallel workers from each pulling the full server history.
+    with cache._ranked_lock:
+        if cache._year_ranked_users is None:
+            cache._year_ranked_users = fetch()
         return cache._year_ranked_users
-
-    ranked: list[dict[str, Any]] = []
-    try:
-        server_history = tautulli.fetch_server_history(after=after, before=before)
-        ranked = _ranked_users_from_server_history(server_history)
-        if ranked:
-            logger.info(
-                "Server rank source=server_history users=%s after=%s before=%s",
-                len(ranked),
-                after,
-                before,
-            )
-    except Exception:
-        logger.warning("Server history ranking failed", exc_info=True)
-
-    if cache is not None:
-        cache._year_ranked_users = ranked
-    return ranked
 
 
 def _position_label(offset: int, translator: Translator) -> str:
@@ -391,6 +398,7 @@ class WrappedAggregator:
         cache: WrappedCache | None = None,
         year: int | None = None,
         ai: ClaudeAIClient | None = None,
+        io_workers: int = 8,
     ):
         self.tautulli = tautulli
         self.settings = settings or get_settings()
@@ -401,6 +409,7 @@ class WrappedAggregator:
         # (e.g. dynamic punchlines) can call self.ai.generate_text(...).
         self.ai = ai or ClaudeAIClient(self.settings)
         self._metadata_cache: dict[str, dict[str, Any]] = {}
+        self._metadata_in_flight: dict[str, threading.Event] = {}
         self._tmdb_poster_cache: dict[tuple[str, str], str | None] = {}
         self._tmdb_credits_cache: dict[tuple[str, int], list[dict[str, Any]]] = {}
         self._tmdb_search_cache: dict[tuple[str, str], int | None] = {}
@@ -408,6 +417,17 @@ class WrappedAggregator:
         self._server_top_movie: tuple[str | None, str | None] | None = None
         self._home_stats: list[dict[str, Any]] | None = None
         self._year_ranked_users: list[dict[str, Any]] | None = None
+        self._server_user_count: int | None = None
+        self._server_name: str | None = None
+        self._server_info_loaded = False
+        # One aggregator can compute several users at once (see
+        # scripts/compute_wrapped.py --workers); these guard the shared,
+        # server-wide lookups so they are fetched exactly once per run.
+        self._ranked_lock = threading.Lock()
+        self._home_stats_lock = threading.Lock()
+        self._server_info_lock = threading.Lock()
+        self._metadata_lock = threading.Lock()
+        self._io_workers = max(1, int(io_workers))
 
     def get_cached(self, user_id: int) -> WrappedPayload | None:
         cached = self.cache.get(user_id, self.year)
@@ -434,15 +454,65 @@ class WrappedAggregator:
 
     def _get_metadata(self, rating_key: str | int) -> dict[str, Any]:
         key = str(rating_key)
-        if key in self._metadata_cache:
-            return self._metadata_cache[key]
+        cached = self._metadata_cache.get(key)
+        if cached is not None:
+            return cached
+
+        # Single-flight: users computed in parallel share popular titles, so
+        # without this every worker would fetch the same rating key at once.
+        with self._metadata_lock:
+            cached = self._metadata_cache.get(key)
+            if cached is not None:
+                return cached
+            in_flight = self._metadata_in_flight.get(key)
+            if in_flight is None:
+                in_flight = threading.Event()
+                self._metadata_in_flight[key] = in_flight
+                mine = True
+            else:
+                mine = False
+
+        if not mine:
+            in_flight.wait()
+            return self._metadata_cache.get(key, {})
+
+        result: dict[str, Any] = {}
         try:
             meta = self.tautulli.get_metadata(rating_key=key)
-            cached = meta if isinstance(meta, dict) else {}
+            if isinstance(meta, dict):
+                result = meta
         except Exception:
-            cached = {}
-        self._metadata_cache[key] = cached
-        return cached
+            logger.debug("get_metadata failed rating_key=%s", key, exc_info=True)
+        finally:
+            with self._metadata_lock:
+                self._metadata_cache[key] = result
+                self._metadata_in_flight.pop(key, None)
+            in_flight.set()
+        return result
+
+    def prefetch_metadata(self, rating_keys: Iterable[str | int]) -> None:
+        """Warm the metadata cache for many rating keys at once.
+
+        Tautulli needs one round-trip per rating key and ``compute`` touches one
+        per distinct movie and series, which is the single slowest part of a run
+        when done one at a time. Fetching them concurrently turns those hundreds
+        of sequential round-trips into a handful of batches; every later
+        ``_get_metadata`` call is then a dict hit.
+        """
+        pending = {str(key) for key in rating_keys if key is not None}
+        with self._metadata_lock:
+            # Snapshot under the lock: another worker may be writing the cache.
+            pending -= set(self._metadata_cache)
+        if not pending:
+            return
+        workers = min(self._io_workers, len(pending))
+        logger.debug("Prefetching Tautulli metadata keys=%s workers=%s", len(pending), workers)
+        if workers <= 1:
+            for key in pending:
+                self._get_metadata(key)
+            return
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="meta") as pool:
+            list(pool.map(self._get_metadata, sorted(pending)))
 
     def _get_metadata_genres(self, rating_key: str | int) -> list[str]:
         meta = self._get_metadata(rating_key)
@@ -470,19 +540,51 @@ class WrappedAggregator:
     def _get_home_stats(self, time_range_days: int) -> list[dict[str, Any]]:
         if self._home_stats is not None:
             return self._home_stats
-        blocks: list[dict[str, Any]] = []
-        try:
-            # NOTE: passing stat_id makes some Tautulli versions return nothing,
-            # so we fetch every block and filter by stat_id ourselves.
-            blocks = self.tautulli.get_home_stats(
-                time_range=time_range_days,
-                stat_id=None,
-                stats_count=5,
-            )
-        except Exception:
-            logger.warning("get_home_stats failed", exc_info=True)
-        self._home_stats = blocks
-        return blocks
+        with self._home_stats_lock:
+            if self._home_stats is not None:
+                return self._home_stats
+            blocks: list[dict[str, Any]] = []
+            try:
+                # NOTE: passing stat_id makes some Tautulli versions return nothing,
+                # so we fetch every block and filter by stat_id ourselves.
+                blocks = self.tautulli.get_home_stats(
+                    time_range=time_range_days,
+                    stat_id=None,
+                    stats_count=5,
+                )
+            except Exception:
+                logger.warning("get_home_stats failed", exc_info=True)
+            self._home_stats = blocks
+            return blocks
+
+    def _get_server_info(self) -> tuple[int | None, str | None]:
+        """Server user count and friendly name — identical for every user."""
+        if self._server_info_loaded:
+            return self._server_user_count, self._server_name
+        with self._server_info_lock:
+            if self._server_info_loaded:
+                return self._server_user_count, self._server_name
+            try:
+                self._server_user_count = len(self.tautulli.get_users())
+            except Exception:
+                logger.warning("get_users failed", exc_info=True)
+            try:
+                self._server_name = self.tautulli.get_server_friendly_name()
+            except Exception:
+                logger.warning("get_server_friendly_name failed", exc_info=True)
+            self._server_info_loaded = True
+            return self._server_user_count, self._server_name
+
+    def prewarm(self) -> None:
+        """Fetch the server-wide data every user needs, once, up front.
+
+        Call this before computing users in parallel so the workers all read
+        warm values instead of racing for the same server history / home stats.
+        """
+        after, before, time_range_days = _year_range(self.year)
+        self._get_server_info()
+        self._get_home_stats(time_range_days)
+        _fetch_year_ranked_users(self.tautulli, after=after, before=before, cache=self)
 
     def _home_stat_rows(self, time_range_days: int, stat_id: str) -> list[dict[str, Any]]:
         for block in self._get_home_stats(time_range_days):
@@ -586,6 +688,14 @@ class WrappedAggregator:
             key=lambda r: r.get("date") or 0,
         )
 
+        # The loop below asks Tautulli for the genres of every distinct movie and
+        # series. Pull that metadata concurrently first so the loop itself only
+        # reads the warm cache instead of blocking on one request per title.
+        self.prefetch_metadata(
+            row.get("rating_key") if row.get("media_type") == "movie" else row.get("grandparent_rating_key")
+            for row in media_history
+        )
+
         for row in media_history:
             media_type = row.get("media_type", "")
             duration = int(row.get("duration") or 0)
@@ -653,22 +763,36 @@ class WrappedAggregator:
                 ranked = sorted(entries, key=lambda x: (-(x[1].get("last_ts") or 0), x[0]))
             else:
                 ranked = sorted(entries, key=lambda x: (-x[1]["plays"], -x[1]["duration"]))
-            items: list[MediaItem] = []
-            for title, data in ranked[:limit]:
-                items.append(
-                    MediaItem(
-                        title=title,
-                        thumb=self._resolve_poster(
-                            thumb=data.get("thumb"),
-                            rating_key=data.get("rating_key"),
-                            title=title,
-                            media_kind=media_kind,
-                        ),
-                        plays=data["plays"],
-                        duration_seconds=data["duration"],
-                    )
+            top = ranked[:limit]
+            if not top:
+                return []
+
+            def thumb_for(entry: tuple[str, dict[str, Any]]) -> str | None:
+                title, data = entry
+                return self._resolve_poster(
+                    thumb=data.get("thumb"),
+                    rating_key=data.get("rating_key"),
+                    title=title,
+                    media_kind=media_kind,
                 )
-            return items
+
+            # Each poster may cost a TMDB lookup or two; resolve them together.
+            workers = min(self._io_workers, len(top))
+            if workers <= 1:
+                thumbs = [thumb_for(entry) for entry in top]
+            else:
+                with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="poster") as pool:
+                    thumbs = list(pool.map(thumb_for, top))
+
+            return [
+                MediaItem(
+                    title=title,
+                    thumb=thumb,
+                    plays=data["plays"],
+                    duration_seconds=data["duration"],
+                )
+                for (title, data), thumb in zip(top, thumbs)
+            ]
 
         top_movies = to_media_items(movie_stats, 5, "movie")
         top_shows = to_media_items(show_stats, 5, "show")
@@ -680,6 +804,7 @@ class WrappedAggregator:
             api_key=self.settings.tmdb_api_key,
             credits_cache=self._tmdb_credits_cache,
             search_cache=self._tmdb_search_cache,
+            max_workers=self._io_workers,
         )
         if top_actors:
             logger.info(
@@ -804,11 +929,7 @@ class WrappedAggregator:
             before=before,
             cache=self,
         )
-        server_user_count: int | None = None
-        try:
-            server_user_count = len(self.tautulli.get_users())
-        except Exception:
-            pass
+        server_user_count, server_name = self._get_server_info()
         server_stats = _compute_server_stats(
             user_id=user_id,
             display_name=display_name,
@@ -818,10 +939,7 @@ class WrappedAggregator:
             year_ranked=year_ranked or None,
             total_users=server_user_count,
         )
-        try:
-            server_stats.server_name = self.tautulli.get_server_friendly_name()
-        except Exception:
-            pass
+        server_stats.server_name = server_name
         server_top_title, server_top_thumb = self._get_server_top_show(time_range_days)
         server_stats.server_top_show = server_top_title
         if server_top_title:
