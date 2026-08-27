@@ -1661,7 +1661,16 @@
         )
       );
 
-      if (d.top_movies && d.top_movies.length) {
+      // The top-5 lists — and the genre slides that summarise the same
+      // library — only earn a spot when there is enough behind them to rank.
+      const showsOver = (episodes) =>
+        (d.top_shows || []).filter((show) => show.plays > episodes).length;
+      const showTopMovies = (d.top_movies || []).length >= 3;
+      const showTopShows =
+        !!(d.top_shows && d.top_shows.length) &&
+        (d.unique_series >= 3 || showsOver(5) >= 2 || showsOver(10) >= 1);
+
+      if (showTopMovies) {
         slides.push(
           createSlide(
             buildTopMoviesPosterBg() +
@@ -1675,7 +1684,7 @@
         );
       }
 
-      if (d.top_shows && d.top_shows.length) {
+      if (showTopShows) {
         slides.push(
           createSlide(
             buildTopShowsPosterBg() +
@@ -1818,7 +1827,7 @@
         );
       }
 
-      if (d.longest_streak_days > 0) {
+      if (d.longest_streak_days >= 3) {
         const streakStart = formatStreakDate(d.longest_streak_start);
         const streakEnd = formatStreakDate(d.longest_streak_end);
         slides.push(
@@ -1854,7 +1863,7 @@
         slides.push(createSlide(favoriteActorSlide, "favorite-actor"));
       }
 
-      if (d.top_movie_genres && d.top_movie_genres.length) {
+      if (showTopMovies && d.top_movie_genres && d.top_movie_genres.length) {
         slides.push(
           createSlide(
             `<div class="genre-icon-explosion" aria-hidden="true"></div>` +
@@ -1871,7 +1880,7 @@
         );
       }
 
-      if (d.top_show_genres && d.top_show_genres.length) {
+      if (showTopShows && d.top_show_genres && d.top_show_genres.length) {
         slides.push(
           createSlide(
             `<div class="genre-icon-explosion" aria-hidden="true"></div>` +
