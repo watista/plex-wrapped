@@ -11,7 +11,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.ai import CursorAIClient, CursorAIError
+from app.ai import ClaudeAIClient, ClaudeAIError
 from app.config import get_settings
 from app.logging_setup import configure_logging
 from app.models.cache import WrappedCache
@@ -22,15 +22,15 @@ from app.wrapped.aggregator import WrappedAggregator
 logger = logging.getLogger(__name__)
 
 
-def _check_ai(ai: CursorAIClient) -> int:
-    """Verify the Cursor AI connection and print the result."""
-    print("Checking Cursor AI connection...")
+def _check_ai(ai: ClaudeAIClient) -> int:
+    """Verify the Claude AI connection and print the result."""
+    print("Checking Claude AI connection...")
     try:
         reply = ai.health_check()
-    except CursorAIError as exc:
-        print(f"  Cursor AI not ready: {exc}")
+    except ClaudeAIError as exc:
+        print(f"  Claude AI not ready: {exc}")
         return 1
-    print(f"  OK: Cursor AI responded with: {reply!r}")
+    print(f"  OK: Claude AI responded with: {reply!r}")
     return 0
 
 
@@ -43,7 +43,7 @@ def main() -> None:
     parser.add_argument(
         "--check-ai",
         action="store_true",
-        help="Verify the Cursor AI connection and exit (no compute)",
+        help="Verify the Claude AI connection and exit (no compute)",
     )
     args = parser.parse_args()
 
@@ -53,14 +53,14 @@ def main() -> None:
     year = args.year or settings.wrapped_year
 
     if args.check_ai:
-        sys.exit(_check_ai(CursorAIClient(settings)))
+        sys.exit(_check_ai(ClaudeAIClient(settings)))
 
     tautulli = TautulliClient(settings)
     cache = WrappedCache(settings, database_path=settings.database_path)
     telegram = load_telegram_data(settings, year)
     mapping = load_user_mapping(settings)
-    ai = CursorAIClient(settings)
-    logger.info("Cursor AI enabled=%s model=%s", ai.enabled, settings.cursor_model)
+    ai = ClaudeAIClient(settings)
+    logger.info("Claude AI enabled=%s model=%s", ai.enabled, settings.claude_model)
 
     user_ids: set[int] = set()
     for entry in mapping.values():

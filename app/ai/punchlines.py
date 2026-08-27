@@ -3,7 +3,7 @@
 A single batched request asks the model for all punchlines at once and expects
 a JSON object back. Every value is validated; anything missing or malformed is
 dropped so the frontend falls back to its rule-based default. Generation is a
-no-op (returns an empty ``AICopy``) when the Cursor connection is disabled.
+no-op (returns an empty ``AICopy``) when the Claude connection is disabled.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import logging
 import re
 from dataclasses import dataclass
 
-from app.ai.client import CursorAIClient
+from app.ai.client import ClaudeAIClient
 from app.i18n import Translator, get_translator
 from app.models.schemas import AICopy
 
@@ -147,7 +147,7 @@ def parse_ai_copy(text: str | None) -> AICopy:
         return AICopy()
     data = _extract_json(text)
     if not data:
-        logger.warning("Cursor AI punchline reply was not valid JSON")
+        logger.warning("Claude AI punchline reply was not valid JSON")
         return AICopy()
     return AICopy(
         series_depth=_clean(data.get("series_depth")),
@@ -156,7 +156,7 @@ def parse_ai_copy(text: str | None) -> AICopy:
 
 
 def generate_ai_copy(
-    ai: CursorAIClient,
+    ai: ClaudeAIClient,
     facts: PunchlineFacts,
     *,
     language: str = "english",
@@ -171,7 +171,7 @@ def generate_ai_copy(
     )
     copy = parse_ai_copy(reply)
     logger.info(
-        "Cursor AI punchlines generated language=%s series_depth=%s server_vs_you=%s",
+        "Claude AI punchlines generated language=%s series_depth=%s server_vs_you=%s",
         translator.language,
         bool(copy.series_depth),
         bool(copy.server_vs_you),

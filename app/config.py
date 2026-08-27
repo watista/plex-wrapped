@@ -64,15 +64,15 @@ class Settings(BaseSettings):
     spotify_client_id: str = ""
     spotify_client_secret: str = ""
 
-    # Cursor AI (used to generate dynamic copy when computing wrapped data).
-    # Uses the Cursor Python SDK with the local runtime, so the `cursor-agent`
-    # runtime must be installed on the machine that runs the compute step.
-    cursor_ai_enabled: bool = False
-    cursor_api_key: str = ""
-    cursor_model: str = "auto"
-    cursor_timeout_seconds: int = 120
+    # Claude AI (used to generate dynamic copy when computing wrapped data).
+    # Uses the Claude Agent SDK, which drives the local `claude` CLI, so that
+    # CLI must be installed and logged in on the machine that runs the compute
+    # step. Auth comes from the CLI itself — no API key is configured here.
+    claude_ai_enabled: bool = False
+    claude_model: str = "claude-opus-5"
+    claude_timeout_seconds: int = 120
     # Working directory the local agent runs against. Empty -> project root.
-    cursor_agent_cwd: str = ""
+    claude_agent_cwd: str = ""
 
     def resolve_path(self, path: str) -> Path:
         p = Path(path)

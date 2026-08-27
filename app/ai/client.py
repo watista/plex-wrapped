@@ -1,16 +1,22 @@
-"""Thin wrapper around the Cursor Python SDK (local runtime).
+"""Thin wrapper around the Claude Agent SDK (local `claude` CLI).
 
-This module owns the *connection* to the Cursor API only. It exposes a generic
+This module owns the *connection* to Claude only. It exposes a generic
 ``generate_text`` primitive that higher-level features (e.g. punchline copy)
-can build on later. It is intentionally defensive: when AI is disabled, the
-SDK is missing, or a run fails, it degrades to ``None`` instead of raising, so
-the data-compute pipeline never breaks because of AI.
+can build on later. Authentication comes from the CLI's own login on the
+compute host, so runs are billed against that Claude subscription — no API
+key is read or sent by this module.
+
+It is intentionally defensive: when AI is disabled, the SDK is missing, the
+`claude` binary is absent, or a run fails, it degrades to ``None`` instead of
+raising, so the data-compute pipeline never breaks because of AI.
 """
 
 from __future__ import annotations
 
+import asyncio
 import concurrent.futures
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -19,23 +25,22 @@ from app.config import PROJECT_ROOT, Settings, get_settings
 logger = logging.getLogger(__name__)
 
 
-class CursorAIError(Exception):
+class ClaudeAIError(Exception):
     """Raised only by explicit checks (e.g. health_check); never during compute."""
 
 
-class CursorAIClient:
-    """Generate text via the Cursor SDK using the local agent runtime.
+class ClaudeAIClient:
+    """Generate text via the Claude Agent SDK, which drives the local `claude` CLI.
 
     The SDK is imported lazily so the rest of the app keeps working when
-    ``cursor-sdk`` is not installed or AI is turned off.
+    ``claude-agent-sdk`` is not installed or AI is turned off.
     """
 
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or get_settings()
-        self._api_key = (self.settings.cursor_api_key or "").strip()
-        self._model = (self.settings.cursor_model or "auto").strip() or "auto"
-        self._timeout = max(1, int(self.settings.cursor_timeout_seconds or 120))
-        self._cwd = self._resolve_cwd(self.settings.cursor_agent_cwd)
+        self._model = (self.settings.claude_model or "").strip()
+        self._timeout = max(1, int(self.settings.claude_timeout_seconds or 120))
+        self._cwd = self._resolve_cwd(self.settings.claude_agent_cwd)
         self._sdk: Any | None = None
 
     @staticmethod
@@ -47,105 +52,155 @@ class CursorAIClient:
 
     @property
     def enabled(self) -> bool:
-        """True when AI is switched on and an API key is configured."""
-        return bool(self.settings.cursor_ai_enabled) and bool(self._api_key)
+        """True when AI is switched on. Auth lives in the CLI, not in settings."""
+        return bool(self.settings.claude_ai_enabled)
 
     def _load_sdk(self) -> Any | None:
-        """Import the Cursor SDK on demand; cache the module on success."""
+        """Import the Claude Agent SDK on demand; cache the module on success."""
         if self._sdk is not None:
             return self._sdk
         try:
-            import cursor_sdk  # type: ignore
+            import claude_agent_sdk  # type: ignore
 
-            self._sdk = cursor_sdk
+            self._sdk = claude_agent_sdk
             return self._sdk
         except Exception:  # ImportError or transitive import failure
             logger.warning(
-                "Cursor SDK not available — install `cursor-sdk` and the "
-                "cursor-agent runtime to enable AI generation",
+                "Claude Agent SDK not available — install `claude-agent-sdk` and "
+                "the `claude` CLI to enable AI generation",
                 exc_info=True,
             )
             return None
 
-    def _run_prompt(self, prompt: str) -> str | None:
-        """Execute a one-shot prompt and return the final assistant text."""
+    def _build_options(self, sdk: Any, system: str | None) -> Any:
+        """Lock the agent down to plain text generation.
+
+        No tools means no filesystem access and exactly one assistant turn;
+        empty ``setting_sources`` keeps a CLAUDE.md or local settings file in
+        ``cwd`` from leaking into the prompt.
+        """
+        options: dict[str, Any] = {
+            "cwd": self._cwd,
+            "tools": [],
+            "allowed_tools": [],
+            "setting_sources": [],
+            "max_turns": 1,
+            "permission_mode": "default",
+        }
+        if system:
+            options["system_prompt"] = system
+        if self._model:
+            options["model"] = self._model
+        return sdk.ClaudeAgentOptions(**options)
+
+    async def _collect(self, sdk: Any, prompt: str, system: str | None) -> str | None:
+        """Run one query and return the final assistant text."""
+        result: str | None = None
+        texts: list[str] = []
+        terminal_reason: str | None = None
+        is_error = False
+
+        options = self._build_options(sdk, system)
+        async for message in sdk.query(prompt=prompt, options=options):
+            if isinstance(message, sdk.ResultMessage):
+                result = getattr(message, "result", None)
+                terminal_reason = getattr(message, "terminal_reason", None)
+                is_error = bool(getattr(message, "is_error", False))
+            elif isinstance(message, sdk.AssistantMessage):
+                for block in message.content:
+                    if isinstance(block, sdk.TextBlock):
+                        texts.append(block.text)
+
+        if is_error:
+            logger.error("Claude AI run failed (terminal_reason=%s)", terminal_reason)
+            return None
+
+        # ResultMessage.result is the final answer; the collected TextBlocks are
+        # a fallback for SDK versions that leave it unset.
+        text = result if isinstance(result, str) and result.strip() else "\n".join(texts)
+        if text and text.strip():
+            return text.strip()
+        logger.warning(
+            "Claude AI run returned no usable text (terminal_reason=%s)", terminal_reason
+        )
+        return None
+
+    def _run_prompt(self, prompt: str, system: str | None) -> str | None:
+        """Execute a one-shot prompt from a worker thread."""
         sdk = self._load_sdk()
         if sdk is None:
             return None
 
-        Agent = sdk.Agent
-        AgentOptions = sdk.AgentOptions
-        LocalAgentOptions = sdk.LocalAgentOptions
-        CursorAgentError = sdk.CursorAgentError
+        CLINotFoundError = sdk.CLINotFoundError
+
+        async def _runner() -> str | None:
+            return await asyncio.wait_for(
+                self._collect(sdk, prompt, system), timeout=self._timeout
+            )
 
         try:
-            result = Agent.prompt(
-                prompt,
-                AgentOptions(
-                    api_key=self._api_key,
-                    model=self._model,
-                    local=LocalAgentOptions(cwd=self._cwd),
-                ),
+            return asyncio.run(_runner())
+        except asyncio.TimeoutError:
+            logger.error("Claude AI timed out after %ss", self._timeout)
+            return None
+        except CLINotFoundError as exc:
+            logger.error(
+                "`claude` CLI not found — install it and log in on this host: %s", exc
             )
-        except CursorAgentError as exc:
-            # Run never started: auth, config, network, missing runtime.
-            logger.error("Cursor AI run failed to start: %s", exc)
             return None
         except Exception:
-            logger.exception("Unexpected Cursor AI error while starting run")
+            logger.exception("Unexpected Claude AI error while running prompt")
             return None
-
-        status = getattr(result, "status", None)
-        if status == "error":
-            logger.error("Cursor AI run executed but failed (status=error)")
-            return None
-
-        text = getattr(result, "result", None)
-        if isinstance(text, str) and text.strip():
-            return text.strip()
-        logger.warning("Cursor AI run returned no usable text (status=%s)", status)
-        return None
 
     def generate_text(self, prompt: str, *, system: str | None = None) -> str | None:
         """Generate text from a prompt.
 
-        Returns the model's reply, or ``None`` if AI is disabled, the SDK is
-        unavailable, the run fails, or the call exceeds the configured timeout.
-        Never raises.
+        Returns the model's reply, or ``None`` if AI is disabled, the SDK or CLI
+        is unavailable, the run fails, or the call exceeds the configured
+        timeout. Never raises.
         """
         if not self.enabled:
-            logger.debug("Cursor AI disabled — skipping generate_text")
+            logger.debug("Claude AI disabled — skipping generate_text")
             return None
         if not prompt or not prompt.strip():
             return None
 
-        full_prompt = f"{system.strip()}\n\n{prompt.strip()}" if system else prompt.strip()
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            logger.warning(
+                "ANTHROPIC_API_KEY is set in the environment — the `claude` CLI "
+                "will bill this run to API credits instead of the subscription. "
+                "Unset it on the compute host to use subscription auth."
+            )
 
+        # The SDK is async-only; run it on a worker thread so callers stay sync.
+        # The inner asyncio timeout does the real work; this one is a backstop
+        # for a subprocess that never yields.
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(self._run_prompt, full_prompt)
+            future = pool.submit(self._run_prompt, prompt.strip(), system)
             try:
-                return future.result(timeout=self._timeout)
+                return future.result(timeout=self._timeout + 30)
             except concurrent.futures.TimeoutError:
-                logger.error("Cursor AI timed out after %ss", self._timeout)
+                logger.error("Claude AI thread did not return after %ss", self._timeout + 30)
                 return None
             except Exception:
-                logger.exception("Cursor AI generate_text failed")
+                logger.exception("Claude AI generate_text failed")
                 return None
 
     def health_check(self) -> str:
         """Verify connectivity by asking for a tiny fixed reply.
 
-        Unlike ``generate_text`` this raises ``CursorAIError`` on problems so a
+        Unlike ``generate_text`` this raises ``ClaudeAIError`` on problems so a
         CLI check can surface a clear failure. Returns the model's reply text.
         """
-        if not self.settings.cursor_ai_enabled:
-            raise CursorAIError("CURSOR_AI_ENABLED is false")
-        if not self._api_key:
-            raise CursorAIError("CURSOR_API_KEY is not set")
+        if not self.settings.claude_ai_enabled:
+            raise ClaudeAIError("CLAUDE_AI_ENABLED is false")
         if self._load_sdk() is None:
-            raise CursorAIError("cursor-sdk is not installed")
+            raise ClaudeAIError("claude-agent-sdk is not installed")
 
         reply = self.generate_text("Reply with exactly: OK")
         if not reply:
-            raise CursorAIError("No reply from Cursor AI (see logs for details)")
+            raise ClaudeAIError(
+                "No reply from Claude AI — check that `claude` is on PATH and "
+                "logged in (`claude login`); see logs for details"
+            )
         return reply

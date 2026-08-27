@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
 
-from app.ai import CursorAIClient, build_facts, generate_ai_copy
+from app.ai import ClaudeAIClient, build_facts, generate_ai_copy
 from app.config import Settings, get_settings
 from app.i18n import Translator, comparison_caption, get_translator, position_label
 from app.models.cache import WrappedCache
@@ -390,16 +390,16 @@ class WrappedAggregator:
         telegram: TelegramData | None = None,
         cache: WrappedCache | None = None,
         year: int | None = None,
-        ai: CursorAIClient | None = None,
+        ai: ClaudeAIClient | None = None,
     ):
         self.tautulli = tautulli
         self.settings = settings or get_settings()
         self.year = year if year is not None else self.settings.wrapped_year
         self.telegram = telegram if telegram is not None else load_telegram_data(self.settings, self.year)
         self.cache = cache or WrappedCache(self.settings)
-        # Connection to Cursor AI. Available during compute() so future features
+        # Connection to Claude AI. Available during compute() so future features
         # (e.g. dynamic punchlines) can call self.ai.generate_text(...).
-        self.ai = ai or CursorAIClient(self.settings)
+        self.ai = ai or ClaudeAIClient(self.settings)
         self._metadata_cache: dict[str, dict[str, Any]] = {}
         self._tmdb_poster_cache: dict[tuple[str, str], str | None] = {}
         self._tmdb_credits_cache: dict[tuple[str, int], list[dict[str, Any]]] = {}
@@ -520,7 +520,7 @@ class WrappedAggregator:
         translator = get_translator(self.settings.language)
         user = self.tautulli.get_user(user_id)
         after, before, time_range_days = _year_range(self.year)
-        logger.debug("Cursor AI enabled=%s for user_id=%s", self.ai.enabled, user_id)
+        logger.debug("Claude AI enabled=%s for user_id=%s", self.ai.enabled, user_id)
         logger.info(
             "Fetching history user_id=%s after=%s before=%s time_range_days=%s",
             user_id,

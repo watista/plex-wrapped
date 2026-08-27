@@ -53,13 +53,13 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 
 ## Compute host requirements
 
-Wrapped stats and slide music are built by `scripts/compute_wrapped.py`. This job needs outbound HTTP to Tautulli, YouTube (via yt-dlp), and optionally TMDB, Spotify, and Cursor. The Uvicorn web process does **not** need ffmpeg or Cursor — only the compute step does.
+Wrapped stats and slide music are built by `scripts/compute_wrapped.py`. This job needs outbound HTTP to Tautulli, YouTube (via yt-dlp), and optionally TMDB, Spotify, and Anthropic. The Uvicorn web process does **not** need ffmpeg or a Claude login — only the compute step does.
 
 | Tool | Required? | Notes |
 |------|-----------|--------|
 | **ffmpeg** | Recommended | MP3 theme conversion; without it, themes may be served as M4A only |
 | **yt-dlp** | When `MUSIC_DOWNLOAD_ENABLED=true` | Installed via `pip install -r requirements.txt`; must be on `PATH` |
-| **Cursor agent runtime** | When `CURSOR_AI_ENABLED=true` | Local runtime for `cursor-sdk` on the compute machine |
+| **Claude login** | When `CLAUDE_AI_ENABLED=true` | `~/.claude/.credentials.json` for the user running compute; the CLI itself ships inside `claude-agent-sdk` |
 | **TMDB API key** | Optional | Favorite-actor slide and poster fallbacks |
 | **Spotify API** | Optional | Better YouTube search for soundtracks |
 
@@ -75,16 +75,20 @@ brew install ffmpeg
 
 Verify: `ffmpeg -version`. If not on `PATH`, set `FFMPEG_LOCATION` in `.env`.
 
-### Cursor AI (optional)
+### Claude AI (optional)
 
-Only needed when `CURSOR_AI_ENABLED=true`:
+Only needed when `CLAUDE_AI_ENABLED=true`. Auth comes from the `claude` CLI's own login, so runs bill against that Claude subscription — there is no API key to configure.
 
-1. Set `CURSOR_API_KEY` from [cursor.com/dashboard](https://cursor.com/dashboard).
-2. Ensure `cursor-sdk` is installed (`pip install -r requirements.txt`).
-3. Install the **cursor-agent** local runtime on the compute host (the SDK uses local mode).
-4. Smoke-test: `python scripts/compute_wrapped.py --check-ai`
+1. Ensure `claude-agent-sdk` is installed (`pip install -r requirements.txt`). It **bundles its own Claude Code CLI binary**, so nothing needs to be on `PATH` for compute to run.
+2. Provide a login for the **same user account that runs compute**. Credentials are read from that user's `~/.claude/.credentials.json`, so a login performed as `root` does *not* authenticate a `plexwrapped` service user. Either:
+   - run `claude` interactively as that user (install it with `npm install -g @anthropic-ai/claude-code` if you don't have it), or
+   - copy an existing `~/.claude/.credentials.json` into the service user's home, owned by that user with mode `600`.
+3. Confirm `ANTHROPIC_API_KEY` is **not** exported in that environment — it overrides subscription auth and bills API credits instead. Check any systemd unit or cron `EnvironmentFile` too.
+4. Smoke-test as the service user: `python scripts/compute_wrapped.py --check-ai`
 
-AI runs during compute only. If Cursor is down, compute continues with rule-based copy.
+**Docker:** the image installs `claude-agent-sdk` but carries no login. To run AI compute in the container, mount credentials read-only (`-v ~/.claude:/root/.claude:ro`) — or leave `CLAUDE_AI_ENABLED=false` in the container and run `compute_wrapped.py` on the host instead.
+
+AI runs during compute only. If Claude is unreachable or the subscription's usage limit is hit, compute continues with rule-based copy.
 
 ### `compute_wrapped.py` options
 
@@ -98,7 +102,7 @@ python scripts/compute_wrapped.py [--year YYYY] [--force] [--user-id N] [-v] [--
 | `--force` | Recompute even when cached |
 | `--user-id` | Single user only |
 | `-v` / `--verbose` | DEBUG logging |
-| `--check-ai` | Test Cursor AI and exit |
+| `--check-ai` | Test Claude AI and exit |
 
 ---
 
@@ -395,7 +399,7 @@ The `data/` directory must be writable by the process user (`plexwrapped` or the
 | Posters missing | Set `PLEX_SERVER_URL` and `PLEX_SERVER_TOKEN`; add `TMDB_API_KEY` for fallbacks |
 | Favorite-actor slide empty | Set `TMDB_API_KEY`; re-run compute with `--force` |
 | Slide music silent / missing | Install ffmpeg; check `yt-dlp` on PATH; verify `data/audio/cache/`; see compute logs with `-v` |
-| AI punchlines missing | Run `--check-ai`; confirm `CURSOR_AI_ENABLED` and cursor-agent runtime on compute host |
+| AI punchlines missing | Run `--check-ai` as the compute user; confirm `CLAUDE_AI_ENABLED`, that `~/.claude/.credentials.json` exists for that user, and that `ANTHROPIC_API_KEY` is unset |
 | Wrong device icon on *Jouw scherm* | Export `GET /admin/devices`, save to `data/known_devices.json`, run `python scripts/generate_device_icons.py` |
 | Login works but wrong user stats | `user_mapping.json` Telegram ID ↔ `plex_user_id` incorrect |
 

@@ -4,6 +4,22 @@ A mobile-first, Spotify Wrapped–style year-in-review for your Plex server. Sig
 
 Built for self-hosted Plex setups that already use **Tautulli** for watch history and optionally a **Telegram bot** for film/series requests.
 
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/welcome.png" alt="Welcome slide — personalized greeting" width="220">
+  <img src="docs/screenshots/when-you-watch.png" alt="When you watch — busiest month, day, and hour" width="220">
+  <img src="docs/screenshots/server-rank.png" alt="Server ranking — your place on the leaderboard" width="220">
+  <img src="docs/screenshots/summary.png" alt="Year summary — shareable recap card" width="220">
+</p>
+
+<p align="center">
+  <em>Welcome · Viewing rhythm · Server rank · Year summary</em>
+</p>
+
+**Production deployment:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+
 ## Features
 
 ### Wrapped experience
@@ -32,15 +48,15 @@ Stats are built in a batch job and stored in SQLite — the web app only serves 
 - **Force refresh** — `--force` overwrites an existing cache entry for that user/year.
 - **Test fixtures** — Load sample profiles into a separate test database for UI development without Tautulli.
 
-### AI-generated copy (Cursor, optional)
+### AI-generated copy (Claude, optional)
 
-During compute, **Cursor AI** can write short Dutch punchlines in Spotify Wrapped style:
+During compute, **Claude** can write short Dutch punchlines in Spotify Wrapped style:
 
 - **Batched generation** — One request produces copy for slides such as *serie diepte* and *server vs. jij*.
 - **Safe fallback** — If AI is disabled or a request fails, the UI uses built-in rule-based text.
 - **Verify before compute** — `python scripts/compute_wrapped.py --check-ai` tests connectivity.
 
-See [Cursor AI (optional)](#cursor-ai-optional) for setup (`CURSOR_API_KEY`, local `cursor-agent` runtime).
+See [Claude AI (optional)](#claude-ai-optional) for setup (a logged-in Claude session on the compute host).
 
 ### Soundtrack themes (Spotify + YouTube)
 
@@ -70,21 +86,6 @@ See [Admin endpoints → Share links](#share-links).
 - **Telegram bot export** — Link request-bot JSON to Plex users via `config/user_mapping.json`.
 - **Google Analytics** (optional) — Slide and button tracking when `GOOGLE_ANALYTICS_ID` is set.
 
-## Screenshots
-
-<p align="center">
-  <img src="docs/screenshots/welcome.png" alt="Welcome slide — personalized greeting" width="220">
-  <img src="docs/screenshots/when-you-watch.png" alt="When you watch — busiest month, day, and hour" width="220">
-  <img src="docs/screenshots/server-rank.png" alt="Server ranking — your place on the leaderboard" width="220">
-  <img src="docs/screenshots/summary.png" alt="Year summary — shareable recap card" width="220">
-</p>
-
-<p align="center">
-  <em>Welcome · Viewing rhythm · Server rank · Year summary</em>
-</p>
-
-**Production deployment:** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
-
 ---
 
 ## Requirements
@@ -100,14 +101,14 @@ See [Admin endpoints → Share links](#share-links).
 | **Optional — Telegram** | JSON export from your request bot + `config/user_mapping.json` to link Telegram IDs to Plex users |
 | **Optional — TMDB** | `TMDB_API_KEY` — favorite-actor slide (cast/photos) and poster fallbacks when Plex thumbs 404 |
 | **Optional — Spotify** | `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` — refines soundtrack search before YouTube lookup |
-| **Optional — Cursor AI** | `CURSOR_AI_ENABLED` + `CURSOR_API_KEY` + `cursor-sdk` + local **cursor-agent** runtime on the compute host — generates Dutch punchlines during compute (see [Cursor AI](#cursor-ai-optional)) |
+| **Optional — Claude AI** | `CLAUDE_AI_ENABLED` + `claude-agent-sdk` + a **logged-in Claude session** for the user that runs compute — generates Dutch punchlines during compute, billed to that Claude subscription (see [Claude AI](#claude-ai-optional)) |
 | **Optional — Docker** | Docker Compose provided; otherwise any host with Python 3.12 |
 | **Optional — posters** | `PLEX_SERVER_URL` + `PLEX_SERVER_TOKEN` for proxied poster images |
 | **Production web server** | Reverse proxy (Nginx/Caddy) + HTTPS; see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 
-**Python dependencies** (see `requirements.txt`): FastAPI, Uvicorn, httpx, Pydantic, Jinja2, yt-dlp, cursor-sdk.
+**Python dependencies** (see `requirements.txt`): FastAPI, Uvicorn, httpx, Pydantic, Jinja2, yt-dlp, claude-agent-sdk.
 
-**Runtime vs compute:** Uvicorn only serves cached data. `ffmpeg`, `yt-dlp`, and Cursor AI are needed on the machine that runs `scripts/compute_wrapped.py`, not necessarily on the web server process.
+**Runtime vs compute:** Uvicorn only serves cached data. `ffmpeg`, `yt-dlp`, and the Claude login are needed on the machine that runs `scripts/compute_wrapped.py`, not necessarily on the web server process.
 
 ---
 
@@ -178,7 +179,7 @@ The app serves **cached** stats only. Opening `/wrapped` without a cache entry s
 | `--force` | Recompute even when a cache entry already exists |
 | `--user-id N` | Compute a single Tautulli user id only |
 | `-v` / `--verbose` | Enable DEBUG logging |
-| `--check-ai` | Verify Cursor AI connectivity and exit (no compute) |
+| `--check-ai` | Verify Claude AI connectivity and exit (no compute) |
 
 8. Open `http://localhost:8000` (or your `PUBLIC_URL`) and sign in with Plex.
 
@@ -259,23 +260,36 @@ Legacy helper `scripts/setup_audio_placeholders.py` can still create silent genr
 
 ---
 
-## Cursor AI (optional)
+## Claude AI (optional)
 
-When enabled, compute asks Cursor for short Dutch punchlines on select slides (series depth, server comparison, etc.). Failures are non-fatal — the UI falls back to rule-based copy.
+When enabled, compute asks Claude for short Dutch punchlines on select slides (series depth, server comparison, etc.). Failures are non-fatal — the UI falls back to rule-based copy.
 
-1. Get an API key at [cursor.com/dashboard](https://cursor.com/dashboard) (Integrations / API Keys).
-2. Install the **cursor-agent** local runtime on the compute host (required by `cursor-sdk` for local mode). The Python package alone is not enough.
-3. In `.env`:
+This uses the [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk), which runs a local Claude Code CLI on the compute host. Authentication is whatever that CLI is logged in as, so requests bill against your **Claude subscription** — no API key is read or sent.
 
-```env
-CURSOR_AI_ENABLED=true
-CURSOR_API_KEY=cursor_...
-CURSOR_MODEL=auto
-CURSOR_TIMEOUT_SECONDS=120
-# CURSOR_AGENT_CWD=          # optional; empty = project root
+1. `pip install -r requirements.txt` installs `claude-agent-sdk`, which **bundles its own CLI binary** — a separate install is not required to run compute.
+
+2. What *is* required is a login for the user account that runs `compute_wrapped.py`. Credentials are stored per home directory in `~/.claude/.credentials.json`. Create them by running `claude` once interactively as that user and completing the login prompt. If you don't already have the CLI, install it with:
+
+```bash
+npm install -g @anthropic-ai/claude-code
 ```
 
-4. Verify before a full compute run:
+3. Make sure **`ANTHROPIC_API_KEY` is not set** in that environment. If it is, the CLI bills API credits instead of your subscription; the compute log warns when it detects one.
+
+4. In `.env`:
+
+```env
+CLAUDE_AI_ENABLED=true
+CLAUDE_MODEL=claude-opus-5
+CLAUDE_TIMEOUT_SECONDS=120
+# CLAUDE_AGENT_CWD=          # optional; empty = project root
+```
+
+`CLAUDE_MODEL` accepts a full model id or a CLI alias (`opus`, `sonnet`, `haiku`); leave it empty to use whatever the CLI is configured to use. Punchline generation is a tiny one-shot prompt, so `sonnet` or `haiku` consumes far less of your subscription's usage limit if you compute for many users at once.
+
+The agent runs with **no tools and no filesystem access**, and does not load `CLAUDE.md` or any user/project settings — it is a plain one-shot text request.
+
+5. Verify before a full compute run:
 
 ```bash
 python scripts/compute_wrapped.py --check-ai
@@ -476,11 +490,10 @@ Mount `.env`, `data/`, `config/user_mapping.json`, and `config/music_overrides.j
 | `MUSIC_OVERRIDES_PATH` | JSON map of title → YouTube URL/id overrides |
 | `FFMPEG_LOCATION` | Path to `ffmpeg` binary or directory (compute host) |
 | `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` | Optional soundtrack search refinement |
-| `CURSOR_AI_ENABLED` | Enable AI punchlines during compute |
-| `CURSOR_API_KEY` | Cursor API key (compute host) |
-| `CURSOR_MODEL` | Cursor model id (default: `auto`) |
-| `CURSOR_TIMEOUT_SECONDS` | Max seconds per AI request |
-| `CURSOR_AGENT_CWD` | Working directory for the local Cursor agent |
+| `CLAUDE_AI_ENABLED` | Enable AI punchlines during compute |
+| `CLAUDE_MODEL` | Model id or CLI alias (default: `claude-opus-5`; empty = CLI default) |
+| `CLAUDE_TIMEOUT_SECONDS` | Max seconds per AI request |
+| `CLAUDE_AGENT_CWD` | Working directory for the local Claude agent |
 | `WRAPPED_TEST_FIXTURE_PATH` | Default fixture for `load_test_wrapped.py` |
 | `WRAPPED_TEST_USERS_PATH` | Registry of test users for `--all-test-users` |
 
